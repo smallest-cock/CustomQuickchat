@@ -5,6 +5,10 @@ Enables custom quickchats in Rocket League using BakkesMod console commands
 Chats are sent using the native Rocket League chat system ✔️
   - Cleaner/better than using a script + macros to simulate keypresses, which is error prone and hacky (temporarily blocks gameplay inputs while chats are being typed)
 
+## Installation
+
+Find the latest version in [Releases](https://github.com/smallest-cock/CustomQuickchat/releases)
+
 ## Usage
 
 1. Bind `customQuickchat "your chat here"` however you want.
@@ -27,7 +31,3 @@ or `customQuickchat "my awesome chat" party` to send "my awesome chat" in party 
 Run (or bind) `customQuickchat_toggle` 
 
 ..... or check/uncheck the box in plugin settings
-
-## Installation
-
-Find the latest version in [Releases](https://github.com/smallest-cock/CustomQuickchat/releases)
