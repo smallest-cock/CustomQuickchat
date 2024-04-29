@@ -281,6 +281,9 @@
     <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_structs.hpp">
       <Filter>RLSDK\SDK_HEADERS</Filter>
     </ClInclude>
+    <ClInclude Include="Keys.h">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CustomQuickchat.rc">

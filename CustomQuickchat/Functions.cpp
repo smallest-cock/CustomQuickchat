@@ -218,6 +218,73 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 
 
 
+
+bool CustomQuickchat::Sequence(const std::string& button1, const std::string& button2) {
+	bool button1Pressed = keyStates[button1];
+	bool button2Pressed = keyStates[button2];
+	if (button1Pressed || button2Pressed) {
+		// get current time
+		auto functionCallTime = std::chrono::steady_clock::now();
+
+		if (sequenceStoredButtonPresses["global"].buttonName == "poopfart" && button1Pressed) {
+			sequenceStoredButtonPresses["global"].buttonName = button1;
+			sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
+		}
+		else {
+			// convert float timeWindow cvar into something addable to a chrono time_point
+			CVarWrapper timeWindowCvar = cvarManager->getCvar("customQuickchat_macroTimeWindow");
+			if (!timeWindowCvar) { return false; }
+			double timeWindowRaw = timeWindowCvar.getFloatValue();
+			auto timeWindow = std::chrono::duration<double>(timeWindowRaw);
+
+			if (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime + timeWindow) {
+				if (button1Pressed) {
+					sequenceStoredButtonPresses["global"].buttonName = button1;
+					sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
+				}
+				else {
+					ResetFirstButtonPressed();
+				}
+			}
+			else {
+				// if 2nd button pressed & correct 1st button previously pressed & 2nd button pressed within the alotted timewindow ...
+				if (button2Pressed && (sequenceStoredButtonPresses["global"].buttonName == button1) && (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime)) {
+					ResetFirstButtonPressed();
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+
+bool CustomQuickchat::Combine(const std::vector<std::string>& buttons) {
+	for (const std::string& button : buttons) {
+		if (!keyStates[button]) {
+			return false;
+		}
+	}
+	ResetFirstButtonPressed();
+	return true;
+}
+
+
+
+void CustomQuickchat::ResetFirstButtonPressed(std::string scope) {
+	sequenceStoredButtonPresses[scope].buttonName = "poopfart";
+}
+
+
+void CustomQuickchat::InitKeyStates() {
+	for (std::string keyName : possibleKeyNames) {
+		keyStates[keyName] = false;
+	}
+}
+
+
+
+
 bool CustomQuickchat::AreGObjectsValid() {
 	if (UObject::GObjObjects()->Num() > 0 && UObject::GObjObjects()->Max() > UObject::GObjObjects()->Num())
 	{

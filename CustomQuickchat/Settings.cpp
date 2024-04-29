@@ -4,6 +4,7 @@
 
 void CustomQuickchat::RenderSettings() {
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
+	CVarWrapper macroTimeWindowCvar = cvarManager->getCvar("customQuickchat_macroTimeWindow");
 
 
 	ImGui::Spacing();
@@ -28,4 +29,16 @@ void CustomQuickchat::RenderSettings() {
 	if (ImGui::Checkbox("Use custom quickchats", &chatsOn)) {
 		cvarManager->executeCommand("customQuickchat_toggle");
 	}
+
+	if (chatsOn) {
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		float macroTimeWindow = macroTimeWindowCvar.getFloatValue();
+		ImGui::SliderFloat("button sequence time window", &macroTimeWindow, 0.0f, 10.0f, "%.1f seconds");
+		macroTimeWindowCvar.setValue(macroTimeWindow);
+	}
+
 }

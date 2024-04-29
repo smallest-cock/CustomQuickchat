@@ -5,6 +5,8 @@
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
+#include "Keys.h"
+
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
@@ -46,6 +48,23 @@ namespace plugin {
 // -------------------------------------------------------------------------------------------------------------------
 
 
+struct CombinationMacro {
+	std::vector<std::string> buttons;
+	std::string chat;
+	//std::function<bool> validationFunc;
+};
+
+struct SequenceMacro {
+	std::vector<std::string> buttons;
+	std::string chat;
+	//std::function<bool> validationFunc;
+};
+
+
+struct ButtonPress {
+	std::string buttonName;
+	std::chrono::steady_clock::time_point pressedTime;
+};
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	,public SettingsWindowBase // Uncomment if you wanna render your own tab in the settings menu
@@ -60,6 +79,22 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	bool AreGObjectsValid();
 	bool AreGNamesValid();
+
+	void InitKeyStates();
+	bool Sequence(const std::string& button1, const std::string& button2);
+	bool Combine(const std::vector<std::string>& buttons);
+
+	void ResetFirstButtonPressed(std::string scope = "global");
+
+	static std::vector<CombinationMacro> ComboMacros;
+	static std::vector<SequenceMacro> SequenceMacros;
+
+
+	static std::unordered_map<std::string, bool> keyStates;
+	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
+
+	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
+
 
 
 public:
