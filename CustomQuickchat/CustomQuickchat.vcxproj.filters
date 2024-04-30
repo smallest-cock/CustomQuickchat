@@ -284,6 +284,9 @@
     <ClInclude Include="Keys.h">
       <Filter>Plugin\header</Filter>
     </ClInclude>
+    <ClInclude Include="nlohmann.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CustomQuickchat.rc">

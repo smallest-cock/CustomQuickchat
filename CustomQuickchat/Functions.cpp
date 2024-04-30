@@ -117,6 +117,7 @@ namespace plugin {
 						//if (uObject->GetFullName().find("Default__") == std::string::npos && !(uObject->ObjectFlags & EObjectFlags::RF_ClassDefaultObject))
 						if (CheckNotInName(uObject, "Default") && CheckNotInName(uObject, "Archetype") && CheckNotInName(uObject, "PostGameLobby") && CheckNotInName(uObject, "Test"))
 						{
+							// LOG("found instance of chatbox ptr thing: {}", i);
 							return static_cast<T*>(uObject);
 						}
 					}
@@ -124,6 +125,7 @@ namespace plugin {
 			}
 			return nullptr;
 		}
+
 	}
 	namespace memory {
 		uintptr_t FindPattern(HMODULE module, const unsigned char* pattern, const char* mask)
@@ -187,15 +189,17 @@ namespace plugin {
 
 
 
-
 void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode) {
+
+	// .... something here prolly causing the one-time few second hang
+
 
 	// only send chat if custom quickchats are turned on
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
 	if (!chatsOnCvar) { return; }
 	if (!chatsOnCvar.getBoolValue()) { return; }
 
-	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
+	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();		// maybe this?
 
 	if (chatBox) {
 
@@ -215,7 +219,6 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 		LOG("UGFxData_Chat_TA ptr is NULL!");
 	}
 }
-
 
 
 
@@ -271,7 +274,7 @@ bool CustomQuickchat::Combine(const std::vector<std::string>& buttons) {
 
 
 
-void CustomQuickchat::ResetFirstButtonPressed(std::string scope) {
+void CustomQuickchat::ResetFirstButtonPressed(const std::string& scope) {
 	sequenceStoredButtonPresses[scope].buttonName = "poopfart";
 }
 
@@ -280,6 +283,156 @@ void CustomQuickchat::InitKeyStates() {
 	for (std::string keyName : possibleKeyNames) {
 		keyStates[keyName] = false;
 	}
+}
+
+
+void CustomQuickchat::AddEmptyBinding() {
+	Binding newBinding;
+	newBinding.typeNameIndex = 0;
+	newBinding.chat = "";
+	newBinding.chatMode = ChatMode::Lobby;
+
+	Bindings.push_back(newBinding);
+}
+
+
+void CustomQuickchat::DeleteBinding(int idx) {
+
+	if (Bindings.empty()) { return; }
+
+	// erase binding at given index
+	Bindings.erase(Bindings.begin() + idx);
+
+	// reset selected binding index
+	selectedBindingIndex = Bindings.empty() ? 0 : Bindings.size() - 1;
+
+	// update JSON
+	WriteBindingsToJson();
+}
+
+
+int CustomQuickchat::FindButtonIndex(const std::string& buttonName) {
+	auto it = std::find(possibleKeyNames.begin(), possibleKeyNames.end(), buttonName);
+	if (it != possibleKeyNames.end()) {
+		return std::distance(possibleKeyNames.begin(), it);
+	}
+	else {
+		return 0;
+	}
+}
+
+
+
+void CustomQuickchat::CheckJsonFiles() {
+	// create 'CustomQuickchat' folder if it doesn't exist
+	if (!std::filesystem::exists(customQuickchatFolder)) {
+		std::filesystem::create_directory(customQuickchatFolder);
+		LOG("'CustomQuickchat' folder didn't exist... so I created it.");
+	}
+
+	// create JSON files if they don't exist
+	if (!std::filesystem::exists(bindingsFilePath)) {
+		std::ofstream NewFile(bindingsFilePath);
+
+		NewFile << "{ \"bindings\": [] }";
+		NewFile.close();
+		LOG("'Bindings.json' didn't exist... so I created it.");
+	}
+	if (!std::filesystem::exists(variationsFilePath)) {
+		std::ofstream NewFile(variationsFilePath);
+		NewFile << "{ \"variations\": [] }";
+		NewFile.close();
+		LOG("'Variations.json' didn't exist... so I created it.");
+	}
+
+}
+
+
+void CustomQuickchat::UpdateData() {
+	std::string jsonFileRawStr = readContent(bindingsFilePath);
+
+	// prevent crash on reading invalid JSON data
+	try {
+		auto bindingsJsonData = nlohmann::json::parse(jsonFileRawStr);
+		auto bindingsList = bindingsJsonData["bindings"];
+
+		if (bindingsList.size() > 0) {
+			for (int i = 0; i < bindingsList.size(); i++) {
+
+				// read data from each binding obj and update Bindings vector
+				auto bindingObj = bindingsList[i];
+				
+				Binding binding;
+				binding.chat = bindingObj["chat"];
+				binding.typeNameIndex = bindingObj["typeNameIndex"];
+				binding.chatMode = bindingObj["chatMode"];
+
+				for (int i = 0; i < bindingObj["buttonNameIndexes"].size(); i++) {
+					
+					binding.buttonNameIndexes.push_back(bindingObj["buttonNameIndexes"][i]);
+				}
+
+				Bindings.push_back(binding);
+
+			}
+		}
+	}
+	catch (...) {
+		LOG("*** Couldn't read the 'Bindings.json' file! Make sure it contains valid JSON... ***");
+	}
+
+
+	// TODO: read in variations JSON and update Variations data
+
+}
+
+
+void CustomQuickchat::WriteBindingsToJson() {
+	nlohmann::json bindingsJsonObj;
+	
+	bindingsJsonObj["bindings"] = {};
+	
+	for (Binding binding: Bindings) {
+		nlohmann::json singleBinding;
+
+		singleBinding["chat"] = binding.chat;
+		singleBinding["typeNameIndex"] = binding.typeNameIndex;
+		singleBinding["chatMode"] = binding.chatMode;
+		singleBinding["buttonNameIndexes"] = {};
+
+		for (int buttonIndex : binding.buttonNameIndexes) {
+			singleBinding["buttonNameIndexes"].push_back(buttonIndex);
+		}
+
+		bindingsJsonObj["bindings"].push_back(singleBinding);
+	}
+
+	writeContent(bindingsFilePath, bindingsJsonObj.dump(4));
+	LOG("Updated 'Bindings.json' :)");
+}
+
+
+void CustomQuickchat::GetFilePaths() {
+	std::filesystem::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
+	customQuickchatFolder = bmDataFolderFilePath / "CustomQuickchat";
+	bindingsFilePath = customQuickchatFolder / "Bindings.json";
+	variationsFilePath = customQuickchatFolder / "Variations.json";
+}
+
+
+
+std::string CustomQuickchat::readContent(const std::filesystem::path& FileName) {
+	std::ifstream Temp(FileName);
+	std::stringstream Buffer;
+	Buffer << Temp.rdbuf();
+	return (Buffer.str());
+}
+
+
+void CustomQuickchat::writeContent(const std::filesystem::path& FileName, const std::string& Buffer) {
+	std::ofstream File(FileName, std::ofstream::trunc);
+	File << Buffer;
+	File.close();
 }
 
 

@@ -17,7 +17,10 @@
 #include <limits.h>
 #include <Windows.h>
 #include <Psapi.h>
+#include <iostream>
+#include <fstream>
 
+#include "nlohmann.hpp"
 #include "RLSDK/SdkHeaders.hpp"
 
 #include "logging.h"

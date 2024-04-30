@@ -34,6 +34,7 @@ namespace plugin {
 
 		// Get the most current/active instance of a class. Example: UEngine* engine = GetInstanceOf<UEngine>();
 		template<typename T> T* GetInstanceOf();
+
 	}
 	namespace memory {
 		uintptr_t FindPattern(HMODULE module, const unsigned char* pattern, const char* mask);
@@ -48,16 +49,29 @@ namespace plugin {
 // -------------------------------------------------------------------------------------------------------------------
 
 
-struct CombinationMacro {
-	std::vector<std::string> buttons;
-	std::string chat;
-	//std::function<bool> validationFunc;
+const std::vector<std::string> possibleBindingTypes = {
+	"button combination",
+	"button sequence"
 };
 
-struct SequenceMacro {
-	std::vector<std::string> buttons;
+const std::vector<std::string> possibleChatModes = {
+	"lobby",
+	"team",
+	"party"
+};
+
+enum ChatMode {
+	Lobby = 0,
+	Team = 1,
+	Party = 2
+};
+
+
+struct Binding {
+	std::vector<int> buttonNameIndexes;
 	std::string chat;
-	//std::function<bool> validationFunc;
+	int typeNameIndex;
+	int chatMode;
 };
 
 
@@ -68,7 +82,7 @@ struct ButtonPress {
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	,public SettingsWindowBase // Uncomment if you wanna render your own tab in the settings menu
-	//,public PluginWindowBase // Uncomment if you want to render your own plugin window
+	,public PluginWindowBase // Uncomment if you want to render your own plugin window
 {
 
 	//Boilerplate
@@ -84,20 +98,40 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	bool Sequence(const std::string& button1, const std::string& button2);
 	bool Combine(const std::vector<std::string>& buttons);
 
-	void ResetFirstButtonPressed(std::string scope = "global");
+	int FindButtonIndex(const std::string& buttonName);
 
-	static std::vector<CombinationMacro> ComboMacros;
-	static std::vector<SequenceMacro> SequenceMacros;
+	void ResetFirstButtonPressed(const std::string& scope = "global");
+	
+	void CheckJsonFiles();
+	void GetFilePaths();
 
+	void WriteBindingsToJson();
+
+	void AddEmptyBinding();
+	void DeleteBinding(int idx);
+
+	// JSON stuff
+	std::string readContent(const std::filesystem::path& FileName);
+	void writeContent(const std::filesystem::path& FileName, const std::string& Buffer);
+
+	void UpdateData();
+
+	static std::vector<Binding> Bindings;
+	static int selectedBindingIndex;
 
 	static std::unordered_map<std::string, bool> keyStates;
 	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
 	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
 
+	static std::filesystem::path customQuickchatFolder;
+	static std::filesystem::path bindingsFilePath;
+	static std::filesystem::path variationsFilePath;
 
+	void RenderAllBindings();
+	void RenderBindingDetails();
 
 public:
 	void RenderSettings() override; // Uncomment if you wanna render your own tab in the settings menu
-	//void RenderWindow() override; // Uncomment if you want to render your own plugin window
+	void RenderWindow() override; // Uncomment if you want to render your own plugin window
 };

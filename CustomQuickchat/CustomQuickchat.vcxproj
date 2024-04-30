@@ -140,6 +140,7 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Keys.h" />
     <ClInclude Include="logging.h" />
+    <ClInclude Include="nlohmann.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="GuiBase.h" />
     <ClInclude Include="CustomQuickchat.h" />

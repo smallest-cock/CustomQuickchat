@@ -10,9 +10,11 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 std::unordered_map<std::string, bool> CustomQuickchat::keyStates;
 std::unordered_map<std::string, ButtonPress> CustomQuickchat::sequenceStoredButtonPresses;
 
-std::vector<CombinationMacro> CustomQuickchat::ComboMacros;
-std::vector<SequenceMacro> CustomQuickchat::SequenceMacros;
+std::vector<Binding> CustomQuickchat::Bindings;
 
+std::filesystem::path CustomQuickchat::customQuickchatFolder;
+std::filesystem::path CustomQuickchat::bindingsFilePath;
+std::filesystem::path CustomQuickchat::variationsFilePath;
 
 void CustomQuickchat::onLoad()
 {
@@ -39,31 +41,19 @@ void CustomQuickchat::onLoad()
 	sequenceStoredButtonPresses["global"].pressedTime = std::chrono::steady_clock::now();
 
 
+	// make sure JSON files are good to go, then read them to update data
+	GetFilePaths();
+	CheckJsonFiles();
+	UpdateData();
+
+
+
 	// register CVars
 	cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
 
 	cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
 
 
-
-
-	// command to send a chat
-	cvarManager->registerNotifier("customQuickchat", [&](std::vector<std::string> args) {
-
-		int numArgs = args.size();
-
-		if (numArgs == 1) {
-			LOG("no chat provided ....");
-		}
-		else if (numArgs == 2) {
-			SendChat(args[1], "lobby");		// default chat mode is lobby
-		}
-		else if (numArgs == 3) {
-			SendChat(args[1], args[2]);
-		}
-
-
-	}, "", 0);
 	
 	// command to toggle custom quickchats on/off
 	cvarManager->registerNotifier("customQuickchat_toggle", [&](std::vector<std::string> args) {
@@ -79,37 +69,6 @@ void CustomQuickchat::onLoad()
 
 	}, "", 0);
 	
-	// command to create a button sequence binding
-	cvarManager->registerNotifier("customQuickchat_createSequenceMacro", [&](std::vector<std::string> args) {
-
-		if (args.size() > 2) {
-			SequenceMacro sequence;
-			sequence.chat = args[1];
-			for (int i = 2; i < args.size(); i++) {
-				sequence.buttons.push_back(args[i]);
-			}
-
-			SequenceMacros.push_back(sequence);
-		}
-
-	}, "", 0);
-	
-	// command to create a button combination binding
-	cvarManager->registerNotifier("customQuickchat_createComboMacro", [&](std::vector<std::string> args) {
-
-		if (args.size() > 2) {
-			CombinationMacro combo;
-			combo.chat = args[1];
-			for (int i = 2; i < args.size(); i++) {
-				combo.buttons.push_back(args[i]);
-			}
-
-			ComboMacros.push_back(combo);
-		}
-
-	}, "", 0);
-
-
 
 
 	// hooks
@@ -128,23 +87,34 @@ void CustomQuickchat::onLoad()
 			keyStates[keyName] = true;
 
 			// check if any bindings triggered
-			for (CombinationMacro combo : ComboMacros) {
-				std::vector<std::string> args;
-				for (std::string button : combo.buttons) {
-					args.push_back(button);
+			for (Binding binding: Bindings) {
+
+				if (possibleBindingTypes[binding.typeNameIndex] == "button combination") {
+
+					// skip if no buttons for the binding
+					if (binding.buttonNameIndexes.empty()) { continue; }
+
+					std::vector<std::string> args;
+					for (int buttonIndex : binding.buttonNameIndexes) {
+						args.push_back(possibleKeyNames[buttonIndex]);
+					}
+
+					if (Combine(args)) {
+						SendChat(binding.chat, possibleChatModes[binding.chatMode]);
+						return;
+					}
 				}
+				else if (possibleBindingTypes[binding.typeNameIndex] == "button sequence") {
+					
+					// skip if less than 2 buttons for the binding
+					if (binding.buttonNameIndexes.size() < 2) { continue; }
+					
+					if (Sequence(possibleKeyNames[binding.buttonNameIndexes[0]], possibleKeyNames[binding.buttonNameIndexes[1]])) {
+						SendChat(binding.chat, possibleChatModes[binding.chatMode]);
+						return;
+					}
 
-				if (Combine(args)) {
-					SendChat(combo.chat, "lobby");
-					return;
-				}
-			}
 
-			for (SequenceMacro sequence : SequenceMacros) {
-
-				if (Sequence(sequence.buttons[0], sequence.buttons[1])) {
-					SendChat(sequence.chat, "lobby");
-					return;
 				}
 			}
 
