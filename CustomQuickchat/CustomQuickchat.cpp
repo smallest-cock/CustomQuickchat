@@ -2,7 +2,7 @@
 #include "CustomQuickchat.h"
 
 
-BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_THREADED)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -45,6 +45,8 @@ void CustomQuickchat::onLoad()
 	GetFilePaths();
 	CheckJsonFiles();
 	UpdateData();
+
+	PreventGameFreeze();	// somewhat hacky solution, but seems to work
 
 
 
@@ -128,4 +130,10 @@ void CustomQuickchat::onLoad()
 
 
 	LOG("CustomQuickchat loaded! :)");
+}
+
+
+void CustomQuickchat::onUnload() {
+	// just to make sure any unsaved changes are saved before exiting
+	WriteBindingsToJson();
 }

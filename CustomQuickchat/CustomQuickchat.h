@@ -87,7 +87,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	//Boilerplate
 	void onLoad() override;
-	//void onUnload() override; // Uncomment and implement if you need a unload method
+	void onUnload() override; // Uncomment and implement if you need a unload method
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
 
@@ -115,6 +115,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void writeContent(const std::filesystem::path& FileName, const std::string& Buffer);
 
 	void UpdateData();
+	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent
 
 	static std::vector<Binding> Bindings;
 	static int selectedBindingIndex;

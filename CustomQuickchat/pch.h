@@ -20,7 +20,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "nlohmann.hpp"
 #include "RLSDK/SdkHeaders.hpp"
 
 #include "logging.h"

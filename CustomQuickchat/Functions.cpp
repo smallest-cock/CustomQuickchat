@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "CustomQuickchat.h"
-
+#include "nlohmann.hpp"
 
 
 FString StrToFString(const std::string& s) {
@@ -184,6 +184,8 @@ namespace plugin {
 	}
 }
 
+// explicit instatiation ... idk if this even does anything
+template UGFxData_Chat_TA* plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
 // -------------------------------------------------------------------------------------------------------------------
 
@@ -382,8 +384,25 @@ void CustomQuickchat::UpdateData() {
 	}
 
 
-	// TODO: read in variations JSON and update Variations data
+	// TODO: read in word variations JSON and update Variations data
 
+}
+
+
+// to be called in separate thread (in onLoad function)
+void CustomQuickchat::PreventGameFreeze() {
+	UGFxData_Chat_TA* chatbox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
+
+	if (chatbox) {
+		FString message = StrToFString("custom quickchats activated");		// never actually gets chatted, prolly bc not in game thread
+
+		chatbox->SendChatMessage(message, 0);
+
+		LOG("called template function to have it compile and/or load instances in memory to prevent game freeze on 1st chat");
+	}
+	else {
+		LOG("(onload) UGFxData_Chat_TA ptr is NULL");
+	}
 }
 
 
