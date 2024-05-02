@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "CustomQuickchat.h"
 #include "nlohmann.hpp"
+#include <regex>
+#include <random>
 
 
 FString StrToFString(const std::string& s) {
@@ -9,6 +11,21 @@ FString StrToFString(const std::string& s) {
 		p[i] = s[i];
 	p[s.size()] = '\0';
 	return FString(p);
+}
+
+
+
+std::vector<std::string> splitStringByNewline(const std::string& input) {
+	std::vector<std::string> lines;
+	std::istringstream iss(input);
+	std::string line;
+
+	// Read each line using std::getline with '\n' as delimiter
+	while (std::getline(iss, line)) {
+		lines.push_back(line);
+	}
+
+	return lines;
 }
 
 
@@ -187,25 +204,23 @@ namespace plugin {
 // explicit instatiation ... idk if this even does anything
 template UGFxData_Chat_TA* plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
+
 // -------------------------------------------------------------------------------------------------------------------
 
 
 
 void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode) {
 
-	// .... something here prolly causing the one-time few second hang
-
-
 	// only send chat if custom quickchats are turned on
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
 	if (!chatsOnCvar) { return; }
 	if (!chatsOnCvar.getBoolValue()) { return; }
 
-	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();		// maybe this?
+	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
 	if (chatBox) {
 
-		FString message = StrToFString(chat);
+		FString message = StrToFString(ReplacePatternInStr(chat));
 
 		if (chatMode == "lobby") {
 			chatBox->SendChatMessage(message, 0);		// send regular (lobby) chat
@@ -298,6 +313,16 @@ void CustomQuickchat::AddEmptyBinding() {
 }
 
 
+void CustomQuickchat::AddEmptyVariationList() {
+	VariationList list;
+	list.listName = "";
+	list.unparsedString = "";
+	list.wordList = {};
+
+	Variations.push_back(list);
+}
+
+
 void CustomQuickchat::DeleteBinding(int idx) {
 
 	if (Bindings.empty()) { return; }
@@ -313,6 +338,20 @@ void CustomQuickchat::DeleteBinding(int idx) {
 }
 
 
+void CustomQuickchat::DeleteVariationList(int idx) {
+	if (Variations.empty()) { return; }
+
+	// erase variation list at given index
+	Variations.erase(Variations.begin() + idx);
+	
+	// reset selected variation list index
+	selectedVariationIndex = Variations.empty() ? 0 : Variations.size() - 1;
+
+	// update JSON
+	WriteVariationsToJson();
+}
+
+
 int CustomQuickchat::FindButtonIndex(const std::string& buttonName) {
 	auto it = std::find(possibleKeyNames.begin(), possibleKeyNames.end(), buttonName);
 	if (it != possibleKeyNames.end()) {
@@ -322,7 +361,6 @@ int CustomQuickchat::FindButtonIndex(const std::string& buttonName) {
 		return 0;
 	}
 }
-
 
 
 void CustomQuickchat::CheckJsonFiles() {
@@ -348,6 +386,153 @@ void CustomQuickchat::CheckJsonFiles() {
 	}
 
 }
+
+
+std::string CustomQuickchat::Variation(const std::string& listName) {
+
+	for (int i = 0; i < Variations.size(); i++) {
+
+		VariationList& list = Variations[i];
+		
+		if (list.listName == listName) {
+
+			if (list.wordList.size() < 3) {
+				LOG("** '{}' word variation list has less than 3 items... and cannot be used **", listName);
+				return listName;
+			}
+
+			std::string variation = list.shuffledWordList[list.nextUsableIndex];
+			
+			if (list.nextUsableIndex != (list.shuffledWordList.size() - 1)) {
+				list.nextUsableIndex++;
+				return variation;
+			}
+			else {
+				ReshuffleWordList(i);
+				return variation;
+			}
+		}
+	}
+	return listName;
+}
+
+
+std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr) {
+	
+	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]]
+	std::regex regexPattern(pattern);
+
+	std::vector<std::string> matchedSubstrings;
+	std::sregex_iterator it(inputStr.begin(), inputStr.end(), regexPattern);
+	std::sregex_iterator end;
+
+	while (it != end) {
+		std::string matchedSubstring = (*it)[1].str();
+		matchedSubstrings.push_back(matchedSubstring);
+		++it;
+	}
+
+	std::string newString = inputStr;
+	for (std::string substring : matchedSubstrings) {
+		std::string specificPattern = "\\[\\[" + substring + "\\]\\]";
+		std::regex specificRegexPattern(specificPattern);
+
+		newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
+	}
+
+	return newString;
+}
+
+
+void CustomQuickchat::UpdateDataFromVariationStr() {
+	for (auto& list : Variations) {		// reference used to modify the actual element itself (instead of just a local copy)
+		std::vector<std::string> parsedVariations = splitStringByNewline(list.unparsedString);
+		list.wordList = parsedVariations;
+
+		list.shuffledWordList = ShuffleWordList(list.wordList);
+		list.nextUsableIndex = 0;
+	}
+}
+
+
+std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std::string>& ogList) {
+	std::vector<std::string> shuffledList = ogList;
+
+	if (ogList.size() >= 3) {
+		std::random_device rd;	// Initialize random number generator
+		std::mt19937 rng(rd()); // Mersenne Twister 19937 generator
+		std::shuffle(shuffledList.begin(), shuffledList.end(), rng);
+	}
+
+	return shuffledList;
+}
+
+
+ void CustomQuickchat::ReshuffleWordList(int idx) {
+	 auto& variationList = Variations[idx];
+	 std::vector<std::string> prevShuffled = variationList.shuffledWordList;
+
+	 // skip all the non-repetition BS if the list has less than 4 variations... and just shuffle it
+	 if (prevShuffled.size() < 4) {
+		 prevShuffled = ShuffleWordList(prevShuffled);
+		 variationList.shuffledWordList = prevShuffled;
+		 variationList.nextUsableIndex = 0;
+		 return;
+	 }
+
+	 // save last two words from previous shuffled list
+	 std::vector<std::string> last2Words;
+	 last2Words.push_back(prevShuffled[prevShuffled.size() - 1]);
+	 last2Words.push_back(prevShuffled[prevShuffled.size() - 2]);
+
+	 // create new shuffled list
+	 std::vector<std::string> shuffledBih = ShuffleWordList(variationList.wordList);
+
+	 std::string newShuffled1st = "";
+	 std::string newShuffled2nd = "";
+
+
+	 // find 1st different variation
+	 for (int i = 0; i < shuffledBih.size(); i++) {
+
+		 auto word = shuffledBih[i];
+
+		 auto it = std::find(last2Words.begin(), last2Words.end(), word);
+		 if (it == last2Words.end()) {
+		
+			 if (newShuffled1st == "") {
+				 newShuffled1st = word;
+				 shuffledBih.erase(shuffledBih.begin() + i);
+				 break;
+			 }
+		 }
+	 }
+	 
+	 // find 2nd different variation
+	 for (int i = 0; i < shuffledBih.size(); i++) {
+
+		 auto word = shuffledBih[i];
+
+		 auto it = std::find(last2Words.begin(), last2Words.end(), word);
+		 if (it == last2Words.end()) {
+		
+			 if (newShuffled2nd == "") {
+				 newShuffled2nd = word;
+				 shuffledBih.erase(shuffledBih.begin() + i);
+				 break;
+			 }
+		 }
+	 }
+	 
+	 // insert selected words (that are diff than prev last two) at beginning of new shuffled vector
+	 shuffledBih.insert(shuffledBih.begin(), newShuffled1st);
+	 shuffledBih.insert(shuffledBih.begin() + 1, newShuffled2nd);
+
+	 // update actual variation list info
+	 variationList.shuffledWordList = shuffledBih;
+	 variationList.nextUsableIndex = 0;
+ }
+
 
 
 void CustomQuickchat::UpdateData() {
@@ -384,8 +569,38 @@ void CustomQuickchat::UpdateData() {
 	}
 
 
-	// TODO: read in word variations JSON and update Variations data
+	// ... same thing for variations
+	jsonFileRawStr = readContent(variationsFilePath);
 
+	try {
+		auto variationsJsonData = nlohmann::json::parse(jsonFileRawStr);
+		auto variationsList = variationsJsonData["variationLists"];
+
+		if (variationsList.size() > 0) {
+			for (int i = 0; i < variationsList.size(); i++) {
+
+				// read data from each variation list obj and update Variations vector
+				auto variationListObj = variationsList[i];
+
+				VariationList variationList;
+				variationList.listName = variationListObj["listName"];
+				variationList.unparsedString = variationListObj["unparsedString"];
+				variationList.nextUsableIndex = 0;
+
+				for (int i = 0; i < variationListObj["wordList"].size(); i++) {
+					variationList.wordList.push_back(variationListObj["wordList"][i]);
+				}
+
+				variationList.shuffledWordList = ShuffleWordList(variationList.wordList);
+
+				Variations.push_back(variationList);
+
+			}
+		}
+	}
+	catch (...) {
+		LOG("*** Couldn't read the 'Variations.json' file! Make sure it contains valid JSON... ***");
+	}
 }
 
 
@@ -408,7 +623,6 @@ void CustomQuickchat::PreventGameFreeze() {
 
 void CustomQuickchat::WriteBindingsToJson() {
 	nlohmann::json bindingsJsonObj;
-	
 	bindingsJsonObj["bindings"] = {};
 	
 	for (Binding binding: Bindings) {
@@ -431,13 +645,41 @@ void CustomQuickchat::WriteBindingsToJson() {
 }
 
 
+void CustomQuickchat::WriteVariationsToJson() {
+	nlohmann::json variationsJsonObj;
+	variationsJsonObj["variationLists"] = {};
+
+	for (auto& list : Variations) {
+		nlohmann::json variationList;
+
+		variationList["listName"] = list.listName;
+		variationList["unparsedString"] = list.unparsedString;
+		variationList["nextUsableIndex"] = list.nextUsableIndex;
+		variationList["wordList"] = {};
+		variationList["shuffledWordList"] = {};
+
+		for (auto& variation : list.wordList) {
+			variationList["wordList"].push_back(variation);
+		}
+		
+		for (auto& variation : list.shuffledWordList) {
+			variationList["shuffledWordList"].push_back(variation);
+		}
+
+		variationsJsonObj["variationLists"].push_back(variationList);
+	}
+
+	writeContent(variationsFilePath, variationsJsonObj.dump(4));
+	LOG("Updated 'Variations.json' :)");
+}
+
+
 void CustomQuickchat::GetFilePaths() {
 	std::filesystem::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
 	customQuickchatFolder = bmDataFolderFilePath / "CustomQuickchat";
 	bindingsFilePath = customQuickchatFolder / "Bindings.json";
 	variationsFilePath = customQuickchatFolder / "Variations.json";
 }
-
 
 
 std::string CustomQuickchat::readContent(const std::filesystem::path& FileName) {
@@ -453,6 +695,7 @@ void CustomQuickchat::writeContent(const std::filesystem::path& FileName, const 
 	File << Buffer;
 	File.close();
 }
+
 
 
 

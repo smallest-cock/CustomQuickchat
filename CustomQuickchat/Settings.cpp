@@ -4,6 +4,7 @@
 
 
 int CustomQuickchat::selectedBindingIndex = 0;
+int CustomQuickchat::selectedVariationIndex = 0;
 
 void CustomQuickchat::RenderSettings() {
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
@@ -60,11 +61,24 @@ void CustomQuickchat::RenderSettings() {
 
 
 void CustomQuickchat::RenderWindow() {
+	ImGui::BeginTabBar("##Tabs");
 
+	if (ImGui::BeginTabItem("Bindings")) {
+		RenderAllBindings();
+		ImGui::SameLine();
+		RenderBindingDetails();
+		ImGui::EndTabItem();
+	}
 
-	RenderAllBindings();
-	ImGui::SameLine();
-	RenderBindingDetails();
+	if (ImGui::BeginTabItem("Word Variations")) {
+		// word varitation GUI
+		RenderAllVariationListNames();
+		ImGui::SameLine();
+		RenderVariationListDetails();
+
+		ImGui::EndTabItem();
+	}
+
 }
 
 void CustomQuickchat::RenderAllBindings() {
@@ -228,3 +242,115 @@ void CustomQuickchat::RenderBindingDetails() {
 	ImGui::EndChild();
 }
 
+void CustomQuickchat::RenderAllVariationListNames() {
+	if (ImGui::BeginChild("##VariationsList", ImVec2(300, 0), true)) {
+
+		ImGui::TextUnformatted("Variation lists:");
+		ImGui::Separator();
+
+		for (int i = 0; i < Variations.size(); i++) {
+			VariationList list = Variations[i];
+			if (ImGui::Selectable((list.listName + "##" + std::to_string(i)).c_str(), i == selectedVariationIndex)) {
+				selectedVariationIndex = i;
+			}
+		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		if (ImGui::Button("Add New List", ImVec2(-1, 0))) {
+
+			AddEmptyVariationList();
+
+			selectedVariationIndex = Variations.empty() ? 0 : Variations.size() - 1;
+
+		}
+	}
+	ImGui::EndChild();
+}
+
+void CustomQuickchat::RenderVariationListDetails() {
+	if (ImGui::BeginChild("##VariationView", ImVec2(0, 0), true)) {
+
+		if (Variations.empty()) {
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			ImGui::TextUnformatted("add a word variation list...");
+
+			ImGui::EndChild();
+			return;
+		}
+
+		VariationList selectedVariation = Variations[selectedVariationIndex];
+
+		// binding display section title
+		ImGui::TextUnformatted(selectedVariation.listName.c_str());
+		ImGui::Separator();
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		
+		// variation list name
+		std::string variationListName = selectedVariation.listName;
+		ImGui::InputTextWithHint("list name", "compliment", &variationListName);
+		Variations[selectedVariationIndex].listName = variationListName;
+
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+
+		// variations (raw text)
+		std::string variationRawListStr = selectedVariation.unparsedString;
+		ImGui::InputTextMultiline("variations", &variationRawListStr, ImVec2(0,350));
+		Variations[selectedVariationIndex].unparsedString = variationRawListStr;
+
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		if (ImGui::Button("Save")) {
+			UpdateDataFromVariationStr();
+			WriteVariationsToJson();
+
+			if (!Variations.empty()) {
+				LOG("{}", ReplacePatternInStr(Variations[0].listName));
+			}
+		}
+
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+
+		// delete variation list button
+		ImGui::PushID(0);
+		ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+		if (ImGui::Button("Delete List", ImVec2(0, 0))) {
+			ImGui::PopStyleColor(3);
+			ImGui::PopID();
+			DeleteVariationList(selectedVariationIndex);
+		}
+		else {
+			ImGui::PopStyleColor(3);
+			ImGui::PopID();
+		}
+
+	}
+
+	ImGui::EndChild();
+}

@@ -2,7 +2,7 @@
 
 Enables custom quickchats in Rocket League
 
-Chats are sent using the native Rocket League chat system ✔️
+Chats are sent through the native Rocket League chat system ✔️
   - Better than using a script + macros to simulate keypresses, which is error prone and hacky (temporarily blocks gameplay inputs while chats are typed out)
 
 ## Installation
@@ -11,13 +11,14 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 ## Usage
 
-1. In plugin settings, press `Open Bindings Menu` to create/edit chat bindings
+1. In plugin settings, click `Open Bindings Menu` to edit chat bindings and word variations
+    - use `[[variation list name]]` syntax in your chats to include word variations
 
-2. Press `Save` when you're finished 
+2. Click `Save` when you're finished
      
-3. Flex your awesome chats in a match 😃
+3. Flex your sick ass chats 😎
 
-### To turn chats on/off:
+### To toggle chats on/off:
 
 Run/bind `customQuickchat_toggle` 
 
@@ -26,4 +27,3 @@ Run/bind `customQuickchat_toggle`
 ## Credits
 
 Inspired by Blaku's [CustomBindingPlugin](https://github.com/blaku-rl/CustomBindingPlugin)
-

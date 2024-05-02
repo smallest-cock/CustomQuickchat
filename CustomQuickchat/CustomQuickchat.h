@@ -75,6 +75,15 @@ struct Binding {
 };
 
 
+struct VariationList {
+	std::string listName;
+	std::string unparsedString;
+	std::vector<std::string> wordList;
+	std::vector<std::string> shuffledWordList;
+	int nextUsableIndex;
+};
+
+
 struct ButtonPress {
 	std::string buttonName;
 	std::chrono::steady_clock::time_point pressedTime;
@@ -106,9 +115,22 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void GetFilePaths();
 
 	void WriteBindingsToJson();
+	void WriteVariationsToJson();
 
 	void AddEmptyBinding();
+	void AddEmptyVariationList();
+
 	void DeleteBinding(int idx);
+	void DeleteVariationList(int idx);
+	void UpdateDataFromVariationStr();
+
+	void ReshuffleWordList(int idx);
+
+	std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
+
+	std::string Variation(const std::string& listName);
+
+	std::string ReplacePatternInStr(const std::string& inputStr);
 
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);
@@ -118,7 +140,10 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent
 
 	static std::vector<Binding> Bindings;
+	static std::vector<VariationList> Variations;
+
 	static int selectedBindingIndex;
+	static int selectedVariationIndex;
 
 	static std::unordered_map<std::string, bool> keyStates;
 	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
@@ -129,8 +154,13 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	static std::filesystem::path bindingsFilePath;
 	static std::filesystem::path variationsFilePath;
 
+	// bindings GUI
 	void RenderAllBindings();
 	void RenderBindingDetails();
+
+	// word variations GUI
+	void RenderAllVariationListNames();
+	void RenderVariationListDetails();
 
 public:
 	void RenderSettings() override; // Uncomment if you wanna render your own tab in the settings menu

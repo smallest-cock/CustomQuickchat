@@ -11,6 +11,7 @@ std::unordered_map<std::string, bool> CustomQuickchat::keyStates;
 std::unordered_map<std::string, ButtonPress> CustomQuickchat::sequenceStoredButtonPresses;
 
 std::vector<Binding> CustomQuickchat::Bindings;
+std::vector<VariationList> CustomQuickchat::Variations;
 
 std::filesystem::path CustomQuickchat::customQuickchatFolder;
 std::filesystem::path CustomQuickchat::bindingsFilePath;
@@ -32,7 +33,6 @@ void CustomQuickchat::onLoad()
 	}
 
 
-
 	// initialize key states map
 	InitKeyStates();
 
@@ -49,12 +49,9 @@ void CustomQuickchat::onLoad()
 	PreventGameFreeze();	// somewhat hacky solution, but seems to work
 
 
-
 	// register CVars
 	cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
-
 	cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
-
 
 	
 	// command to toggle custom quickchats on/off
@@ -119,8 +116,6 @@ void CustomQuickchat::onLoad()
 
 				}
 			}
-
-
 		}
 		else if (keyEventType == InputEvent::Released) {
 			keyStates[keyName] = false;
