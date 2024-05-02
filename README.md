@@ -22,3 +22,8 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 Run/bind `customQuickchat_toggle` 
 
 ..... or just toggle the checkbox in plugin settings
+
+## Credits
+
+Inspired by Blaku's [CustomBindingPlugin](https://github.com/blaku-rl/CustomBindingPlugin)
+
