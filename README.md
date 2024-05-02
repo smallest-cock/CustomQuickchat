@@ -13,6 +13,7 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 1. In plugin settings, click `Open Bindings Menu` to edit chat bindings and word variations
     - use `[[variation list name]]` syntax in your chats to include word variations
+    - when creating word variation lists in settings, each word/phrase should be separated by a new line (hence the tall text input)
 
 2. Click `Save` when you're finished
      
