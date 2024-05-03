@@ -6,6 +6,7 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
 #include "Keys.h"
+#include "TextEffects.h"
 
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -15,7 +16,7 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 FString StrToFString(const std::string& str);
 
 
-// ---------------------------- RLSDK shit ---------------------------------------------------------------------------
+// ------------------------------------------- RLSDK shit ---------------------------------------------------------------------------
 
 static constexpr int32_t INSTANCES_INTERATE_OFFSET = 100;
 
@@ -46,7 +47,7 @@ namespace plugin {
 	}
 }
 
-// -------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------------------
 
 
 const std::vector<std::string> possibleBindingTypes = {
@@ -74,13 +75,26 @@ struct Binding {
 	int chatMode;
 };
 
-
+// variation stuff
 struct VariationList {
 	std::string listName;
 	std::string unparsedString;
 	std::vector<std::string> wordList;
 	std::vector<std::string> shuffledWordList;
 	int nextUsableIndex;
+};
+
+// rank stuff
+struct Rank {
+	int matches;
+	std::string div;
+	std::string tier;
+	int mmr;
+};
+
+struct ChatterRanks {
+	std::string playerName;
+	std::unordered_map <std::string, Rank> ranks;
 };
 
 
@@ -132,6 +146,12 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	std::string ReplacePatternInStr(const std::string& inputStr);
 
+	std::string LastChat();
+	std::string AllRanks();
+	std::string SpecificRank(const std::string& playlist);
+	std::string GetRankStr(const Rank& rank);
+	ChatterRanks FindLastChattersRanks();
+
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);
 	void writeContent(const std::filesystem::path& FileName, const std::string& Buffer);
@@ -153,6 +173,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	static std::filesystem::path customQuickchatFolder;
 	static std::filesystem::path bindingsFilePath;
 	static std::filesystem::path variationsFilePath;
+	static std::filesystem::path lobbyInfoFolder;
+	static std::filesystem::path lobbyInfoChatsFilePath;
+	static std::filesystem::path lobbyInfoRanksFilePath;
 
 	// bindings GUI
 	void RenderAllBindings();

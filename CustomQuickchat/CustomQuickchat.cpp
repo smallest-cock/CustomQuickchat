@@ -16,6 +16,9 @@ std::vector<VariationList> CustomQuickchat::Variations;
 std::filesystem::path CustomQuickchat::customQuickchatFolder;
 std::filesystem::path CustomQuickchat::bindingsFilePath;
 std::filesystem::path CustomQuickchat::variationsFilePath;
+std::filesystem::path CustomQuickchat::lobbyInfoFolder;
+std::filesystem::path CustomQuickchat::lobbyInfoChatsFilePath;
+std::filesystem::path CustomQuickchat::lobbyInfoRanksFilePath;
 
 void CustomQuickchat::onLoad()
 {

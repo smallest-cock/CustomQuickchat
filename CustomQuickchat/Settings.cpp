@@ -173,8 +173,8 @@ void CustomQuickchat::RenderBindingDetails() {
 		ImGui::Spacing();
 		
 		
-		if (possibleBindingTypes[Bindings[selectedBindingIndex].typeNameIndex] == "button sequence") {
-			ImGui::Text("Note: button sequence bindings only use 2 buttons");
+		if (possibleBindingTypes[Bindings[selectedBindingIndex].typeNameIndex] == "button sequence" && (Bindings[selectedBindingIndex].buttonNameIndexes.size() < 2)) {
+			ImGui::Text("*** Button sequence bindings must use 2 buttons! ***");
 			ImGui::Spacing();
 			ImGui::Spacing();
 		}

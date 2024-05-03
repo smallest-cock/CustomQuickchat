@@ -122,6 +122,7 @@
     <ClCompile Include="RLSDK\SDK_HEADERS\WinDrv_classes.cpp" />
     <ClCompile Include="RLSDK\SDK_HEADERS\XAudio2_classes.cpp" />
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="TextEffects.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_classes.hpp" />
     <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_parameters.hpp" />
     <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_structs.hpp" />
+    <ClInclude Include="TextEffects.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>

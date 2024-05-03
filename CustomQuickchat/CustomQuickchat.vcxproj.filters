@@ -126,6 +126,9 @@
     <ClCompile Include="Settings.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
+    <ClCompile Include="TextEffects.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imgui_rangeslider.h">
@@ -286,6 +289,9 @@
     </ClInclude>
     <ClInclude Include="nlohmann.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextEffects.h">
+      <Filter>Plugin\header</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

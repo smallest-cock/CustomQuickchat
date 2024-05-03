@@ -29,6 +29,16 @@ std::vector<std::string> splitStringByNewline(const std::string& input) {
 }
 
 
+std::string cleanString(std::string str) {
+	// Remove non-ASCII characters
+	str.erase(std::remove_if(str.begin(), str.end(),
+		[](unsigned char c) { return c > 127; }),
+		str.end());
+
+	return str;
+}
+
+
 // ---------------------------- RLSDK shit ---------------------------------------------------------------------------
 
 
@@ -220,7 +230,10 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 
 	if (chatBox) {
 
-		FString message = StrToFString(ReplacePatternInStr(chat));
+		std::string processedChat = ReplacePatternInStr(chat);
+		if (processedChat == "") { return; }
+
+		FString message = StrToFString(processedChat);
 
 		if (chatMode == "lobby") {
 			chatBox->SendChatMessage(message, 0);		// send regular (lobby) chat
@@ -437,7 +450,48 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr) {
 		std::string specificPattern = "\\[\\[" + substring + "\\]\\]";
 		std::regex specificRegexPattern(specificPattern);
 
-		newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
+		if (substring == "blast all") {
+			return AllRanks();
+		}
+		else if (substring == "blast 1v1") {
+			return SpecificRank("1v1");
+		}
+		else if (substring == "blast 2v2") {
+			return SpecificRank("2v2");
+		}
+		else if (substring == "blast 3v3") {
+			return SpecificRank("3v3");
+		}
+		else if (substring == "blast casual") {
+			return SpecificRank("casual");
+		}
+		else if (substring == "lastChat") {
+			std::string lastChat = LastChat();
+			if (lastChat == "") { return ""; }
+
+			// maybe: if any lastChat text effects selected for the binding, apply them here...
+			// ...
+
+			// ... then (after effects applied) replace pattern with lastChat text
+			newString = std::regex_replace(newString, specificRegexPattern, lastChat);
+		}
+		else if (substring == "lastChat sarcasm") {
+			std::string lastChat = LastChat();
+			if (lastChat == "") { return ""; }
+
+			std::string sarcasmChat = toSarcasm(lastChat);
+			newString = std::regex_replace(newString, specificRegexPattern, sarcasmChat);
+		}
+		else if (substring == "lastChat uwu") {
+			std::string lastChat = LastChat();
+			if (lastChat == "") { return ""; }
+
+			std::string uwuChat = toUwu(lastChat);
+			newString = std::regex_replace(newString, specificRegexPattern, uwuChat);
+		}
+		else {
+			newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
+		}
 	}
 
 	return newString;
@@ -452,6 +506,181 @@ void CustomQuickchat::UpdateDataFromVariationStr() {
 		list.shuffledWordList = ShuffleWordList(list.wordList);
 		list.nextUsableIndex = 0;
 	}
+}
+
+
+std::string CustomQuickchat::LastChat() {
+	
+	// check if file exists 1st ...
+	if (!std::filesystem::exists(lobbyInfoChatsFilePath)) {
+		LOG("*** 'Lobby Info/Chats.json' doesn't exist... ***");
+		return "";
+	}
+
+	std::string jsonFileRawStr = readContent(lobbyInfoChatsFilePath);
+
+	// prevent crash on reading invalid JSON data
+	try {
+		auto chatsJsonData = nlohmann::json::parse(jsonFileRawStr);
+		auto chatMessages = chatsJsonData["chatMessages"];
+
+		if (!chatMessages.empty()) {
+			std::string lastChat = chatMessages[chatMessages.size() - 1]["chat"];
+			return lastChat;
+		}
+		else {
+			LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
+		}
+	}
+	catch (...) {
+		LOG("*** Couldn't read the 'Lobby Info/Chats.json' file! Make sure it contains valid JSON... ***");
+		return "";
+	}
+
+	return "";
+}
+
+
+std::string CustomQuickchat::AllRanks() {
+	ChatterRanks lastChatterRanks = FindLastChattersRanks();
+
+	if (lastChatterRanks.ranks.empty()) { return ""; }
+
+	// to make return line readable
+	std::string onesRankStr = GetRankStr(lastChatterRanks.ranks["1v1"]);
+	std::string twosRankStr = GetRankStr(lastChatterRanks.ranks["2v2"]);
+	std::string threesRankStr = GetRankStr(lastChatterRanks.ranks["3v3"]);
+
+	return lastChatterRanks.playerName + ": [1s] " + onesRankStr + " [2s] " + twosRankStr + " [3s] " + threesRankStr;
+}
+
+
+std::string CustomQuickchat::SpecificRank(const std::string& playlist) {
+	ChatterRanks lastChatterRanks = FindLastChattersRanks();
+
+	if (lastChatterRanks.ranks.empty()) { return ""; }
+
+	Rank specificRank = lastChatterRanks.ranks[playlist];
+
+	if (playlist != "casual") {
+		if (specificRank.tier != "n/a" || specificRank.div != "n/a") {
+			if (specificRank.matches != 0) {
+				return lastChatterRanks.playerName + " [" + playlist + "] ** " + specificRank.tier + " div" + specificRank.div + " ** (" + std::to_string(specificRank.matches) + " matches)";
+			}
+			else {
+				return lastChatterRanks.playerName + " [" + playlist + "] ** " + specificRank.tier + " div" + specificRank.div + " ** (prev season MMR)";
+			}
+		}
+		else {
+			return lastChatterRanks.playerName + " [" + playlist + "] ** doesnt play ** (" + std::to_string(specificRank.matches) + " matches)";
+		}
+	}
+	else {
+		return lastChatterRanks.playerName + " [casual] ** " + std::to_string(specificRank.matches) + " matches played **";
+	}
+}
+
+
+//void LogRankInfo(const Rank& rank, const std::string& name) {
+//	LOG("====== "+ name + " rank info =====");
+//	LOG("tier: {}", rank.tier);
+//	LOG("div: {}", rank.div);
+//	LOG("matches: {}", rank.matches);
+//	LOG("mmr: {}", rank.mmr);
+//}
+
+
+ChatterRanks CustomQuickchat::FindLastChattersRanks() {
+
+	ChatterRanks lastChattersRanks;
+	lastChattersRanks.playerName = "";
+	lastChattersRanks.ranks = {};
+
+	// check if file exists 1st ...
+	if (!std::filesystem::exists(lobbyInfoChatsFilePath)) {
+		LOG("*** 'Lobby Info/Chats.json' doesn't exist... ***");
+		return lastChattersRanks;
+	}
+
+	std::string jsonFileRawStr = readContent(lobbyInfoChatsFilePath);
+
+	// prevent crash on reading invalid JSON data
+	try {
+		auto chatsJsonData = nlohmann::json::parse(jsonFileRawStr);
+		auto chatMessages = chatsJsonData["chatMessages"];
+
+		if (!chatMessages.empty()) {
+			std::string playerName = chatMessages[chatMessages.size() - 1]["playerName"];
+
+			jsonFileRawStr = readContent(lobbyInfoRanksFilePath);
+			
+			auto ranksJsonData = nlohmann::json::parse(jsonFileRawStr);
+			auto playersRanks = ranksJsonData["lobbyRanks"];
+
+			// check if ranks for given player name exist
+			auto it = playersRanks.find(playerName);
+			if (it != playersRanks.end()) {
+				auto playerRanksObj = playersRanks[playerName];
+				auto onesData = playerRanksObj["1v1"];
+				auto twosData = playerRanksObj["2v2"];
+				auto threesData = playerRanksObj["3v3"];
+				auto casData = playerRanksObj["casual"];
+
+				Rank onesRank;
+				onesRank.mmr = 0;
+				onesRank.div = onesData["rank"]["div"];
+				onesRank.tier = onesData["rank"]["tier"];
+				onesRank.matches = onesData["matches"];
+				
+				Rank twosRank;
+				twosRank.mmr = 0;
+				twosRank.div = twosData["rank"]["div"];
+				twosRank.tier = twosData["rank"]["tier"];
+				twosRank.matches = twosData["matches"];
+
+				Rank threesRank;
+				threesRank.mmr = 0;
+				threesRank.div = threesData["rank"]["div"];
+				threesRank.tier = threesData["rank"]["tier"];
+				threesRank.matches = threesData["matches"];
+
+				Rank casRank;
+				casRank.mmr = casData["mmr"];
+				casRank.matches = casData["matches"];
+				casRank.div = "";
+				casRank.tier = "";
+
+
+				// TODO: filter non-ascii characters out of player name
+				lastChattersRanks.playerName = cleanString(playerName);
+
+
+				lastChattersRanks.ranks["1v1"] = onesRank;
+				lastChattersRanks.ranks["2v2"] = twosRank;
+				lastChattersRanks.ranks["3v3"] = threesRank;
+				lastChattersRanks.ranks["casual"] = casRank;
+			}
+			else {
+				LOG("*** Error: player '{}' wasn't found in 'Lobby Info/Ranks.json' ***", playerName);
+			}
+		}
+		else {
+			LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
+		}
+	}
+	catch (...) {
+		LOG("*** Couldn't read the 'Lobby Info/Chats.json' file! Make sure it contains valid JSON... ***");
+	}
+
+	return lastChattersRanks;
+}
+
+
+std::string CustomQuickchat::GetRankStr(const Rank& rank) {
+	if (rank.div == "n/a" || rank.tier == "n/a" || rank.matches == 0) {
+		return "--";
+	}
+	return rank.tier + "..div" + rank.div;
 }
 
 
@@ -679,6 +908,11 @@ void CustomQuickchat::GetFilePaths() {
 	customQuickchatFolder = bmDataFolderFilePath / "CustomQuickchat";
 	bindingsFilePath = customQuickchatFolder / "Bindings.json";
 	variationsFilePath = customQuickchatFolder / "Variations.json";
+	
+	// Lobby Info JSON files
+	lobbyInfoFolder = bmDataFolderFilePath / "Lobby Info";
+	lobbyInfoChatsFilePath = lobbyInfoFolder / "Chats.json";
+	lobbyInfoRanksFilePath = lobbyInfoFolder / "Ranks.json";
 }
 
 
