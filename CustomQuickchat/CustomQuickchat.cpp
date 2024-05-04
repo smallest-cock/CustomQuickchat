@@ -115,10 +115,9 @@ void CustomQuickchat::onLoad()
 						SendChat(binding.chat, possibleChatModes[binding.chatMode]);
 						return;
 					}
-
-
 				}
 			}
+
 		}
 		else if (keyEventType == InputEvent::Released) {
 			keyStates[keyName] = false;

@@ -259,9 +259,11 @@ bool CustomQuickchat::Sequence(const std::string& button1, const std::string& bu
 		// get current time
 		auto functionCallTime = std::chrono::steady_clock::now();
 
-		if (sequenceStoredButtonPresses["global"].buttonName == "poopfart" && button1Pressed) {
-			sequenceStoredButtonPresses["global"].buttonName = button1;
-			sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
+		if (sequenceStoredButtonPresses["global"].buttonName == "poopfart") {
+			if (button1Pressed) {
+				sequenceStoredButtonPresses["global"].buttonName = button1;
+				sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
+			}
 		}
 		else {
 			// convert float timeWindow cvar into something addable to a chrono time_point
@@ -269,6 +271,10 @@ bool CustomQuickchat::Sequence(const std::string& button1, const std::string& bu
 			if (!timeWindowCvar) { return false; }
 			double timeWindowRaw = timeWindowCvar.getFloatValue();
 			auto timeWindow = std::chrono::duration<double>(timeWindowRaw);
+
+			// so sequence bindings with the same 1st & 2nd button aren't accidentally triggered (bc firstButtonPressed is global & the fact all bindings are attempted in for loop)
+			double tooFastTimeWindowRaw = 0.05;
+			auto tooFastTimeWindow = std::chrono::duration<double>(tooFastTimeWindowRaw);
 
 			if (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime + timeWindow) {
 				if (button1Pressed) {
@@ -281,7 +287,7 @@ bool CustomQuickchat::Sequence(const std::string& button1, const std::string& bu
 			}
 			else {
 				// if 2nd button pressed & correct 1st button previously pressed & 2nd button pressed within the alotted timewindow ...
-				if (button2Pressed && (sequenceStoredButtonPresses["global"].buttonName == button1) && (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime)) {
+				if (button2Pressed && (sequenceStoredButtonPresses["global"].buttonName == button1) && (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime + tooFastTimeWindow)) {
 					ResetFirstButtonPressed();
 					return true;
 				}
