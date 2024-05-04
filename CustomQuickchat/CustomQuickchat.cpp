@@ -20,6 +20,45 @@ std::filesystem::path CustomQuickchat::lobbyInfoFolder;
 std::filesystem::path CustomQuickchat::lobbyInfoChatsFilePath;
 std::filesystem::path CustomQuickchat::lobbyInfoRanksFilePath;
 
+
+
+void filterLinesInPlace(const std::filesystem::path& filePath, const std::string& startString) {
+	// Open the file for reading and writing
+	std::fstream file(filePath, std::ios::in | std::ios::out);
+
+	if (!file.is_open()) {
+		LOG("Error: Unable to open file {}", filePath.string());
+		return;
+	}
+
+	std::string line;
+	std::ofstream tempFile("temp.txt"); // Temporary file to store filtered lines
+
+	if (!tempFile.is_open()) {
+		LOG("Error: Unable to create temporary file");
+		return;
+	}
+
+	while (std::getline(file, line)) {
+		if (line.substr(0, startString.length()) == startString) {
+			// Write the line to the temporary file if it starts with the given string
+			tempFile << line << '\n';
+		}
+	}
+
+	// Close both files
+	file.close();
+	tempFile.close();
+
+	// Replace the original file with the temporary file
+	std::filesystem::remove(filePath); // Remove the original file
+	std::filesystem::rename("temp.txt", filePath); // Rename the temporary file to the original file
+
+	LOG("Filtered lines saved to {}", filePath.string());
+}
+
+
+
 void CustomQuickchat::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -52,10 +91,18 @@ void CustomQuickchat::onLoad()
 	PreventGameFreeze();	// somewhat hacky solution, but seems to work
 
 
-	// register CVars
-	cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
-	cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
+	// execute this stuff in the main thread
+	gameWrapper->Execute([this](GameWrapper* gw) {
 
+		// register CVars
+		cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
+		cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
+
+		// load previous CVar values from .cfg file
+		std::filesystem::path cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
+		cvarManager->loadCfg(cfgPath.string());
+
+	});
 	
 	// command to toggle custom quickchats on/off
 	cvarManager->registerNotifier("customQuickchat_toggle", [&](std::vector<std::string> args) {
@@ -133,4 +180,10 @@ void CustomQuickchat::onLoad()
 void CustomQuickchat::onUnload() {
 	// just to make sure any unsaved changes are saved before exiting
 	WriteBindingsToJson();
+
+	// save all CVar values to .cfg file
+	std::filesystem::path cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
+	cvarManager->backupCfg(cfgPath.string());
+
+	filterLinesInPlace(cfgPath, "customQuickchat_");
 }

@@ -587,15 +587,6 @@ std::string CustomQuickchat::SpecificRank(const std::string& playlist) {
 }
 
 
-//void LogRankInfo(const Rank& rank, const std::string& name) {
-//	LOG("====== "+ name + " rank info =====");
-//	LOG("tier: {}", rank.tier);
-//	LOG("div: {}", rank.div);
-//	LOG("matches: {}", rank.matches);
-//	LOG("mmr: {}", rank.mmr);
-//}
-
-
 ChatterRanks CustomQuickchat::FindLastChattersRanks() {
 
 	ChatterRanks lastChattersRanks;
