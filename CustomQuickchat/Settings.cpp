@@ -322,10 +322,6 @@ void CustomQuickchat::RenderVariationListDetails() {
 		if (ImGui::Button("Save")) {
 			UpdateDataFromVariationStr();
 			WriteVariationsToJson();
-
-			if (!Variations.empty()) {
-				LOG("{}", ReplacePatternInStr(Variations[0].listName));
-			}
 		}
 
 		ImGui::Spacing();

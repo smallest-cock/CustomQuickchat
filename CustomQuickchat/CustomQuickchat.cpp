@@ -16,10 +16,15 @@ std::vector<VariationList> CustomQuickchat::Variations;
 std::filesystem::path CustomQuickchat::customQuickchatFolder;
 std::filesystem::path CustomQuickchat::bindingsFilePath;
 std::filesystem::path CustomQuickchat::variationsFilePath;
+std::filesystem::path CustomQuickchat::speechToTextFilePath;
+std::filesystem::path CustomQuickchat::speechToTextPyScriptFilePath;
+
 std::filesystem::path CustomQuickchat::lobbyInfoFolder;
 std::filesystem::path CustomQuickchat::lobbyInfoChatsFilePath;
 std::filesystem::path CustomQuickchat::lobbyInfoRanksFilePath;
 
+bool CustomQuickchat::transcriptionUpdated = false;
+bool CustomQuickchat::speechToTextActive = false;
 
 
 void filterLinesInPlace(const std::filesystem::path& filePath, const std::string& startString) {

@@ -144,13 +144,15 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	std::string Variation(const std::string& listName);
 
-	std::string ReplacePatternInStr(const std::string& inputStr);
+	std::string ReplacePatternInStr(const std::string& inputStr, const std::string& chatMode);
 
 	std::string LastChat();
 	std::string AllRanks();
 	std::string SpecificRank(const std::string& playlist);
 	std::string GetRankStr(const Rank& rank);
 	ChatterRanks FindLastChattersRanks();
+
+	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "");
 
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);
@@ -168,11 +170,18 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	static std::unordered_map<std::string, bool> keyStates;
 	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
+	static bool transcriptionUpdated;
+	static bool speechToTextActive;
+
 	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
 
 	static std::filesystem::path customQuickchatFolder;
 	static std::filesystem::path bindingsFilePath;
 	static std::filesystem::path variationsFilePath;
+	static std::filesystem::path speechToTextFilePath;
+	static std::filesystem::path speechToTextPyScriptFilePath;
+
+	// Lobby Info filepaths
 	static std::filesystem::path lobbyInfoFolder;
 	static std::filesystem::path lobbyInfoChatsFilePath;
 	static std::filesystem::path lobbyInfoRanksFilePath;

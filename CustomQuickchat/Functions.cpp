@@ -230,7 +230,7 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 
 	if (chatBox) {
 
-		std::string processedChat = ReplacePatternInStr(chat);
+		std::string processedChat = ReplacePatternInStr(chat, chatMode);
 		if (processedChat == "") { return; }
 
 		FString message = StrToFString(processedChat);
@@ -403,7 +403,12 @@ void CustomQuickchat::CheckJsonFiles() {
 		NewFile.close();
 		LOG("'Variations.json' didn't exist... so I created it.");
 	}
-
+	if (!std::filesystem::exists(speechToTextFilePath)) {
+		std::ofstream NewFile(speechToTextFilePath);
+		NewFile << "{ \"transcription\": {} }";
+		NewFile.close();
+		LOG("'SpeechToText.json' didn't exist... so I created it.");
+	}
 }
 
 
@@ -436,7 +441,7 @@ std::string CustomQuickchat::Variation(const std::string& listName) {
 }
 
 
-std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr) {
+std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, const std::string& chatMode) {
 	
 	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]]
 	std::regex regexPattern(pattern);
@@ -495,12 +500,185 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr) {
 			std::string uwuChat = toUwu(lastChat);
 			newString = std::regex_replace(newString, specificRegexPattern, uwuChat);
 		}
+		else if (substring == "speechToText") {
+			if (!speechToTextActive) {
+				StartSpeechToText(chatMode);
+			}
+			return "";
+		}
+		else if (substring == "speechToText sarcasm") {
+			if (!speechToTextActive) {
+				StartSpeechToText(chatMode, "sarcasm");
+			}
+			return "";
+		}
+		else if (substring == "speechToText uwu") {
+			if (!speechToTextActive) {
+				StartSpeechToText(chatMode, "uwu");
+			}
+			return "";
+		}
 		else {
 			newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
 		}
 	}
 
 	return newString;
+}
+
+
+
+// Function to search for Python interpreter filepath and return as a regular std::string
+std::string findPythonInterpreter() {
+	// Get the value of the PATH environment variable
+	const char* pathEnv = getenv("PATH");
+	if (pathEnv == nullptr) {
+		LOG("PATH environment variable not found :(");
+		return "";
+	}
+
+	// Split the PATH string into individual directories
+	std::istringstream iss(pathEnv);
+	std::vector<std::string> directories;
+	std::string directory;
+	while (std::getline(iss, directory, ';')) {
+		directories.push_back(directory);
+	}
+
+	// Search for Python executable in each directory
+	const std::string pythonExecutableName = "pythonw.exe";
+	for (const auto& dir : directories) {
+		std::filesystem::path pythonPath = dir + "\\" + pythonExecutableName;
+		if (std::filesystem::exists(pythonPath)) {
+			return pythonPath.string();  // Convert path to string
+		}
+	}
+
+	LOG("Python interpreter not found in PATH directories :(");
+	return "";
+}
+
+
+
+void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect) {
+
+	// reset transcription data
+	std::ofstream NewFile(speechToTextFilePath);
+	NewFile << "{ \"transcription\": {} }";
+	NewFile.close();
+	DEBUGLOG("cleared STT JSON file...");
+
+
+	std::string oinkInterpreter = findPythonInterpreter();
+
+	if (oinkInterpreter == "") {
+		LOG("couldn't find the pythonw interpreter filepath in the PATH variable :(");
+		return;
+	}
+
+	std::string pathToPyInterpreter = "\"" + oinkInterpreter + "\"";
+	std::string pathToPywScript = "\"" + speechToTextPyScriptFilePath.string() + "\"";
+	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
+
+    // Command-line to execute Python script with JSON filepath as 1st arg
+    std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile;
+
+
+	std::wstring wCommand(command.begin(), command.end());
+
+	//LOG("command: {}", command);
+
+    // CreateProcess variables
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    // Initialize STARTUPINFO
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    // Create the process
+    if (CreateProcess(
+            NULL,                   // Application name (use NULL to use command line)
+            const_cast<wchar_t*>(wCommand.c_str()),  // Command line
+            NULL,                   // Process security attributes
+            NULL,                   // Thread security attributes
+            FALSE,                  // Inherit handles from the calling process
+            CREATE_NEW_CONSOLE,    // Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
+            NULL,                   // Use parent's environment block
+            NULL,                   // Use parent's starting directory
+            &si,                    // Pointer to STARTUPINFO
+            &pi                     // Pointer to PROCESS_INFORMATION
+        )) {
+        // Successfully started the process
+		speechToTextActive = true;
+
+        // Close process handle to allow it to run asynchronously
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+		LOG("Started speech-to-text python script, listening for speech......");
+    } else {
+        // Failed to create process
+        DWORD error = GetLastError();
+		LOG("Error executing Python script with CreateProcess. Error code: {}", error);
+    }
+
+	transcriptionUpdated = false;
+
+	for (int i = 0; i < 25; i++) {
+		gameWrapper->SetTimeout([this, chatMode, effect, i](GameWrapper* gw) {
+			
+			if (!transcriptionUpdated && speechToTextActive) {
+				
+				// probe JSON file nd check if time is less than it is now
+				std::string jsonFileRawStr = readContent(speechToTextFilePath);
+
+				// prevent crash on reading invalid JSON data
+				try {
+					auto transcriptionData = nlohmann::json::parse(jsonFileRawStr);
+
+					auto transcription = transcriptionData["transcription"];
+					if (transcription.empty()) { return; }
+
+					bool error = transcriptionData["transcription"]["error"];
+
+
+					transcriptionUpdated = true;
+					speechToTextActive = false;
+
+					if (!error) {
+						std::string text = transcription["text"];
+
+						// apply text effect if necessary
+						if (effect == "sarcasm") {
+							text = toSarcasm(text);
+						}
+						else if (effect == "uwu") {
+							text = toUwu(text);
+						}
+
+						SendChat(text, chatMode);
+					}
+					else {
+						std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
+						LOG(errorMsg);
+					}
+
+				}
+				catch (...) {
+					LOG("*** Couldn't read the 'SpeechToText.json' file! Make sure it contains valid JSON... ***");
+				}
+
+				// if transcription response is taking too long, just forget it
+				if (i == 24) {
+					speechToTextActive = false;
+					LOG("speech-to-text is taking too long to process... aborted");
+				}
+			}
+			
+		}, ((i + 1) * 0.2) + 3);	// wait 3s before probing for 5s (to kind avoid unnecessary probing while user still speaking)
+	}
 }
 
 
@@ -905,6 +1083,8 @@ void CustomQuickchat::GetFilePaths() {
 	customQuickchatFolder = bmDataFolderFilePath / "CustomQuickchat";
 	bindingsFilePath = customQuickchatFolder / "Bindings.json";
 	variationsFilePath = customQuickchatFolder / "Variations.json";
+	speechToTextFilePath = customQuickchatFolder / "SpeechToText.json";
+	speechToTextPyScriptFilePath = customQuickchatFolder / "speechToText.pyw";
 	
 	// Lobby Info JSON files
 	lobbyInfoFolder = bmDataFolderFilePath / "Lobby Info";

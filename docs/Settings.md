@@ -32,13 +32,19 @@ Then use `[[variation list name]]` syntax in your chats to include your word var
 
 ## Special Effects
 
-Similar to variations, you can include these keywords in your chat to trigger special functionality. They require the [Lobby Info plugin](https://github.com/smallest-cock/LobbyInfo) to be installed
+Similar to variations, you can include these keywords in your chat to trigger special functionality. 
+
+- The `blast` and `lastChat` keywords require the [Lobby Info plugin](https://github.com/smallest-cock/LobbyInfo) to be installed
+
+- The `speechToText` keywords require the `speechToText.pyw` script, and the **SpeechRecognition** python module to be installed (as well as [python itself](https://www.python.org/getit/))
+  - Place `speechToText.pyw` inside the `CustomQuickchat` folder (found inside your bakkesmod data folder)
+  - **SpeechRecognition** can be installed by running `pip install SpeechRecognition` in a command prompt (after python is installed)
 
 >[!TIP]
 >Don't name your variation lists the same as these
 
 | keyword | description |
-|---|:---:|
+|:---|:---:|
 `[[blast 1v1]]` | blast the last chatter's 1v1 rank and # of games played
 `[[blast 2v2]]` | blast the last chatter's 2v2 rank and # of games played
 `[[blast 3v3]]` | blast the last chatter's 3v3 rank and # of games played
@@ -47,5 +53,8 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 `[[lastChat]]` | returns the last chat sent in the lobby (depends on your Lobby Info settings)
 `[[lastChat sarcasm]]` | returns the last chat iN sArCAsM tExT
 `[[lastChat uwu]]` | returns the last chat in UωU text ≽^•⩊•^≼ 👉👈 ( ˶ˆ꒳ˆ˵ )
+`[[speechToText]]` | start listening for speech-to-text, then send the result in chat
+`[[speechToText sarcasm]]` | start listening for speech-to-text, then send the result in chat (with sarcasm effect)
+`[[speechToText uwu]]` | start listening for speech-to-text, then send the result in chat (with UωU effect)
 
-**For example:** A chat set up as `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and look as if it were coming from a toxic nerd.
+**For example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and look as if it were said by a toxic nerd
