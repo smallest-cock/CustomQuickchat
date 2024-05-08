@@ -102,6 +102,7 @@ void CustomQuickchat::onLoad()
 		// register CVars
 		cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
 		cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
+		cvarManager->registerCvar("customQuickchat_speechToTextTimeout", "10", "speech-to-text timeout", true, true, 3, true, 500);
 
 		// load previous CVar values from .cfg file
 		std::filesystem::path cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
@@ -154,7 +155,7 @@ void CustomQuickchat::onLoad()
 					}
 
 					if (Combine(args)) {
-						SendChat(binding.chat, possibleChatModes[binding.chatMode]);
+						PerformBindingAction(binding);
 						return;
 					}
 				}
@@ -164,7 +165,7 @@ void CustomQuickchat::onLoad()
 					if (binding.buttonNameIndexes.size() < 2) { continue; }
 					
 					if (Sequence(possibleKeyNames[binding.buttonNameIndexes[0]], possibleKeyNames[binding.buttonNameIndexes[1]])) {
-						SendChat(binding.chat, possibleChatModes[binding.chatMode]);
+						PerformBindingAction(binding);
 						return;
 					}
 				}

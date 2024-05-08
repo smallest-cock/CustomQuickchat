@@ -9,6 +9,7 @@ int CustomQuickchat::selectedVariationIndex = 0;
 void CustomQuickchat::RenderSettings() {
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
 	CVarWrapper macroTimeWindowCvar = cvarManager->getCvar("customQuickchat_macroTimeWindow");
+	CVarWrapper speechToTextTimeoutCvar = cvarManager->getCvar("customQuickchat_speechToTextTimeout");
 
 
 	ImGui::Spacing();
@@ -44,6 +45,16 @@ void CustomQuickchat::RenderSettings() {
 		float macroTimeWindow = macroTimeWindowCvar.getFloatValue();
 		ImGui::SliderFloat("button sequence time window", &macroTimeWindow, 0.0f, 10.0f, "%.1f seconds");
 		macroTimeWindowCvar.setValue(macroTimeWindow);
+		
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		
+		// speech-to-text timeout slider
+		int speechToTextTimeout = speechToTextTimeoutCvar.getFloatValue();
+		ImGui::SliderInt("speech-to-text timeout", &speechToTextTimeout, 3.0f, 20.0f, "%.0f seconds");
+		speechToTextTimeoutCvar.setValue(speechToTextTimeout);
 		
 		ImGui::Spacing();
 		ImGui::Spacing();

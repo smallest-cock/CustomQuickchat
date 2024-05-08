@@ -138,13 +138,14 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void DeleteVariationList(int idx);
 	void UpdateDataFromVariationStr();
 
+	std::string Variation(const std::string& listName);
+	std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
 	void ReshuffleWordList(int idx);
 
-	std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
+	void PerformBindingAction(const Binding& binding);
 
-	std::string Variation(const std::string& listName);
-
-	std::string ReplacePatternInStr(const std::string& inputStr, const std::string& chatMode);
+	std::string ReplacePatternInStr(const std::string& inputStr, const std::vector<std::string>& substrings);
+	std::vector<std::string> GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr);
 
 	std::string LastChat();
 	std::string AllRanks();

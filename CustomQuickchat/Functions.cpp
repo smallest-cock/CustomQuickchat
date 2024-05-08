@@ -219,7 +219,56 @@ template UGFxData_Chat_TA* plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
 
 
+void CustomQuickchat::PerformBindingAction(const Binding& binding) {
+
+	// get keywords in chat string
+	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]] ... maybe turn into CVar and make editable?
+	std::vector<std::string> keywords = GetSubstringsUsingRegexPattern(binding.chat, pattern);
+
+
+	// start speech-to-text if necessary
+	for (std::string keyword : keywords) {
+		if (keyword == "speechToText") {
+			if (!speechToTextActive) {
+				StartSpeechToText(possibleChatModes[binding.chatMode]);
+			}
+			else {
+				LOG("Didn't start speech-to-text ... it's already active!");
+			}
+			return;
+		}
+		else if (keyword == "speechToText sarcasm") {
+			if (!speechToTextActive) {
+				StartSpeechToText(possibleChatModes[binding.chatMode], "sarcasm");
+			}
+			else {
+				LOG("Didn't start speech-to-text ... it's already active!");
+			}
+			return;
+		}
+		else if (keyword == "speechToText uwu") {
+			if (!speechToTextActive) {
+				StartSpeechToText(possibleChatModes[binding.chatMode], "uwu");
+			}
+			else {
+				LOG("Didn't start speech-to-text ... it's already active!");
+			}
+			return;
+		}
+	}
+
+
+	// replace keywords with appropriate text ...
+	std::string processedChat = ReplacePatternInStr(binding.chat, keywords);
+	if (processedChat == "") { return; }
+
+	// send processed chat
+	SendChat(processedChat, possibleChatModes[binding.chatMode]);
+}
+
+
 void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode) {
+	if (chat == "") { return; }
 
 	// only send chat if custom quickchats are turned on
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
@@ -230,10 +279,7 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 
 	if (chatBox) {
 
-		std::string processedChat = ReplacePatternInStr(chat, chatMode);
-		if (processedChat == "") { return; }
-
-		FString message = StrToFString(processedChat);
+		FString message = StrToFString(chat);
 
 		if (chatMode == "lobby") {
 			chatBox->SendChatMessage(message, 0);		// send regular (lobby) chat
@@ -441,10 +487,8 @@ std::string CustomQuickchat::Variation(const std::string& listName) {
 }
 
 
-std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, const std::string& chatMode) {
-	
-	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]]
-	std::regex regexPattern(pattern);
+std::vector<std::string> CustomQuickchat::GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr) {
+	std::regex regexPattern(patternRawStr);
 
 	std::vector<std::string> matchedSubstrings;
 	std::sregex_iterator it(inputStr.begin(), inputStr.end(), regexPattern);
@@ -456,8 +500,14 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, co
 		++it;
 	}
 
+	return matchedSubstrings;
+}
+
+
+std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, const std::vector<std::string>& substrings) {
+
 	std::string newString = inputStr;
-	for (std::string substring : matchedSubstrings) {
+	for (std::string substring : substrings) {
 		std::string specificPattern = "\\[\\[" + substring + "\\]\\]";
 		std::regex specificRegexPattern(specificPattern);
 
@@ -480,10 +530,6 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, co
 			std::string lastChat = LastChat();
 			if (lastChat == "") { return ""; }
 
-			// maybe: if any lastChat text effects selected for the binding, apply them here...
-			// ...
-
-			// ... then (after effects applied) replace pattern with lastChat text
 			newString = std::regex_replace(newString, specificRegexPattern, lastChat);
 		}
 		else if (substring == "lastChat sarcasm") {
@@ -499,24 +545,6 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, co
 
 			std::string uwuChat = toUwu(lastChat);
 			newString = std::regex_replace(newString, specificRegexPattern, uwuChat);
-		}
-		else if (substring == "speechToText") {
-			if (!speechToTextActive) {
-				StartSpeechToText(chatMode);
-			}
-			return "";
-		}
-		else if (substring == "speechToText sarcasm") {
-			if (!speechToTextActive) {
-				StartSpeechToText(chatMode, "sarcasm");
-			}
-			return "";
-		}
-		else if (substring == "speechToText uwu") {
-			if (!speechToTextActive) {
-				StartSpeechToText(chatMode, "uwu");
-			}
-			return "";
 		}
 		else {
 			newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
@@ -572,7 +600,7 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	std::string oinkInterpreter = findPythonInterpreter();
 
 	if (oinkInterpreter == "") {
-		LOG("couldn't find the pythonw interpreter filepath in the PATH variable :(");
+		LOG("couldn't find the pythonw.exe interpreter filepath in the PATH variable :(");
 		return;
 	}
 
@@ -586,7 +614,6 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 	std::wstring wCommand(command.begin(), command.end());
 
-	//LOG("command: {}", command);
 
     // CreateProcess variables
     STARTUPINFO si;
@@ -624,9 +651,17 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 		LOG("Error executing Python script with CreateProcess. Error code: {}", error);
     }
 
+
+	CVarWrapper speechToTextTimeoutCvar = cvarManager->getCvar("customQuickchat_speechToTextTimeout");
+	if (!speechToTextTimeoutCvar) { return; }
+	int speechToTextTimeout = speechToTextTimeoutCvar.getIntValue();
+
+
 	transcriptionUpdated = false;
 
-	for (int i = 0; i < 25; i++) {
+	// probe ...
+	for (int i = 0; i < (((speechToTextTimeout - 3) * 5) + 1); i++) {
+
 		gameWrapper->SetTimeout([this, chatMode, effect, i](GameWrapper* gw) {
 			
 			if (!transcriptionUpdated && speechToTextActive) {
@@ -669,17 +704,25 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 				catch (...) {
 					LOG("*** Couldn't read the 'SpeechToText.json' file! Make sure it contains valid JSON... ***");
 				}
-
-				// if transcription response is taking too long, just forget it
-				if (i == 24) {
-					speechToTextActive = false;
-					LOG("speech-to-text is taking too long to process... aborted");
-				}
 			}
 			
 		}, ((i + 1) * 0.2) + 3);	// wait 3s before probing for 5s (to kind avoid unnecessary probing while user still speaking)
 	}
+
+
+	gameWrapper->SetTimeout([this, speechToTextTimeout](GameWrapper* gw) {
+
+		if (speechToTextActive) {
+			LOG("Speech-to-text processing reached timeout of {} seconds..... aborting", speechToTextTimeout);
+			speechToTextActive = false;
+		}
+
+	}, speechToTextTimeout);
+
 }
+
+
+
 
 
 void CustomQuickchat::UpdateDataFromVariationStr() {
