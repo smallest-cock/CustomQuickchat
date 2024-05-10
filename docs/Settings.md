@@ -36,9 +36,6 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 
 - The `blast` and `lastChat` keywords require the [Lobby Info plugin](https://github.com/smallest-cock/LobbyInfo) to be installed
 
-- The `speechToText` keywords require the `speechToText.pyw` script, and the **SpeechRecognition** python module to be installed (as well as [python itself](https://www.python.org/getit/))
-  - Place `speechToText.pyw` inside the `CustomQuickchat` folder (found inside your bakkesmod data folder)
-  - **SpeechRecognition** can be installed by running `pip install SpeechRecognition` in a command prompt (after python is installed)
 
 >[!TIP]
 >Don't name your variation lists the same as these

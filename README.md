@@ -2,13 +2,21 @@
 
 Enables custom quickchats in Rocket League
 
-<img src='./docs/images/cover_pic.png' alt="overview" width="700"/>
+<img src='./docs/images/cover_pic.png' alt="overview" width="600"/>
+
 
 <br>
 
 Chats are sent through the native Rocket League chat system ✔️
   - Better than using a script + macros to simulate keypresses, which is error prone and hacky (temporarily blocks gameplay inputs while chats are typed out)
 
+## Video Tutorial
+
+https://youtu.be/P4UZTl09oYo
+
+<a href='https://youtu.be/P4UZTl09oYo'>
+  <img src='./docs/images/YT_screenshot.png' alt="overview" width="400"/>
+</a>
 
 ## Installation
 
