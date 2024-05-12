@@ -22,9 +22,13 @@ rem ----------- Copy .dll file to bakkesmod plugins folder -----------
 
 rem Check if the source folder exists before attempting to copy
 if not exist "%bmPluginsFolder%" (
-    echo Destination folder does not exist: "%bmPluginsFolder%"
+    echo.
+    echo.
+    echo Error: Destination folder does not exist: "%bmPluginsFolder%"
+    echo.
     echo.
     echo Press any key to exit...
+    echo.
     timeout /t 10 >nul 2>&1
     exit /b 1
 )
@@ -34,9 +38,15 @@ xcopy "%dllFile%" "%bmPluginsFolder%" /Y
 
 rem Check the exit code of xcopy and handle any errors if needed
 if errorlevel 1 (
+    echo.
+    echo.
     echo Error occurred while copying .dll file to bakkesmod plugins folder.
     echo.
+    echo .... maybe try running as Administrator?
+    echo.
+    echo.
     echo Press any key to exit...
+    echo.
     timeout /t 10 >nul 2>&1
     exit /b 1
 ) else (
@@ -48,9 +58,15 @@ rem ----------- Copy CustomQuickchat folder to bakkesmod data folder -----------
 
 rem Check if the source folder exists before attempting to copy
 if not exist "%sourceFolder%" (
+    echo.
+    echo.
     echo Error: Source folder does not exist: "%sourceFolder%"
     echo.
+    echo .... maybe try running as Administrator?
+    echo.
+    echo.
     echo Press any key to exit...
+    echo.
     exit /b 1
 )
 
@@ -59,9 +75,15 @@ xcopy "%sourceFolder%" "%customQuickchatInstallationFolder%" /E /I /Y
 
 rem Check the exit code of xcopy and handle any errors if needed
 if errorlevel 1 (
+    echo.
+    echo.
     echo Error occurred while copying the CustomQuickchat folder to bakkesmod data folder. Maybe try running as admin?
     echo.
+    echo .... maybe try running as Administrator?
+    echo.
+    echo.
     echo Press any key to exit...
+    echo.
     timeout /t 10 >nul 2>&1
     exit /b 1
 ) else (
@@ -99,7 +121,9 @@ echo.
 echo.
 echo Setup successfully completed.
 echo.
+echo.
 echo Press any key to exit...
+echo.
 timeout /t 20 >nul 2>&1
 
 endlocal
