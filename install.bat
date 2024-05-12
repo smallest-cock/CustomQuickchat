@@ -77,7 +77,7 @@ rem Check the exit code of xcopy and handle any errors if needed
 if errorlevel 1 (
     echo.
     echo.
-    echo Error occurred while copying the CustomQuickchat folder to bakkesmod data folder. Maybe try running as admin?
+    echo Error occurred while copying the CustomQuickchat folder to bakkesmod data folder.
     echo.
     echo .... maybe try running as Administrator?
     echo.
