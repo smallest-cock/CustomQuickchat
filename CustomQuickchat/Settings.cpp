@@ -8,8 +8,10 @@ int CustomQuickchat::selectedVariationIndex = 0;
 
 void CustomQuickchat::RenderSettings() {
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
+	CVarWrapper speechToTextNotificationsOnCvar = cvarManager->getCvar("customQuickchat_speechToTextNotificationsOn");
 	CVarWrapper macroTimeWindowCvar = cvarManager->getCvar("customQuickchat_macroTimeWindow");
-	CVarWrapper speechToTextTimeoutCvar = cvarManager->getCvar("customQuickchat_speechToTextTimeout");
+	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
+	CVarWrapper waitForSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_waitForSpeechTimeout");
 
 
 	ImGui::Spacing();
@@ -40,22 +42,68 @@ void CustomQuickchat::RenderSettings() {
 		ImGui::Spacing();
 		ImGui::Spacing();
 		ImGui::Spacing();
+		
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		
+		// --------------------------- speech-to-text ------------------------------
 
-		// macro time window slider
-		float macroTimeWindow = macroTimeWindowCvar.getFloatValue();
-		ImGui::SliderFloat("button sequence time window", &macroTimeWindow, 0.0f, 10.0f, "%.1f seconds");
-		macroTimeWindowCvar.setValue(macroTimeWindow);
+		if (ImGui::CollapsingHeader("speech-to-text settings", ImGuiTreeNodeFlags_None))
+		{
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// chat notifications
+			if (!speechToTextNotificationsOnCvar) { return; }
+			bool speechToTextNotificationsOn = speechToTextNotificationsOnCvar.getBoolValue();
+			if (ImGui::Checkbox("Enable speech-to-text notifications in chat", &speechToTextNotificationsOn)) {
+				speechToTextNotificationsOnCvar.setValue(speechToTextNotificationsOn);
+
+				speechToTextNotificationsOn = speechToTextNotificationsOnCvar.getBoolValue();
+
+				LOG(speechToTextNotificationsOn ? "<<\tspeech-to-text notifications turned ON\t>>" : "<<\tspeech-to-text notifications turned OFF\t>>");
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// start speech timeout
+			float waitForSpeechTimeout = waitForSpeechTimeoutCvar.getFloatValue();
+			ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds");
+			waitForSpeechTimeoutCvar.setValue(waitForSpeechTimeout);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("max time to wait for start of speech");
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+
+			// processing timeout
+			int processSpeechTimeout = processSpeechTimeoutCvar.getFloatValue();
+			ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 20.0f, "%.0f seconds");
+			processSpeechTimeoutCvar.setValue(processSpeechTimeout);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");
+			}
+
+		}
 		
+		// -------------------------------------------------------------------------
+
 		ImGui::Spacing();
 		ImGui::Spacing();
 		ImGui::Spacing();
 		ImGui::Spacing();
-		
-		// speech-to-text timeout slider
-		int speechToTextTimeout = speechToTextTimeoutCvar.getFloatValue();
-		ImGui::SliderInt("speech-to-text timeout", &speechToTextTimeout, 3.0f, 20.0f, "%.0f seconds");
-		speechToTextTimeoutCvar.setValue(speechToTextTimeout);
-		
+
 		ImGui::Spacing();
 		ImGui::Spacing();
 		ImGui::Spacing();

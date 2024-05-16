@@ -10,6 +10,8 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 std::unordered_map<std::string, bool> CustomQuickchat::keyStates;
 std::unordered_map<std::string, ButtonPress> CustomQuickchat::sequenceStoredButtonPresses;
 
+std::string CustomQuickchat::ActiveSTTAttemptID = "420_blz_it_lmao";
+
 std::vector<Binding> CustomQuickchat::Bindings;
 std::vector<VariationList> CustomQuickchat::Variations;
 
@@ -22,9 +24,6 @@ std::filesystem::path CustomQuickchat::speechToTextPyScriptFilePath;
 std::filesystem::path CustomQuickchat::lobbyInfoFolder;
 std::filesystem::path CustomQuickchat::lobbyInfoChatsFilePath;
 std::filesystem::path CustomQuickchat::lobbyInfoRanksFilePath;
-
-bool CustomQuickchat::transcriptionUpdated = false;
-bool CustomQuickchat::speechToTextActive = false;
 
 
 void filterLinesInPlace(const std::filesystem::path& filePath, const std::string& startString) {
@@ -101,8 +100,10 @@ void CustomQuickchat::onLoad()
 
 		// register CVars
 		cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
+		cvarManager->registerCvar("customQuickchat_speechToTextNotificationsOn", "1", "Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
 		cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
-		cvarManager->registerCvar("customQuickchat_speechToTextTimeout", "10", "speech-to-text timeout", true, true, 3, true, 500);
+		cvarManager->registerCvar("customQuickchat_waitForSpeechTimeout", "3", "timeout for starting speech", true, true, 1.5, true, 10);
+		cvarManager->registerCvar("customQuickchat_processSpeechTimeout", "10", "timeout for processing speech", true, true, 3, true, 500);
 
 		// load previous CVar values from .cfg file
 		std::filesystem::path cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
@@ -124,9 +125,15 @@ void CustomQuickchat::onLoad()
 
 	}, "", 0);
 	
+	
+	// command to toggle custom quickchats on/off
+	cvarManager->registerNotifier("customQuickchat_testShit", [&](std::vector<std::string> args) {
+		TestShit();
+	}, "", 0);
+	
 
 
-	// hooks
+	// ------------------------------------------------ hooks -------------------------------------------------
 
 	// on every input event
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>(KeyPressedEvent, [this](ActorWrapper caller, void* params, std::string eventName) {

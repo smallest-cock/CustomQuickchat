@@ -39,6 +39,26 @@ std::string cleanString(std::string str) {
 }
 
 
+std::string generateRandomString(int length) {
+	// Define character set
+	const std::string charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+	// Initialize random number generator
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> distr(0, charset.length() - 1);
+
+	// Generate random string
+	std::string randomString;
+	randomString.reserve(length);
+	for (int i = 0; i < length; ++i) {
+		randomString += charset[distr(gen)];
+	}
+
+	return randomString;
+}
+
+
 // ---------------------------- RLSDK shit ---------------------------------------------------------------------------
 
 
@@ -219,6 +239,13 @@ template UGFxData_Chat_TA* plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
 
 
+void CustomQuickchat::TestShit() {
+
+	// ...
+
+}
+
+
 void CustomQuickchat::PerformBindingAction(const Binding& binding) {
 
 	// get keywords in chat string
@@ -229,29 +256,29 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding) {
 	// start speech-to-text if necessary
 	for (std::string keyword : keywords) {
 		if (keyword == "speechToText") {
-			if (!speechToTextActive) {
+			if (ActiveSTTAttemptID == "420_blz_it_lmao") {
 				StartSpeechToText(possibleChatModes[binding.chatMode]);
 			}
 			else {
-				LOG("Didn't start speech-to-text ... it's already active!");
+				STTLog("Speech-to-text is already active!");
 			}
 			return;
 		}
 		else if (keyword == "speechToText sarcasm") {
-			if (!speechToTextActive) {
+			if (ActiveSTTAttemptID == "420_blz_it_lmao") {
 				StartSpeechToText(possibleChatModes[binding.chatMode], "sarcasm");
 			}
 			else {
-				LOG("Didn't start speech-to-text ... it's already active!");
+				STTLog("Speech-to-text is already active!");
 			}
 			return;
 		}
 		else if (keyword == "speechToText uwu") {
-			if (!speechToTextActive) {
+			if (ActiveSTTAttemptID == "420_blz_it_lmao") {
 				StartSpeechToText(possibleChatModes[binding.chatMode], "uwu");
 			}
 			else {
-				LOG("Didn't start speech-to-text ... it's already active!");
+				STTLog("Speech-to-text is already active!");
 			}
 			return;
 		}
@@ -556,7 +583,7 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, co
 
 
 
-// Function to search for Python interpreter filepath and return as a regular std::string
+// search for Python interpreter filepath
 std::string findPythonInterpreter() {
 	// Get the value of the PATH environment variable
 	const char* pathEnv = getenv("PATH");
@@ -588,6 +615,111 @@ std::string findPythonInterpreter() {
 
 
 
+void CustomQuickchat::LogToChatBox(const std::string& message, const std::string& sender) {
+	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
+
+	if (chatBox) {
+		FGFxChatMessage chatData;
+		chatData.Team = 69;		// anything above 1 is dark purplish color ... anything below -1 is light gray color ... anything in the middle is no bueno
+		chatData.PlayerName = StrToFString(sender);
+		chatData.Message = StrToFString(message);
+
+		chatBox->InternalAddMessage(chatData);
+	}
+	else {
+		LOG("UGFxData_Chat_TA ptr is NULL!");
+	}
+}
+
+void CustomQuickchat::STTLog(const std::string& message) {
+	CVarWrapper speechToTextNotificationsOnCvar = cvarManager->getCvar("customQuickchat_speechToTextNotificationsOn");
+
+	if (speechToTextNotificationsOnCvar.getBoolValue()) {
+		LogToChatBox(message, "speech-to-text");
+	}
+
+	LOG("[SPEECH-TO-TEXT] " + message);
+}
+
+
+void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID) {
+	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
+	if (!processSpeechTimeoutCvar) { return; }
+	int processSpeechTimeout = processSpeechTimeoutCvar.getIntValue();
+
+
+
+	// probe JSON file ...
+	for (int i = 0; i < (((processSpeechTimeout - 2) * 5) + 1); i++) {
+
+		gameWrapper->SetTimeout([this, chatMode, effect, attemptID, i](GameWrapper* gw) {
+			
+			if (ActiveSTTAttemptID == attemptID) {
+
+				std::string jsonFileRawStr = readContent(speechToTextFilePath);
+
+				// prevent crash on reading invalid JSON data
+				try {
+					auto transcriptionData = nlohmann::json::parse(jsonFileRawStr);
+					auto transcription = transcriptionData["transcription"];
+
+					if (transcription.empty()) { return; }		// return if still processing
+
+					// make sure JSON data is from the same attempt
+					std::string jsonAttemptID = transcriptionData["transcription"]["ID"];
+					if (jsonAttemptID != attemptID) { return; }
+
+
+					bool error = transcriptionData["transcription"]["error"];
+
+					// clear active attempt ID
+					ActiveSTTAttemptID = "420_blz_it_lmao";
+
+					if (!error) {
+						std::string text = transcription["text"];
+
+						// apply text effect if necessary
+						if (effect == "sarcasm") {
+							text = toSarcasm(text);
+						}
+						else if (effect == "uwu") {
+							text = toUwu(text);
+						}
+
+						SendChat(text, chatMode);
+					}
+					else {
+						std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
+						STTLog("[ERROR] " + errorMsg);
+					}
+
+				}
+				catch (...) {
+					// clear active attempt ID
+					ActiveSTTAttemptID = "420_blz_it_lmao";
+
+					STTLog("[ERROR] Couldn't read 'SpeechToText.json'... Make sure it contains valid JSON");
+				}
+			}
+			
+		}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
+	}
+
+
+	gameWrapper->SetTimeout([this, processSpeechTimeout, attemptID](GameWrapper* gw) {
+
+		if (ActiveSTTAttemptID == attemptID) {
+			STTLog("Processing reached timeout of " + std::to_string(processSpeechTimeout) + " seconds... aborting");
+			
+			// clear active attempt ID
+			ActiveSTTAttemptID = "420_blz_it_lmao";
+		}
+
+	}, processSpeechTimeout);
+
+}
+
+
 void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect) {
 
 	// reset transcription data
@@ -597,22 +729,33 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	DEBUGLOG("cleared STT JSON file...");
 
 
-	std::string oinkInterpreter = findPythonInterpreter();
+	std::string pyInterpreter = findPythonInterpreter();
 
-	if (oinkInterpreter == "") {
-		LOG("couldn't find the pythonw.exe interpreter filepath in the PATH variable :(");
+	if (pyInterpreter == "") {
+		STTLog("[ERROR] Couldn't find pythonw.exe interpreter in PATH variable");
 		return;
 	}
 
-	std::string pathToPyInterpreter = "\"" + oinkInterpreter + "\"";
+	
+	// get CVar for start speech timeout
+	CVarWrapper waitForSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_waitForSpeechTimeout");
+	if (!waitForSpeechTimeoutCvar) { return; }
+	float waitForSpeechTimeout = waitForSpeechTimeoutCvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
+
+	// generate unique attempt ID
+	std::string attemptID = generateRandomString(10);
+	ActiveSTTAttemptID = attemptID;		// store in global variable (so other attempts can see/compare to it)
+	LOG("ID for current speech-to-text attempt: {}", ActiveSTTAttemptID);
+
+
+	std::string pathToPyInterpreter = "\"" + pyInterpreter + "\"";
 	std::string pathToPywScript = "\"" + speechToTextPyScriptFilePath.string() + "\"";
 	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
 
     // Command-line to execute Python script with JSON filepath as 1st arg
-    std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile;
+    std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(waitForSpeechTimeout) + " " + attemptID;
 
-
-	std::wstring wCommand(command.begin(), command.end());
+	std::wstring wCommand(command.begin(), command.end());		// convert to wide string
 
 
     // CreateProcess variables
@@ -637,91 +780,27 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
             &si,                    // Pointer to STARTUPINFO
             &pi                     // Pointer to PROCESS_INFORMATION
         )) {
-        // Successfully started the process
-		speechToTextActive = true;
+
+        // -------------- after successfully starting the process -----------
 
         // Close process handle to allow it to run asynchronously
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
-		LOG("Started speech-to-text python script, listening for speech......");
+		// prompt user for speech
+		STTLog("listening......");
+
+		// wait for speech, and probe JSON file for response
+		STTWaitAndProbe(chatMode, effect, attemptID);
+
     } else {
         // Failed to create process
         DWORD error = GetLastError();
-		LOG("Error executing Python script with CreateProcess. Error code: {}", error);
+
+		STTLog("Error executing Python script with CreateProcess. Error code: " + std::to_string(error));
     }
 
-
-	CVarWrapper speechToTextTimeoutCvar = cvarManager->getCvar("customQuickchat_speechToTextTimeout");
-	if (!speechToTextTimeoutCvar) { return; }
-	int speechToTextTimeout = speechToTextTimeoutCvar.getIntValue();
-
-
-	transcriptionUpdated = false;
-
-	// probe ...
-	for (int i = 0; i < (((speechToTextTimeout - 3) * 5) + 1); i++) {
-
-		gameWrapper->SetTimeout([this, chatMode, effect, i](GameWrapper* gw) {
-			
-			if (!transcriptionUpdated && speechToTextActive) {
-				
-				// probe JSON file nd check if time is less than it is now
-				std::string jsonFileRawStr = readContent(speechToTextFilePath);
-
-				// prevent crash on reading invalid JSON data
-				try {
-					auto transcriptionData = nlohmann::json::parse(jsonFileRawStr);
-
-					auto transcription = transcriptionData["transcription"];
-					if (transcription.empty()) { return; }
-
-					bool error = transcriptionData["transcription"]["error"];
-
-
-					transcriptionUpdated = true;
-					speechToTextActive = false;
-
-					if (!error) {
-						std::string text = transcription["text"];
-
-						// apply text effect if necessary
-						if (effect == "sarcasm") {
-							text = toSarcasm(text);
-						}
-						else if (effect == "uwu") {
-							text = toUwu(text);
-						}
-
-						SendChat(text, chatMode);
-					}
-					else {
-						std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
-						LOG(errorMsg);
-					}
-
-				}
-				catch (...) {
-					LOG("*** Couldn't read the 'SpeechToText.json' file! Make sure it contains valid JSON... ***");
-				}
-			}
-			
-		}, ((i + 1) * 0.2) + 3);	// wait 3s before probing for 5s (to kind avoid unnecessary probing while user still speaking)
-	}
-
-
-	gameWrapper->SetTimeout([this, speechToTextTimeout](GameWrapper* gw) {
-
-		if (speechToTextActive) {
-			LOG("Speech-to-text processing reached timeout of {} seconds..... aborting", speechToTextTimeout);
-			speechToTextActive = false;
-		}
-
-	}, speechToTextTimeout);
-
 }
-
-
 
 
 

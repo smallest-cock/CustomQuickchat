@@ -15,6 +15,8 @@ def main():
         print("Error: too few arguments provided")
         return
 
+    attemptID = args[2]
+
     transcription = get_transcription()
     current_time = time.time()
 
@@ -23,6 +25,7 @@ def main():
         # update JSON
         with open(args[0], 'r+') as f:      # json filepath should be the 1st argument
             data = json.load(f)
+            data['transcription']['ID'] = attemptID
             data['transcription']['time'] = current_time 
             data['transcription']['text'] = transcription
             data['transcription']['error'] = False
@@ -36,9 +39,10 @@ def get_transcription() -> str | None:
         recognizer = sr.Recognizer()
         mic = sr.Microphone()
 
+        timeoutArg = args[1]
+
         with mic as source:
-            # print('speak now...\n')
-            audio = recognizer.listen(source, timeout=5)    # 5 second time limit to listen for the start of speech
+            audio = recognizer.listen(source, timeout=float(timeoutArg))    # listen within time limit for the start of speech
 
         transcription = recognizer.recognize_google(audio)
         return transcription.lower() if transcription else None
@@ -46,23 +50,26 @@ def get_transcription() -> str | None:
     except OSError:
         write_error_to_json(args[0], 'No mic detected...')
     except sr.WaitTimeoutError:
-        write_error_to_json(args[0], 'Listening timed out while waiting for speech')
+        write_error_to_json(args[0], "You didn't speak or your mic is muted")
     except sr.RequestError:
         # API was unreachable or unresponsive
-        write_error_to_json(args[0], 'Speech-to-text API is unavailable')
+        write_error_to_json(args[0], 'Google Speech Recognition API is unavailable')
     except sr.UnknownValueError:
         # speech was unintelligible
         write_error_to_json(args[0], 'Unable to recognize speech')
     except Exception as e:
         # print(e)
-        write_error_to_json(args[0], e)
+        write_error_to_json(args[0], str(e))
 
     
 def write_error_to_json(filepath: str, error_message: str):
+    attemptID = args[2]
+
     with open(filepath, 'r+') as f:      # json filepath should be the 1st argument
         data = json.load(f)
+        data['transcription']['ID'] = attemptID
         data['transcription']['error'] = True
-        data['transcription']['errorMessage'] = 'Error: ' + error_message
+        data['transcription']['errorMessage'] = error_message
         f.seek(0)        # <--- should reset file position to the beginning.
         json.dump(data, f, indent=4)
         f.truncate()     # remove remaining part

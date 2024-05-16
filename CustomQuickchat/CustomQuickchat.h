@@ -103,6 +103,8 @@ struct ButtonPress {
 	std::chrono::steady_clock::time_point pressedTime;
 };
 
+
+
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	,public SettingsWindowBase // Uncomment if you wanna render your own tab in the settings menu
 	,public PluginWindowBase // Uncomment if you want to render your own plugin window
@@ -113,6 +115,13 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onUnload() override; // Uncomment and implement if you need a unload method
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
+
+	void TestShit();
+
+	void LogToChatBox(const std::string& message, const std::string& sender);
+	void STTLog(const std::string& message);
+	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID);
+	static std::string ActiveSTTAttemptID;
 
 	bool AreGObjectsValid();
 	bool AreGNamesValid();
@@ -170,9 +179,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	static std::unordered_map<std::string, bool> keyStates;
 	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
-
-	static bool transcriptionUpdated;
-	static bool speechToTextActive;
 
 	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
 

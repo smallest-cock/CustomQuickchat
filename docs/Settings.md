@@ -55,3 +55,13 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 `[[speechToText uwu]]` | start listening for speech-to-text, then send the result in chat (with UωU effect)
 
 **For example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and look as if it were said by a toxic nerd
+
+### Speech-to-text
+
+`[[speechToText]]` uses whatever mic is set as your default input device in Windows sound settings:
+
+![](./images/default_device.png)
+
+... so if you have multiple mics connected, make sure the one you're using in RL is the default device
+
+**To change the default mic:** select it in the list, then click the `Set Default` button
