@@ -615,27 +615,36 @@ std::string findPythonInterpreter() {
 
 
 
-void CustomQuickchat::LogToChatBox(const std::string& message, const std::string& sender) {
-	UGFxData_Chat_TA* chatBox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
+void CustomQuickchat::PopupNotification(const std::string& message, const std::string& title, float duration) {
+	
+	if (UNotificationManager_TA* NotificationManager = plugin::instances::GetInstanceOf<UNotificationManager_TA>()) {
+		if (!notificationClass)
+		{
+			notificationClass = UGenericNotification_TA::StaticClass();
+		}
 
-	if (chatBox) {
-		FGFxChatMessage chatData;
-		chatData.Team = 69;		// anything above 1 is dark purplish color ... anything below -1 is light gray color ... anything in the middle is no bueno
-		chatData.PlayerName = StrToFString(sender);
-		chatData.Message = StrToFString(message);
+		UNotification_TA* Notification = NotificationManager->PopUpOnlyNotification(notificationClass);
 
-		chatBox->InternalAddMessage(chatData);
+		if (Notification) {
+			Notification->SetTitle(StrToFString(title));
+			Notification->SetBody(StrToFString(message));
+			Notification->PopUpDuration = duration;
+		}
 	}
 	else {
-		LOG("UGFxData_Chat_TA ptr is NULL!");
+		LOG("UNotificationManager_TA* is NULL! ..... popup notification failed :(");
 	}
 }
 
 void CustomQuickchat::STTLog(const std::string& message) {
 	CVarWrapper speechToTextNotificationsOnCvar = cvarManager->getCvar("customQuickchat_speechToTextNotificationsOn");
+	if (!speechToTextNotificationsOnCvar) { return; }
 
 	if (speechToTextNotificationsOnCvar.getBoolValue()) {
-		LogToChatBox(message, "speech-to-text");
+		CVarWrapper popupNotificationDurationCvar = cvarManager->getCvar("customQuickchat_popupNotificationDuration");
+		if (!popupNotificationDurationCvar) { return; }
+
+		PopupNotification(message, "speech-to-text", popupNotificationDurationCvar.getFloatValue());
 	}
 
 	LOG("[SPEECH-TO-TEXT] " + message);
@@ -1132,6 +1141,7 @@ void CustomQuickchat::UpdateData() {
 
 // to be called in separate thread (in onLoad function)
 void CustomQuickchat::PreventGameFreeze() {
+	// for sending chats
 	UGFxData_Chat_TA* chatbox = plugin::instances::GetInstanceOf<UGFxData_Chat_TA>();
 
 	if (chatbox) {
@@ -1143,6 +1153,23 @@ void CustomQuickchat::PreventGameFreeze() {
 	}
 	else {
 		LOG("(onload) UGFxData_Chat_TA ptr is NULL");
+	}
+
+	// for popup notifications
+	if (UNotificationManager_TA* NotificationManager = plugin::instances::GetInstanceOf<UNotificationManager_TA>()) {
+
+		UClass* notiClass = UGenericNotification_TA::StaticClass();
+
+		UNotification_TA* Notification = NotificationManager->PopUpOnlyNotification(notiClass);		// doesn't get shown, separate thread
+
+		if (Notification) {
+			Notification->SetTitle(StrToFString("Custom Quickchat"));
+			Notification->SetBody(StrToFString("Ready to cook"));
+			Notification->PopUpDuration = 3;
+		}
+	}
+	else {
+		LOG("UNotificationManager_TA* is NULL! ..... popup notification failed :(");
 	}
 }
 

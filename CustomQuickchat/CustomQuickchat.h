@@ -118,7 +118,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	void TestShit();
 
-	void LogToChatBox(const std::string& message, const std::string& sender);
+	void PopupNotification(const std::string& message, const std::string& title, float duration);
 	void STTLog(const std::string& message);
 	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID);
 	static std::string ActiveSTTAttemptID;
@@ -176,6 +176,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	static int selectedBindingIndex;
 	static int selectedVariationIndex;
+
+	static UClass* notificationClass;
 
 	static std::unordered_map<std::string, bool> keyStates;
 	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;

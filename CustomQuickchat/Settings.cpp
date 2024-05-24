@@ -12,6 +12,7 @@ void CustomQuickchat::RenderSettings() {
 	CVarWrapper macroTimeWindowCvar = cvarManager->getCvar("customQuickchat_macroTimeWindow");
 	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
 	CVarWrapper waitForSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_waitForSpeechTimeout");
+	CVarWrapper popupNotificationDurationCvar = cvarManager->getCvar("customQuickchat_popupNotificationDuration");
 
 
 	ImGui::Spacing();
@@ -61,12 +62,41 @@ void CustomQuickchat::RenderSettings() {
 			// chat notifications
 			if (!speechToTextNotificationsOnCvar) { return; }
 			bool speechToTextNotificationsOn = speechToTextNotificationsOnCvar.getBoolValue();
-			if (ImGui::Checkbox("Enable speech-to-text notifications in chat", &speechToTextNotificationsOn)) {
+			if (ImGui::Checkbox("Enable speech-to-text notifications", &speechToTextNotificationsOn)) {
 				speechToTextNotificationsOnCvar.setValue(speechToTextNotificationsOn);
 
 				speechToTextNotificationsOn = speechToTextNotificationsOnCvar.getBoolValue();
-
 				LOG(speechToTextNotificationsOn ? "<<\tspeech-to-text notifications turned ON\t>>" : "<<\tspeech-to-text notifications turned OFF\t>>");
+			}
+
+			if (speechToTextNotificationsOn) {
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				// popup notification duration
+				float popupNotificationDuration = popupNotificationDurationCvar.getFloatValue();
+				ImGui::SliderFloat("duration of popup notifications", &popupNotificationDuration, 1.5f, 10.0f, "%.1f seconds");
+				popupNotificationDurationCvar.setValue(popupNotificationDuration);
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+
+				// test popup notifications
+				if (ImGui::Button("Test Popup Notification", ImVec2(0, 0))) {
+					gameWrapper->Execute([this, popupNotificationDuration](GameWrapper* gw) {
+						PopupNotification("You can see 'em if you're driving. You just run them over. That's what you do.", "Terry A Davis", popupNotificationDuration);
+					});
+				}
+
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
 			}
 
 			ImGui::Spacing();

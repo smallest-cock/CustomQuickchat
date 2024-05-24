@@ -15,6 +15,8 @@ std::string CustomQuickchat::ActiveSTTAttemptID = "420_blz_it_lmao";
 std::vector<Binding> CustomQuickchat::Bindings;
 std::vector<VariationList> CustomQuickchat::Variations;
 
+UClass* CustomQuickchat::notificationClass = nullptr;
+
 std::filesystem::path CustomQuickchat::customQuickchatFolder;
 std::filesystem::path CustomQuickchat::bindingsFilePath;
 std::filesystem::path CustomQuickchat::variationsFilePath;
@@ -103,6 +105,7 @@ void CustomQuickchat::onLoad()
 		cvarManager->registerCvar("customQuickchat_speechToTextNotificationsOn", "1", "Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
 		cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
 		cvarManager->registerCvar("customQuickchat_waitForSpeechTimeout", "3", "timeout for starting speech", true, true, 1.5, true, 10);
+		cvarManager->registerCvar("customQuickchat_popupNotificationDuration", "3", "how long a popup notification will stay on the screen", true, true, 1.5, true, 10);
 		cvarManager->registerCvar("customQuickchat_processSpeechTimeout", "10", "timeout for processing speech", true, true, 3, true, 500);
 
 		// load previous CVar values from .cfg file
