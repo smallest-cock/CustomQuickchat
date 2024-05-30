@@ -93,8 +93,9 @@ void CustomQuickchat::onLoad()
 	GetFilePaths();
 	CheckJsonFiles();
 	UpdateData();
+	ClearTranscriptionJson();
 
-	PreventGameFreeze();	// somewhat hacky solution, but seems to work
+	PreventGameFreeze();	// hacky solution, but seems to work
 
 
 	// execute this stuff in the main thread
@@ -129,7 +130,7 @@ void CustomQuickchat::onLoad()
 	}, "", 0);
 	
 	
-	// command to toggle custom quickchats on/off
+	// test new features?
 	cvarManager->registerNotifier("customQuickchat_testShit", [&](std::vector<std::string> args) {
 		TestShit();
 	}, "", 0);

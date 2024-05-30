@@ -106,13 +106,13 @@ struct ButtonPress {
 
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
-	,public SettingsWindowBase // Uncomment if you wanna render your own tab in the settings menu
-	,public PluginWindowBase // Uncomment if you want to render your own plugin window
+	,public SettingsWindowBase
+	,public PluginWindowBase
 {
 
 	//Boilerplate
 	void onLoad() override;
-	void onUnload() override; // Uncomment and implement if you need a unload method
+	void onUnload() override;
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
 
@@ -121,6 +121,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void PopupNotification(const std::string& message, const std::string& title, float duration);
 	void STTLog(const std::string& message);
 	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID);
+	bool ClearTranscriptionJson();
 	static std::string ActiveSTTAttemptID;
 
 	bool AreGObjectsValid();

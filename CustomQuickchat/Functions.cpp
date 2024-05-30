@@ -732,10 +732,10 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect) {
 
 	// reset transcription data
-	std::ofstream NewFile(speechToTextFilePath);
-	NewFile << "{ \"transcription\": {} }";
-	NewFile.close();
-	DEBUGLOG("cleared STT JSON file...");
+	if (!ClearTranscriptionJson()) { 
+		STTLog("[ERROR] 'SpeechToText.json' cannot be found");
+		return;
+	}
 
 
 	std::string pyInterpreter = findPythonInterpreter();
@@ -811,6 +811,21 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 }
 
+
+bool CustomQuickchat::ClearTranscriptionJson() {
+
+	if (!std::filesystem::exists(speechToTextFilePath)) {
+		return false;
+	}
+
+	// reset transcription data
+	std::ofstream NewFile(speechToTextFilePath);
+	NewFile << "{ \"transcription\": {} }";
+	NewFile.close();
+	DEBUGLOG("cleared STT JSON file...");
+
+	return true;
+}
 
 
 void CustomQuickchat::UpdateDataFromVariationStr() {
