@@ -113,6 +113,17 @@ void CustomQuickchat::onLoad()
 		std::filesystem::path cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
 		cvarManager->loadCfg(cfgPath.string());
 
+
+		// do a background speech-to-text test run after onLoad (but in main game thread), to help prevent error on first real attempt
+		gameWrapper->Execute([this](GameWrapper* gw) {
+
+			gameWrapper->SetTimeout([this](GameWrapper* gw) {
+
+				StartSpeechToText("lobby", "", true);
+
+			}, 5);	// wait 5s to give threaded onLoad some time to finish
+
+		});
 	});
 	
 	// command to toggle custom quickchats on/off
@@ -187,6 +198,7 @@ void CustomQuickchat::onLoad()
 			keyStates[keyName] = false;
 		}
 	});
+
 
 
 

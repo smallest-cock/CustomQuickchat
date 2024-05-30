@@ -115,12 +115,13 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onUnload() override;
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
-
 	void TestShit();
+
+	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false);
+	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test);
 
 	void PopupNotification(const std::string& message, const std::string& title, float duration);
 	void STTLog(const std::string& message);
-	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID);
 	bool ClearTranscriptionJson();
 	static std::string ActiveSTTAttemptID;
 
@@ -163,7 +164,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::string GetRankStr(const Rank& rank);
 	ChatterRanks FindLastChattersRanks();
 
-	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "");
 
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);

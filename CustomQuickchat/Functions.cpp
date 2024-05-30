@@ -651,7 +651,7 @@ void CustomQuickchat::STTLog(const std::string& message) {
 }
 
 
-void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID) {
+void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test) {
 	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
 	if (!processSpeechTimeoutCvar) { return; }
 	int processSpeechTimeout = processSpeechTimeoutCvar.getIntValue();
@@ -661,7 +661,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 	// probe JSON file ...
 	for (int i = 0; i < (((processSpeechTimeout - 2) * 5) + 1); i++) {
 
-		gameWrapper->SetTimeout([this, chatMode, effect, attemptID, i](GameWrapper* gw) {
+		gameWrapper->SetTimeout([this, chatMode, effect, attemptID, test, i](GameWrapper* gw) {
 			
 			if (ActiveSTTAttemptID == attemptID) {
 
@@ -684,22 +684,25 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 					// clear active attempt ID
 					ActiveSTTAttemptID = "420_blz_it_lmao";
 
-					if (!error) {
-						std::string text = transcription["text"];
+					if (!test) {
+						if (!error) {
+							std::string text = transcription["text"];
 
-						// apply text effect if necessary
-						if (effect == "sarcasm") {
-							text = toSarcasm(text);
-						}
-						else if (effect == "uwu") {
-							text = toUwu(text);
-						}
+							// apply text effect if necessary
+							if (effect == "sarcasm") {
+								text = toSarcasm(text);
+							}
+							else if (effect == "uwu") {
+								text = toUwu(text);
+							}
 
-						SendChat(text, chatMode);
-					}
-					else {
-						std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
-						STTLog("[ERROR] " + errorMsg);
+							SendChat(text, chatMode);
+						}
+						else {
+							std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
+							LOG("[SPEECH-TO-TEXT] Error: {}", errorMsg);
+							STTLog("[ERROR] " + errorMsg);
+						}
 					}
 
 				}
@@ -715,9 +718,9 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 	}
 
 
-	gameWrapper->SetTimeout([this, processSpeechTimeout, attemptID](GameWrapper* gw) {
+	gameWrapper->SetTimeout([this, processSpeechTimeout, attemptID, test](GameWrapper* gw) {
 
-		if (ActiveSTTAttemptID == attemptID) {
+		if (ActiveSTTAttemptID == attemptID && !test) {
 			STTLog("Processing reached timeout of " + std::to_string(processSpeechTimeout) + " seconds... aborting");
 			
 			// clear active attempt ID
@@ -729,7 +732,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 }
 
 
-void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect) {
+void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test) {
 
 	// reset transcription data
 	if (!ClearTranscriptionJson()) { 
@@ -796,11 +799,13 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
-		// prompt user for speech
-		STTLog("listening......");
+		if (!test) {
+			// prompt user for speech
+			STTLog("listening......");
+		}
 
 		// wait for speech, and probe JSON file for response
-		STTWaitAndProbe(chatMode, effect, attemptID);
+		STTWaitAndProbe(chatMode, effect, attemptID, test);
 
     } else {
         // Failed to create process
