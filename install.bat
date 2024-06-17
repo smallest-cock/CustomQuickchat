@@ -110,6 +110,7 @@ IF %ERRORLEVEL% EQU 0 (
 rem ----------- upgrade pip and install latest version of SpeechRecognition python module ... for speech-to-text -----------
 
 python.exe -m pip install --upgrade pip
+pip install pyaudio
 pip install --upgrade SpeechRecognition
 
 
