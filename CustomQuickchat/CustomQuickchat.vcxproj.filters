@@ -129,6 +129,12 @@
     <ClCompile Include="TextEffects.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
+    <ClCompile Include="SpeechToText.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imgui_rangeslider.h">
@@ -291,6 +297,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TextEffects.h">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.hpp">
       <Filter>Plugin\header</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,9 +3,6 @@
 #include "GuiBase.h"
 
 
-int CustomQuickchat::selectedBindingIndex = 0;
-int CustomQuickchat::selectedVariationIndex = 0;
-
 void CustomQuickchat::RenderSettings() {
 	CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
 	CVarWrapper speechToTextNotificationsOnCvar = cvarManager->getCvar("customQuickchat_speechToTextNotificationsOn");

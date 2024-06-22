@@ -7,6 +7,8 @@
 
 #include "Keys.h"
 #include "TextEffects.h"
+#include "Utils.hpp"
+#include "nlohmann.hpp"
 
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -116,15 +118,17 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
 	void TestShit();
+	void PopupNotification(const std::string& message, const std::string& title, float duration);
 
+	// speech-to-text stuff
 	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false);
 	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test);
-
-	void PopupNotification(const std::string& message, const std::string& title, float duration);
 	void STTLog(const std::string& message);
 	bool ClearTranscriptionJson();
-	static std::string ActiveSTTAttemptID;
+	std::string ActiveSTTAttemptID = "420_blz_it_lmao";
 
+
+	bool CheckGlobals();
 	bool AreGObjectsValid();
 	bool AreGNamesValid();
 
@@ -138,6 +142,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	
 	void CheckJsonFiles();
 	void GetFilePaths();
+	void FilterLinesInFile(const std::filesystem::path& filePath, const std::string& startString);
 
 	void WriteBindingsToJson();
 	void WriteVariationsToJson();
@@ -148,6 +153,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void DeleteBinding(int idx);
 	void DeleteVariationList(int idx);
 	void UpdateDataFromVariationStr();
+
 
 	std::string Variation(const std::string& listName);
 	std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
@@ -172,29 +178,33 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void UpdateData();
 	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent
 
-	static std::vector<Binding> Bindings;
-	static std::vector<VariationList> Variations;
+	std::vector<Binding> Bindings;
+	std::vector<VariationList> Variations;
 
-	static int selectedBindingIndex;
-	static int selectedVariationIndex;
+	int selectedBindingIndex = 0;
+	int selectedVariationIndex = 0;
 
-	static UClass* notificationClass;
+	UClass* notificationClass = nullptr;
 
-	static std::unordered_map<std::string, bool> keyStates;
-	static std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
+	std::unordered_map<std::string, bool> keyStates;
+	std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
 	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
+	void HandleKeyPress(ActorWrapper caller, void* params, std::string eventName);
 
-	static std::filesystem::path customQuickchatFolder;
-	static std::filesystem::path bindingsFilePath;
-	static std::filesystem::path variationsFilePath;
-	static std::filesystem::path speechToTextFilePath;
-	static std::filesystem::path speechToTextPyScriptFilePath;
+
+	// CustomQuickchat filepaths
+	std::filesystem::path customQuickchatFolder;
+	std::filesystem::path bindingsFilePath;
+	std::filesystem::path variationsFilePath;
+	std::filesystem::path speechToTextFilePath;
+	std::filesystem::path speechToTextPyScriptFilePath;
+	std::filesystem::path cfgPath;
 
 	// Lobby Info filepaths
-	static std::filesystem::path lobbyInfoFolder;
-	static std::filesystem::path lobbyInfoChatsFilePath;
-	static std::filesystem::path lobbyInfoRanksFilePath;
+	std::filesystem::path lobbyInfoFolder;
+	std::filesystem::path lobbyInfoChatsFilePath;
+	std::filesystem::path lobbyInfoRanksFilePath;
 
 	// bindings GUI
 	void RenderAllBindings();
@@ -205,6 +215,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void RenderVariationListDetails();
 
 public:
+
 	void RenderSettings() override; // Uncomment if you wanna render your own tab in the settings menu
 	void RenderWindow() override; // Uncomment if you want to render your own plugin window
 };
