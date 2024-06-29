@@ -22,25 +22,29 @@ void CustomQuickchat::onLoad()
 
 	LOG("[Troubleshooting] 2");
 
+	pyInterpreter = findPythonInterpreter();	// find & store filepath to pythonw.exe
+
+	LOG("[Troubleshooting] 3");
+
 	// set global sequenceStoredButtonPresses to default value
 	sequenceStoredButtonPresses["global"].buttonName = "poopfart";
 	sequenceStoredButtonPresses["global"].pressedTime = std::chrono::steady_clock::now();
 
-	LOG("[Troubleshooting] 3");
+	LOG("[Troubleshooting] 4");
 
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();
-	LOG("[Troubleshooting] 4");
-	CheckJsonFiles();
 	LOG("[Troubleshooting] 5");
-	UpdateData();
+	CheckJsonFiles();
 	LOG("[Troubleshooting] 6");
-	ClearTranscriptionJson();
+	UpdateData();
 	LOG("[Troubleshooting] 7");
+	ClearTranscriptionJson();
+	LOG("[Troubleshooting] 8");
 
 
 	PreventGameFreeze();	// hacky solution, but seems to work
-	LOG("[Troubleshooting] 8");
+	LOG("[Troubleshooting] 9");
 
 
 	// execute this stuff in the main thread
@@ -54,7 +58,7 @@ void CustomQuickchat::onLoad()
 		cvarManager->registerCvar("customQuickchat_popupNotificationDuration", "3", "how long a popup notification will stay on the screen", true, true, 1.5, true, 10);
 		cvarManager->registerCvar("customQuickchat_processSpeechTimeout", "10", "timeout for processing speech", true, true, 3, true, 500);
 
-		LOG("[Troubleshooting] 9");
+		LOG("[Troubleshooting] 10");
 
 
 		// load previous saved CVar values from .cfg file
@@ -62,7 +66,7 @@ void CustomQuickchat::onLoad()
 		LOG("cfgPath: {}", cfgPathStr);
 		cvarManager->loadCfg(cfgPathStr);
 
-		LOG("[Troubleshooting] 10");
+		LOG("[Troubleshooting] 11");
 
 
 		// do a background speech-to-text test run after onLoad, to help prevent error on first real attempt
@@ -74,11 +78,11 @@ void CustomQuickchat::onLoad()
 
 		}, 5);	// wait 5s to give threaded onLoad some time to finish		<---- maybe causing crash for some ppl? Maybe sumn to do with using invalid filepaths?
 
-		LOG("[Troubleshooting] 11");
+		LOG("[Troubleshooting] 12");
 
 	});
 	
-	LOG("[Troubleshooting] 12");
+	LOG("[Troubleshooting] 13");
 
 	// command to toggle custom quickchats on/off
 	cvarManager->registerNotifier("customQuickchat_toggle", [&](std::vector<std::string> args) {

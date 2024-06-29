@@ -2,39 +2,20 @@
 #include "CustomQuickchat.h"
 
 
-// search for Python interpreter filepath
-std::string findPythonInterpreter() {
-	// Get the value of the PATH environment variable
-	const char* pathEnv = getenv("PATH");
-	if (pathEnv == nullptr) {
-		LOG("PATH environment variable not found :(");
-		return "";
+// search for pythonw.exe filepath
+std::filesystem::path CustomQuickchat::findPythonInterpreter() {
+	wchar_t buffer[MAX_PATH];
+	DWORD result = SearchPath(NULL, L"pythonw.exe", NULL, MAX_PATH, buffer, NULL);
+
+	if (result > 0 && result < MAX_PATH) {
+		std::filesystem::path foundPath = std::filesystem::path(buffer);
+		LOG("found filepath to pythonw.exe: {}", foundPath.string());
+		return std::filesystem::path(buffer);
 	}
-
-	// Split the PATH string into individual directories
-	std::istringstream iss(pathEnv);
-	std::vector<std::string> directories;
-	std::string directory;
-	while (std::getline(iss, directory, ';')) {
-		directories.push_back(directory);
+	else {
+		return std::filesystem::path(); // return empty path (same as "")
 	}
-
-	// Search for Python executable in each directory
-	const std::string pythonExecutableName = "pythonw.exe";
-	for (const auto& dir : directories) {
-		std::filesystem::path directoryFromPATH = std::filesystem::path(dir);
-		if (!std::filesystem::exists(directoryFromPATH)) { continue; }
-
-		std::filesystem::path pythonPath = directoryFromPATH / pythonExecutableName;
-		if (std::filesystem::exists(pythonPath)) {
-			return pythonPath.string();  // Convert path to string
-		}
-	}
-
-	LOG("Python interpreter not found in PATH directories :(");
-	return "";
 }
-
 
 
 void CustomQuickchat::STTLog(const std::string& message) {
@@ -56,7 +37,6 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
 	if (!processSpeechTimeoutCvar) { return; }
 	int processSpeechTimeout = processSpeechTimeoutCvar.getIntValue();
-
 
 
 	// probe JSON file ...
@@ -115,7 +95,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 				}
 			}
 
-			}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
+		}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
 	}
 
 
@@ -128,7 +108,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 			ActiveSTTAttemptID = "420_blz_it_lmao";
 		}
 
-		}, processSpeechTimeout);
+	}, processSpeechTimeout);
 
 }
 
@@ -141,10 +121,12 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 		return;
 	}
 
+	// search for pythonw.exe once more if it's not already found & stored
+	if (pyInterpreter.empty()) {
+		pyInterpreter = findPythonInterpreter();
+	}
 
-	std::string pyInterpreter = findPythonInterpreter();
-
-	if (pyInterpreter == "") {
+	if (pyInterpreter.empty()) {
 		STTLog("[ERROR] Couldn't find pythonw.exe interpreter in PATH variable");
 		return;
 	}
@@ -161,7 +143,7 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	LOG("ID for current speech-to-text attempt: {}", ActiveSTTAttemptID);
 
 
-	std::string pathToPyInterpreter = "\"" + pyInterpreter + "\"";
+	std::string pathToPyInterpreter = "\"" + pyInterpreter.string() + "\"";
 	std::string pathToPywScript = "\"" + speechToTextPyScriptFilePath.string() + "\"";
 	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
 
@@ -215,7 +197,6 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 		STTLog("Error executing Python script with CreateProcess. Error code: " + std::to_string(error));
 	}
-
 }
 
 

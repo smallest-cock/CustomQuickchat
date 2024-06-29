@@ -192,6 +192,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
 	void HandleKeyPress(ActorWrapper caller, void* params, std::string eventName);
 
+	std::filesystem::path findPythonInterpreter();
 
 	// CustomQuickchat filepaths
 	std::filesystem::path customQuickchatFolder;
@@ -199,6 +200,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::filesystem::path variationsFilePath;
 	std::filesystem::path speechToTextFilePath;
 	std::filesystem::path speechToTextPyScriptFilePath;
+	std::filesystem::path pyInterpreter;
 	std::filesystem::path cfgPath;
 
 	// Lobby Info filepaths
