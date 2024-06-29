@@ -62,6 +62,6 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 
 ![](./images/default_device.png)
 
-... so if you have multiple mics connected, make sure the one you're using in RL is the default device
+... so if you have multiple mics connected, make sure the one you're using in RL is the default device. If you continuously get the `You didn't speak or your mic is muted` speech-to-text error, disable all other active mics from this list.
 
 **To change the default mic:** select it in the list, then click the `Set Default` button
