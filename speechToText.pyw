@@ -1,6 +1,7 @@
 #! /usr/bin/env pythonw
 
 import speech_recognition as sr
+import pyaudio
 import time
 import json
 import sys
@@ -17,7 +18,9 @@ def main():
 
     attemptID = args[2]
 
-    transcription = get_transcription()
+    audio = pyaudio.PyAudio()
+    transcription = get_transcription(audio)
+
     current_time = time.time()
 
     if transcription:
@@ -34,7 +37,7 @@ def main():
             f.truncate()     # remove remaining part
     
 
-def get_transcription() -> str | None:
+def get_transcription(pAudio: pyaudio.PyAudio) -> str | None:
     try:
         recognizer = sr.Recognizer()
         mic = sr.Microphone()
@@ -50,7 +53,8 @@ def get_transcription() -> str | None:
     except OSError:
         write_error_to_json(args[0], 'No mic detected...')
     except sr.WaitTimeoutError:
-        write_error_to_json(args[0], "You didn't speak or your mic is muted")
+        default_device_name = pAudio.get_default_input_device_info()['name']
+        write_error_to_json(args[0], f"No speech detected from '{default_device_name}'. Make sure it's not muted!")
     except sr.RequestError:
         # API was unreachable or unresponsive
         write_error_to_json(args[0], 'Google Speech Recognition API is unavailable')
