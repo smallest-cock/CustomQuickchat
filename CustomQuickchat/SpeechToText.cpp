@@ -230,33 +230,62 @@ void CustomQuickchat::ResetJsonFile(float micCalibration)
 }
 
 
-bool CustomQuickchat::ClearTranscriptionJson() {
+void CustomQuickchat::UpdateMicCalibration(float timeOut)
+{
+	// get value from JSON after calibration finished
+	gameWrapper->SetTimeout([this](GameWrapper* gw) {
 
-	if (!std::filesystem::exists(speechToTextFilePath)) {
-		return false;
-	}
-
-	// read JSON file
-	std::string jsonFileSerialized = readContent(speechToTextFilePath);
-
-	try {
-		auto jsonData = nlohmann::json::parse(jsonFileSerialized);
+		// read file
+		auto jsonData = getJsonFromFile(speechToTextFilePath);
 
 		if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
-			auto micCalibration = jsonData["micNoiseCalibration"];
-			
-			if (!micCalibration.empty()) {
-				ResetJsonFile(micCalibration);
-				return true;
-			}
+			micEnergyThreshold = jsonData["micNoiseCalibration"];	// update value of micEnergyThreshold
 		}
 
-		ResetJsonFile();
-		return true;
+	}, timeOut);
+}
+
+
+bool CustomQuickchat::ClearTranscriptionJson() {
+
+	if (!std::filesystem::exists(speechToTextFilePath)) { return false; }
+
+	// read file
+	auto jsonData = getJsonFromFile(speechToTextFilePath);
+
+	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
+		auto micCalibration = jsonData["micNoiseCalibration"];
+
+		if (!micCalibration.empty()) {
+			ResetJsonFile(micCalibration);
+			return true;
+		}
 	}
-	catch (...) {
-		// clear active attempt ID
-		LOG("there was an error");
-		return false;
-	}
+
+	ResetJsonFile();
+	return true;
+
+
+	//std::string jsonFileSerialized = readContent(speechToTextFilePath);
+
+	//try {
+	//	auto jsonData = nlohmann::json::parse(jsonFileSerialized);
+
+	//	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
+	//		auto micCalibration = jsonData["micNoiseCalibration"];
+	//		
+	//		if (!micCalibration.empty()) {
+	//			ResetJsonFile(micCalibration);
+	//			return true;
+	//		}
+	//	}
+
+	//	ResetJsonFile();
+	//	return true;
+	//}
+	//catch (...) {
+	//	// clear active attempt ID
+	//	LOG("there was an error");
+	//	return false;
+	//}
 }

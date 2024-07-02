@@ -1079,6 +1079,24 @@ std::string CustomQuickchat::readContent(const std::filesystem::path& FileName) 
 }
 
 
+nlohmann::json CustomQuickchat::getJsonFromFile(const std::filesystem::path& filePath)
+{
+	nlohmann::json contents;
+
+	if (!std::filesystem::exists(filePath)) { return contents; }
+	
+	std::string jsonFileRawStr = readContent(filePath);
+	try {
+		contents = nlohmann::json::parse(jsonFileRawStr);
+	}
+	catch (...) {
+		LOG("[ERROR] Couldn't read '{}' Make sure it contains valid JSON!", filePath.string());
+	}
+
+	return contents;
+}
+
+
 void CustomQuickchat::writeJsonToFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData) {
 	std::ofstream file(filePath);
 	if (file.is_open()) {

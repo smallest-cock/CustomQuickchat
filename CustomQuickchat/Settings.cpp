@@ -15,6 +15,7 @@ void CustomQuickchat::RenderSettings() {
 	ImGui::Spacing();
 	ImGui::Spacing();
 	ImGui::Spacing();
+	ImGui::Spacing();
 
 	ImGui::TextColored(ImVec4(1, 0, 1, 1), "Plugin made by SSLow");
 
@@ -22,6 +23,7 @@ void CustomQuickchat::RenderSettings() {
 	ImGui::Spacing();
 	ImGui::Spacing();
 
+	ImGui::Text(pretty_plugin_version);
 	ImGui::Separator();
 
 	ImGui::Spacing();
@@ -55,6 +57,37 @@ void CustomQuickchat::RenderSettings() {
 			ImGui::Spacing();
 			ImGui::Spacing();
 			ImGui::Spacing();
+			
+			// open bindings window button
+			if (ImGui::Button("Calibrate microphone")) {
+				gameWrapper->Execute([this](GameWrapper* gw) {
+					StartSpeechToText("lobby", "", true, true);  // calibrate mic energy threshold
+					UpdateMicCalibration(4);
+				});
+			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("calibrates microphone sensitivity level (for the plugin) based on a 2 second sample of background noise");
+			}
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			
+			// to keep the precision of the double without truncating digits in the string
+			std::ostringstream oss;
+			oss << std::setprecision(16) << micEnergyThreshold;
+			std::string micThresholdStr = oss.str();
+
+			std::string thresholdStr = "Energy threshold: " + micThresholdStr;
+			ImGui::Text(thresholdStr.c_str());
+
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
+			ImGui::Spacing();
 
 			// chat notifications
 			if (!speechToTextNotificationsOnCvar) { return; }
@@ -84,7 +117,7 @@ void CustomQuickchat::RenderSettings() {
 				ImGui::Spacing();
 
 				// test popup notifications
-				if (ImGui::Button("Test Popup Notification", ImVec2(0, 0))) {
+				if (ImGui::Button("Test Popup Notification")) {
 					gameWrapper->Execute([this, popupNotificationDuration](GameWrapper* gw) {
 						PopupNotification("You can see 'em if you're driving. You just run them over. That's what you do.", "Terry A Davis", popupNotificationDuration);
 					});
@@ -137,11 +170,12 @@ void CustomQuickchat::RenderSettings() {
 		ImGui::Spacing();
 
 		// open bindings window button
-		if (ImGui::Button("Open Bindings Menu", ImVec2(0, 0))) {
+		if (ImGui::Button("Open Bindings Menu")) {
 			gameWrapper->Execute([this](GameWrapper* gw) {
 				cvarManager->executeCommand("togglemenu " + GetMenuName());
 				});
 		}
+
 	}
 }
 

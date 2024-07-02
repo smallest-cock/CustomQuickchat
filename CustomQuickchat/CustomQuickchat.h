@@ -12,6 +12,7 @@
 
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
+constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
 
 
@@ -127,6 +128,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void ResetJsonFile(float micCalibration = 69420);
 	bool ClearTranscriptionJson();
 	std::string ActiveSTTAttemptID = "420_blz_it_lmao";
+	double micEnergyThreshold = 420;
+	void UpdateMicCalibration(float timeOut);
 
 
 	bool CheckGlobals();
@@ -175,6 +178,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);
 	void writeJsonToFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData);
+	nlohmann::json getJsonFromFile(const std::filesystem::path& filePath);
 
 	void UpdateData();
 	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent

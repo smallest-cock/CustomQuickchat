@@ -76,10 +76,11 @@ void CustomQuickchat::onLoad()
 
 			//StartSpeechToText("lobby", "", true);	// do a dummy test run of speech-to-text
 			StartSpeechToText("lobby", "", true, true);  // calibrate mic energy threshold
+			UpdateMicCalibration(4);
 
 			LOG("[Troubleshooting] did the background speech-to-text test run after onLoad, to help prevent error");
 
-		}, 5);	// wait 5s to give threaded onLoad some time to finish		<---- maybe causing crash for some ppl? Maybe sumn to do with using invalid filepaths?
+		}, 2);
 
 		LOG("[Troubleshooting] 12");
 
