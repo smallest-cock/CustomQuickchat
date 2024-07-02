@@ -1,80 +1,108 @@
 #! /usr/bin/env pythonw
 
 import speech_recognition as sr
-import pyaudio
-import time
+import argparse
+# import time
 import json
-import sys
-
-
-args = sys.argv[1:]
 
 
 def main():
 
-    if not args:
-        print("Error: too few arguments provided")
-        return
+    parser = argparse.ArgumentParser(description="A script to convert speech to text, and save the result in a JSON file.")
+    
+    # positional arguments
+    parser.add_argument('json_file', type=str, help='File path to SpeechToText.json')
+    parser.add_argument('listening_timeout', type=float, help='Max amount of time to wait for user to start speech')
+    parser.add_argument('attempt_ID', type=str, help='Unique ID representing the current speech-to-text attempt')
 
-    attemptID = args[2]
+    # optional arguments
+    parser.add_argument('--calibrate', action='store_true', help='Flag to calibrate mic for ambient noise instead of listening for speech')
 
-    audio = pyaudio.PyAudio()
-    transcription = get_transcription(audio)
+    # parse arguments
+    args = parser.parse_args()
 
-    current_time = time.time()
 
-    if transcription:
-        print(transcription)
-        # update JSON
-        with open(args[0], 'r+') as f:      # json filepath should be the 1st argument
-            data = json.load(f)
-            data['transcription']['ID'] = attemptID
-            data['transcription']['time'] = current_time 
-            data['transcription']['text'] = transcription
-            data['transcription']['error'] = False
-            f.seek(0)        # <--- should reset file position to the beginning.
-            json.dump(data, f, indent=4)
-            f.truncate()     # remove remaining part
+    if args.calibrate:
+        calibrate_mic(args)
+    else:
+        transcription = get_transcription(args)
+
+        # current_time = time.time()
+
+        if transcription:
+            with open(args.json_file, 'r+') as f:
+                data = json.load(f)
+                data['transcription']['ID'] = args.attempt_ID
+                # data['transcription']['time'] = current_time 
+                data['transcription']['text'] = transcription
+                data['transcription']['error'] = False
+                f.seek(0)        # go to 1st line of file
+                json.dump(data, f, indent=4)
+                f.truncate()     # remove remaining part
     
 
-def get_transcription(pAudio: pyaudio.PyAudio) -> str | None:
+def get_transcription(args: argparse.Namespace) -> str | None:
     try:
         recognizer = sr.Recognizer()
         mic = sr.Microphone()
 
-        timeoutArg = args[1]
+        with open(args.json_file, 'r') as f:
+            data = json.load(f)
+            if 'micNoiseCalibration' in data:
+                recognizer.energy_threshold = data['micNoiseCalibration']
 
         with mic as source:
-            audio = recognizer.listen(source, timeout=float(timeoutArg))    # listen within time limit for the start of speech
+            audio = recognizer.listen(source, timeout=args.listening_timeout)    # listen within time limit for the start of speech
 
         transcription = recognizer.recognize_google(audio)
         return transcription.lower() if transcription else None
 
     except OSError:
-        write_error_to_json(args[0], 'No mic detected...')
+        write_error_to_json(args, 'No mic detected...')
     except sr.WaitTimeoutError:
-        default_device_name = pAudio.get_default_input_device_info()['name']
-        write_error_to_json(args[0], f"No speech detected from '{default_device_name}'. Make sure it's not muted!")
+        # no speech detected
+        import pyaudio
+        default_device_name = pyaudio.PyAudio().get_default_input_device_info()['name'] 
+        write_error_to_json(args, f"No speech detected from '{default_device_name}'. Make sure it's not muted!")
     except sr.RequestError:
         # API was unreachable or unresponsive
-        write_error_to_json(args[0], 'Google Speech Recognition API is unavailable')
+        write_error_to_json(args, 'Google Speech Recognition API is unavailable')
     except sr.UnknownValueError:
         # speech was unintelligible
-        write_error_to_json(args[0], 'Unable to recognize speech')
+        write_error_to_json(args, 'Unable to recognize speech')
     except Exception as e:
         # print(e)
-        write_error_to_json(args[0], str(e))
+        write_error_to_json(args, str(e))
 
     
-def write_error_to_json(filepath: str, error_message: str):
-    attemptID = args[2]
+def calibrate_mic(args: argparse.Namespace):
+    try:
+        recognizer = sr.Recognizer()
+        mic = sr.Microphone()
 
-    with open(filepath, 'r+') as f:      # json filepath should be the 1st argument
+        with mic as source:
+            recognizer.adjust_for_ambient_noise(source)
+
+        with open(args.json_file, 'r+') as f:
+            data = json.load(f)
+            data['micNoiseCalibration'] = recognizer.energy_threshold
+            f.seek(0)        # go to 1st line
+            json.dump(data, f, indent=4)
+            f.truncate()     # remove remaining part
+
+    except OSError:
+        write_error_to_json(args, 'No mic detected...')
+    except Exception as e:
+        write_error_to_json(args, str(e))
+
+
+def write_error_to_json(args: argparse.Namespace, error_message: str):
+    with open(args.json_file, 'r+') as f:
         data = json.load(f)
-        data['transcription']['ID'] = attemptID
+        data['transcription']['ID'] = args.attempt_ID
         data['transcription']['error'] = True
         data['transcription']['errorMessage'] = error_message
-        f.seek(0)        # <--- should reset file position to the beginning.
+        f.seek(0)        # go to 1st line of file
         json.dump(data, f, indent=4)
         f.truncate()     # remove remaining part
 
