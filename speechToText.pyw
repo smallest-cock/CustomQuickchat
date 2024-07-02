@@ -81,7 +81,7 @@ def calibrate_mic(args: argparse.Namespace):
         mic = sr.Microphone()
 
         with mic as source:
-            recognizer.adjust_for_ambient_noise(source)
+            recognizer.adjust_for_ambient_noise(source=source, duration=2)
 
         with open(args.json_file, 'r+') as f:
             data = json.load(f)
