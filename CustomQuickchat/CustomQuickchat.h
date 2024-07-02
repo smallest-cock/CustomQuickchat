@@ -121,9 +121,10 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void PopupNotification(const std::string& message, const std::string& title, float duration);
 
 	// speech-to-text stuff
-	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false);
+	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false, bool calibrateMic = false);
 	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test);
 	void STTLog(const std::string& message);
+	void ResetJsonFile(float micCalibration = 69420);
 	bool ClearTranscriptionJson();
 	std::string ActiveSTTAttemptID = "420_blz_it_lmao";
 
@@ -173,7 +174,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// JSON stuff
 	std::string readContent(const std::filesystem::path& FileName);
-	void writeContent(const std::filesystem::path& FileName, const std::string& Buffer);
+	void writeJsonToFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData);
 
 	void UpdateData();
 	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent

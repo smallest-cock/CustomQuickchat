@@ -978,7 +978,7 @@ void CustomQuickchat::WriteBindingsToJson() {
 		bindingsJsonObj["bindings"].push_back(singleBinding);
 	}
 
-	writeContent(bindingsFilePath, bindingsJsonObj.dump(4));
+	writeJsonToFile(bindingsFilePath, bindingsJsonObj);
 	LOG("Updated 'Bindings.json' :)");
 }
 
@@ -1007,7 +1007,7 @@ void CustomQuickchat::WriteVariationsToJson() {
 		variationsJsonObj["variationLists"].push_back(variationList);
 	}
 
-	writeContent(variationsFilePath, variationsJsonObj.dump(4));
+	writeJsonToFile(variationsFilePath, variationsJsonObj);
 	LOG("Updated 'Variations.json' :)");
 }
 
@@ -1079,10 +1079,15 @@ std::string CustomQuickchat::readContent(const std::filesystem::path& FileName) 
 }
 
 
-void CustomQuickchat::writeContent(const std::filesystem::path& FileName, const std::string& Buffer) {
-	std::ofstream File(FileName, std::ofstream::trunc);
-	File << Buffer;
-	File.close();
+void CustomQuickchat::writeJsonToFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData) {
+	std::ofstream file(filePath);
+	if (file.is_open()) {
+		file << jsonData.dump(4); // Pretty-print with 4 spaces indentation
+		file.close();
+	}
+	else {
+		LOG("Could not open file for writing");
+	}
 }
 
 

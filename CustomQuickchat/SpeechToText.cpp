@@ -113,7 +113,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 }
 
 
-void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test) {
+void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic) {
 
 	// reset transcription data
 	if (!ClearTranscriptionJson()) {
@@ -150,6 +150,10 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	// Command-line to execute Python script with JSON filepath as 1st arg
 	std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(waitForSpeechTimeout) + " " + attemptID;
 
+	if (calibrateMic) {
+		command += " --calibrate";
+	}
+
 	std::wstring wCommand(command.begin(), command.end());		// convert to wide string
 
 
@@ -182,13 +186,17 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
 
-		if (!test) {
+		if (!test && !calibrateMic) {
 			// prompt user for speech
 			STTLog("listening......");
-		}
 
-		// wait for speech, and probe JSON file for response
-		STTWaitAndProbe(chatMode, effect, attemptID, test);
+			// wait for speech, and probe JSON file for response
+			STTWaitAndProbe(chatMode, effect, attemptID, test);
+		}
+		else {
+			// reset active attempt ID
+			ActiveSTTAttemptID = "420_blz_it_lmao";
+		}
 
 	}
 	else {
@@ -200,17 +208,55 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 }
 
 
+void CustomQuickchat::ResetJsonFile(float micCalibration)
+{
+	if (!std::filesystem::exists(speechToTextFilePath)) { return; }
+
+	nlohmann::json jsonData;
+	jsonData["transcription"] = nlohmann::json::object();
+
+	if (micCalibration != 69420) {
+		jsonData["micNoiseCalibration"] = micCalibration;
+	}
+
+	try {
+		writeJsonToFile(speechToTextFilePath, jsonData);
+	}
+	catch (const std::exception& e) {
+		LOG("Error writing JSON file: {}", e.what());
+	}
+
+	DEBUGLOG("cleared STT JSON file...");
+}
+
+
 bool CustomQuickchat::ClearTranscriptionJson() {
 
 	if (!std::filesystem::exists(speechToTextFilePath)) {
 		return false;
 	}
 
-	// reset transcription data
-	std::ofstream NewFile(speechToTextFilePath);
-	NewFile << "{ \"transcription\": {} }";
-	NewFile.close();
-	DEBUGLOG("cleared STT JSON file...");
+	// read JSON file
+	std::string jsonFileSerialized = readContent(speechToTextFilePath);
 
-	return true;
+	try {
+		auto jsonData = nlohmann::json::parse(jsonFileSerialized);
+
+		if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
+			auto micCalibration = jsonData["micNoiseCalibration"];
+			
+			if (!micCalibration.empty()) {
+				ResetJsonFile(micCalibration);
+				return true;
+			}
+		}
+
+		ResetJsonFile();
+		return true;
+	}
+	catch (...) {
+		// clear active attempt ID
+		LOG("there was an error");
+		return false;
+	}
 }
