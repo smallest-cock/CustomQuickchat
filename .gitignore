@@ -1,4 +1,6 @@
 .vs
+.vscode
 build
 plugins
-CustomQuickchat/RLSDK/SDK_HEADERS
+CustomQuickchat/SDK
+CustomQuickchat/Components

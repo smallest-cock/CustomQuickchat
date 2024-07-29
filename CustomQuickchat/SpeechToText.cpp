@@ -2,62 +2,66 @@
 #include "CustomQuickchat.h"
 
 
+
 // search for pythonw.exe filepath
-std::filesystem::path CustomQuickchat::findPythonInterpreter() {
+fs::path CustomQuickchat::findPythonInterpreter()
+{
 	wchar_t buffer[MAX_PATH];
 	DWORD result = SearchPath(NULL, L"pythonw.exe", NULL, MAX_PATH, buffer, NULL);
 
-	if (result > 0 && result < MAX_PATH) {
-		std::filesystem::path foundPath = std::filesystem::path(buffer);
+	if (result > 0 && result < MAX_PATH)
+	{
+		fs::path foundPath = fs::path(buffer);
 		LOG("found filepath to pythonw.exe: {}", foundPath.string());
-		return std::filesystem::path(buffer);
+		return fs::path(buffer);
 	}
 	else {
-		return std::filesystem::path(); // return empty path (same as "")
+		return fs::path(); // return empty path (same as "")
 	}
 }
 
 
-void CustomQuickchat::STTLog(const std::string& message) {
-	CVarWrapper speechToTextNotificationsOnCvar = cvarManager->getCvar("customQuickchat_speechToTextNotificationsOn");
-	if (!speechToTextNotificationsOnCvar) { return; }
+void CustomQuickchat::STTLog(const std::string& message)
+{
+	auto enableSTTNotificationsCvar = cvarManager->getCvar(CvarNames::enableSTTNotifications);
+	if (!enableSTTNotificationsCvar) return;
 
-	if (speechToTextNotificationsOnCvar.getBoolValue()) {
-		CVarWrapper popupNotificationDurationCvar = cvarManager->getCvar("customQuickchat_popupNotificationDuration");
-		if (!popupNotificationDurationCvar) { return; }
+	if (enableSTTNotificationsCvar.getBoolValue())
+	{
+		auto notificationDurationCvar = cvarManager->getCvar(CvarNames::notificationDuration);
+		if (!notificationDurationCvar) return;
 
-		PopupNotification(message, "speech-to-text", popupNotificationDurationCvar.getFloatValue());
+		Instances.SpawnNotification("Speech-To-Text", message, notificationDurationCvar.getFloatValue());
 	}
-
-	LOG("[SPEECH-TO-TEXT] " + message);
 }
 
 
-void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test) {
-	CVarWrapper processSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_processSpeechTimeout");
-	if (!processSpeechTimeoutCvar) { return; }
-	int processSpeechTimeout = processSpeechTimeoutCvar.getIntValue();
+void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
+{
+	auto speechProcessingTimeoutCvar = cvarManager->getCvar(CvarNames::speechProcessingTimeout);
+	if (!speechProcessingTimeoutCvar) return;
+	int processSpeechTimeout = speechProcessingTimeoutCvar.getIntValue();
 
 
 	// probe JSON file ...
-	for (int i = 0; i < (((processSpeechTimeout - 2) * 5) + 1); i++) {
-
+	for (int i = 0; i < (((processSpeechTimeout - 2) * 5) + 1); i++)
+	{
 		gameWrapper->SetTimeout([this, chatMode, effect, attemptID, test, i](GameWrapper* gw) {
 
-			if (ActiveSTTAttemptID == attemptID) {
-
+			if (ActiveSTTAttemptID == attemptID)
+			{
 				std::string jsonFileRawStr = readContent(speechToTextFilePath);
 
 				// prevent crash on reading invalid JSON data
 				try {
-					auto transcriptionData = nlohmann::json::parse(jsonFileRawStr);
+					auto transcriptionData = json::parse(jsonFileRawStr);
 					auto transcription = transcriptionData["transcription"];
 
-					if (transcription.empty()) { return; }		// return if still processing
+					if (transcription.empty()) return;		// return if still processing
 
 					// make sure JSON data is from the same attempt
 					std::string jsonAttemptID = transcriptionData["transcription"]["ID"];
-					if (jsonAttemptID != attemptID) { return; }
+					if (jsonAttemptID != attemptID) return;
 
 
 					bool error = transcriptionData["transcription"]["error"];
@@ -101,7 +105,8 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 
 	gameWrapper->SetTimeout([this, processSpeechTimeout, attemptID, test](GameWrapper* gw) {
 
-		if (ActiveSTTAttemptID == attemptID && !test) {
+		if (ActiveSTTAttemptID == attemptID && !test)
+		{
 			STTLog("Processing reached timeout of " + std::to_string(processSpeechTimeout) + " seconds... aborting");
 
 			// clear active attempt ID
@@ -113,32 +118,35 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 }
 
 
-void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic) {
-
+void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic)
+{
 	// reset transcription data
-	if (!ClearTranscriptionJson()) {
+	if (!ClearTranscriptionJson())
+	{
 		STTLog("[ERROR] 'SpeechToText.json' cannot be found");
 		return;
 	}
 
 	// search for pythonw.exe once more if it's not already found & stored
-	if (pyInterpreter.empty()) {
+	if (pyInterpreter.empty())
+	{
 		pyInterpreter = findPythonInterpreter();
 	}
 
-	if (pyInterpreter.empty()) {
+	if (pyInterpreter.empty())
+	{
 		STTLog("[ERROR] Couldn't find pythonw.exe interpreter in PATH variable");
 		return;
 	}
 
 
 	// get CVar for start speech timeout
-	CVarWrapper waitForSpeechTimeoutCvar = cvarManager->getCvar("customQuickchat_waitForSpeechTimeout");
-	if (!waitForSpeechTimeoutCvar) { return; }
-	float waitForSpeechTimeout = waitForSpeechTimeoutCvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
+	auto beginSpeechTimeoutCvar = cvarManager->getCvar(CvarNames::beginSpeechTimeout);
+	if (!beginSpeechTimeoutCvar) return;
+	float beginSpeechTimeout = beginSpeechTimeoutCvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
 
 	// generate unique attempt ID
-	std::string attemptID = generateRandomString(10);
+	std::string attemptID = Format::GenRandomString(10);
 	ActiveSTTAttemptID = attemptID;		// store in global variable (so other attempts can see/compare to it)
 	LOG("ID for current speech-to-text attempt: {}", ActiveSTTAttemptID);
 
@@ -148,7 +156,7 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
 
 	// Command-line to execute Python script with JSON filepath as 1st arg
-	std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(waitForSpeechTimeout) + " " + attemptID;
+	std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(beginSpeechTimeout) + " " + attemptID;
 
 	if (calibrateMic) {
 		command += " --calibrate";
@@ -186,7 +194,8 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
 
-		if (!test && !calibrateMic) {
+		if (!test && !calibrateMic)
+		{
 			// prompt user for speech
 			STTLog("listening......");
 
@@ -210,12 +219,13 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 void CustomQuickchat::ResetJsonFile(float micCalibration)
 {
-	if (!std::filesystem::exists(speechToTextFilePath)) { return; }
+	if (!fs::exists(speechToTextFilePath)) return;
 
-	nlohmann::json jsonData;
-	jsonData["transcription"] = nlohmann::json::object();
+	json jsonData;
+	jsonData["transcription"] = json::object();
 
-	if (micCalibration != 69420) {
+	if (micCalibration != 69420)
+	{
 		jsonData["micNoiseCalibration"] = micCalibration;
 	}
 
@@ -238,7 +248,8 @@ void CustomQuickchat::UpdateMicCalibration(float timeOut)
 		// read file
 		auto jsonData = getJsonFromFile(speechToTextFilePath);
 
-		if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
+		if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null())
+		{
 			micEnergyThreshold = jsonData["micNoiseCalibration"];	// update value of micEnergyThreshold
 		}
 
@@ -246,17 +257,19 @@ void CustomQuickchat::UpdateMicCalibration(float timeOut)
 }
 
 
-bool CustomQuickchat::ClearTranscriptionJson() {
-
-	if (!std::filesystem::exists(speechToTextFilePath)) { return false; }
+bool CustomQuickchat::ClearTranscriptionJson()
+{
+	if (!fs::exists(speechToTextFilePath)) return false;
 
 	// read file
 	auto jsonData = getJsonFromFile(speechToTextFilePath);
 
-	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
+	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null())
+	{
 		auto micCalibration = jsonData["micNoiseCalibration"];
 
-		if (!micCalibration.empty()) {
+		if (!micCalibration.empty())
+		{
 			ResetJsonFile(micCalibration);
 			return true;
 		}
@@ -264,28 +277,4 @@ bool CustomQuickchat::ClearTranscriptionJson() {
 
 	ResetJsonFile();
 	return true;
-
-
-	//std::string jsonFileSerialized = readContent(speechToTextFilePath);
-
-	//try {
-	//	auto jsonData = nlohmann::json::parse(jsonFileSerialized);
-
-	//	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null()) {
-	//		auto micCalibration = jsonData["micNoiseCalibration"];
-	//		
-	//		if (!micCalibration.empty()) {
-	//			ResetJsonFile(micCalibration);
-	//			return true;
-	//		}
-	//	}
-
-	//	ResetJsonFile();
-	//	return true;
-	//}
-	//catch (...) {
-	//	// clear active attempt ID
-	//	LOG("there was an error");
-	//	return false;
-	//}
 }

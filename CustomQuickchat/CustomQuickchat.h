@@ -1,111 +1,23 @@
 #pragma once
 
+#include "pch.h"
 #include "GuiBase.h"
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
+#include "Structs.hpp"
 #include "Keys.h"
 #include "TextEffects.h"
-#include "Utils.hpp"
-#include "nlohmann.hpp"
 
 #include "version.h"
+
+#include "Events.hpp"
+#include "CvarNames.hpp"
+#include "Components/Includes.hpp"
+
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
-
-
-
-FString StrToFString(const std::string& str);
-
-
-// ------------------------------------------- RLSDK shit ---------------------------------------------------------------------------
-
-static constexpr int32_t INSTANCES_INTERATE_OFFSET = 100;
-
-bool CheckNotInName(UObject* obj, const std::string& str);
-
-namespace plugin {
-	namespace instances {
-		// Get an object instance by it's name and class type. Example: UTexture2D* texture = FindObject<UTexture2D>("WhiteSquare");
-		template<typename T> T* FindObject(const std::string& objectName, bool bStrictFind = false);
-
-		// Get the instance of a class using an index for the GObjects array. Example: UEngine* engine = GetInstanceOf<UEngine>(420);
-		template<typename T> T* GetInstanceFromIndex(int index);
-
-		// Get all active instances of a class type. Example: std::vector<APawn*> pawns = GetAllInstancesOf<APawn>();
-		template<typename T> std::vector<T*> GetAllInstancesOf();
-
-		// Get the most current/active instance of a class. Example: UEngine* engine = GetInstanceOf<UEngine>();
-		template<typename T> T* GetInstanceOf();
-
-	}
-	namespace memory {
-		uintptr_t FindPattern(HMODULE module, const unsigned char* pattern, const char* mask);
-	}
-	namespace globals {
-		uintptr_t fnGObjects();
-		uintptr_t fnGNames();
-		void Init();
-	}
-}
-
-// ----------------------------------------------------------------------------------------------------------------------------------
-
-
-const std::vector<std::string> possibleBindingTypes = {
-	"button combination",
-	"button sequence"
-};
-
-const std::vector<std::string> possibleChatModes = {
-	"lobby",
-	"team",
-	"party"
-};
-
-enum ChatMode {
-	Lobby = 0,
-	Team = 1,
-	Party = 2
-};
-
-
-struct Binding {
-	std::vector<int> buttonNameIndexes;
-	std::string chat;
-	int typeNameIndex;
-	int chatMode;
-};
-
-// variation stuff
-struct VariationList {
-	std::string listName;
-	std::string unparsedString;
-	std::vector<std::string> wordList;
-	std::vector<std::string> shuffledWordList;
-	int nextUsableIndex;
-};
-
-// rank stuff
-struct Rank {
-	int matches;
-	std::string div;
-	std::string tier;
-	int mmr;
-};
-
-struct ChatterRanks {
-	std::string playerName;
-	std::unordered_map <std::string, Rank> ranks;
-};
-
-
-struct ButtonPress {
-	std::string buttonName;
-	std::chrono::steady_clock::time_point pressedTime;
-};
-
 
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
@@ -118,10 +30,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onUnload() override;
 
 	void SendChat(const std::string& chat, const std::string& chatMode);
-	void TestShit();
-	void PopupNotification(const std::string& message, const std::string& title, float duration);
 
-	// speech-to-text stuff
+	// speech-to-text
 	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false, bool calibrateMic = false);
 	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test);
 	void STTLog(const std::string& message);
@@ -130,11 +40,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::string ActiveSTTAttemptID = "420_blz_it_lmao";
 	double micEnergyThreshold = 420;
 	void UpdateMicCalibration(float timeOut);
-
-
-	bool CheckGlobals();
-	bool AreGObjectsValid();
-	bool AreGNamesValid();
 
 	void InitKeyStates();
 	bool Sequence(const std::string& button1, const std::string& button2);
@@ -146,7 +51,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	
 	void CheckJsonFiles();
 	void GetFilePaths();
-	void FilterLinesInFile(const std::filesystem::path& filePath, const std::string& startString);
 
 	void WriteBindingsToJson();
 	void WriteVariationsToJson();
@@ -176,9 +80,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
 	// JSON stuff
-	std::string readContent(const std::filesystem::path& FileName);
-	void writeJsonToFile(const std::filesystem::path& filePath, const nlohmann::json& jsonData);
-	nlohmann::json getJsonFromFile(const std::filesystem::path& filePath);
+	std::string readContent(const fs::path& FileName);
+	void writeJsonToFile(const fs::path& filePath, const json& jsonData);
+	json getJsonFromFile(const fs::path& filePath);
 
 	void UpdateData();
 	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent
@@ -189,40 +93,45 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	int selectedBindingIndex = 0;
 	int selectedVariationIndex = 0;
 
-	UClass* notificationClass = nullptr;
-
 	std::unordered_map<std::string, bool> keyStates;
 	std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
-	const std::string KeyPressedEvent = "Function TAGame.GameViewportClient_TA.HandleKeyPress";
-	void HandleKeyPress(ActorWrapper caller, void* params, std::string eventName);
-
-	std::filesystem::path findPythonInterpreter();
+	fs::path findPythonInterpreter();
 
 	// CustomQuickchat filepaths
-	std::filesystem::path customQuickchatFolder;
-	std::filesystem::path bindingsFilePath;
-	std::filesystem::path variationsFilePath;
-	std::filesystem::path speechToTextFilePath;
-	std::filesystem::path speechToTextPyScriptFilePath;
-	std::filesystem::path pyInterpreter;
-	std::filesystem::path cfgPath;
+	fs::path customQuickchatFolder;
+	fs::path bindingsFilePath;
+	fs::path variationsFilePath;
+	fs::path speechToTextFilePath;
+	fs::path speechToTextPyScriptFilePath;
+	fs::path pyInterpreter;
+	fs::path cfgPath;
 
 	// Lobby Info filepaths
-	std::filesystem::path lobbyInfoFolder;
-	std::filesystem::path lobbyInfoChatsFilePath;
-	std::filesystem::path lobbyInfoRanksFilePath;
+	fs::path lobbyInfoFolder;
+	fs::path lobbyInfoChatsFilePath;
+	fs::path lobbyInfoRanksFilePath;
 
-	// bindings GUI
-	void RenderAllBindings();
-	void RenderBindingDetails();
 
-	// word variations GUI
-	void RenderAllVariationListNames();
-	void RenderVariationListDetails();
+	// commands
+	void toggleEnabled(std::vector<std::string> args);
+	void test(std::vector<std::string> args);
+
+	// cvar change callbacks
+	void enabled_Changed(std::string cvarName, CVarWrapper updatedCvar);
+	void enableSTTNotifications_Changed(std::string cvarName, CVarWrapper updatedCvar);
+
+	// hook callbacks
+	void Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName);
 
 public:
-
+	// GUI
 	void RenderSettings() override; // Uncomment if you wanna render your own tab in the settings menu
 	void RenderWindow() override; // Uncomment if you want to render your own plugin window
+
+	void RenderAllBindings();
+	void RenderBindingDetails();
+	
+	void RenderAllVariationListNames();
+	void RenderVariationListDetails();
 };

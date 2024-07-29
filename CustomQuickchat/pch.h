@@ -10,6 +10,7 @@
 #include <memory>
 
 #include "IMGUI/imgui.h"
+#include "IMGUI/imgui_internal.h"
 #include "IMGUI/imgui_stdlib.h"
 #include "IMGUI/imgui_searchablecombo.h"
 #include "IMGUI/imgui_rangeslider.h"
@@ -19,7 +20,14 @@
 #include <Psapi.h>
 #include <iostream>
 #include <fstream>
+#include <shellapi.h>
 
-#include "RLSDK/SdkHeaders.hpp"
+#include "nlohmann.hpp"
+#include "SDK/SdkHeaders.hpp"
 
 #include "logging.h"
+
+#pragma comment(lib, "Shlwapi.lib")
+
+namespace fs = std::filesystem;
+using json = nlohmann::json;

@@ -11,110 +11,81 @@ void CustomQuickchat::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
-	// init RLSDK globals
-	plugin::globals::Init();
-	CheckGlobals();
 
-	LOG("[Troubleshooting] 1");
+	// init globals
+	Instances.InitGlobals();
+	if (!Instances.CheckGlobals()) return;
 
-	// init key states map
+
+	// ----------------- other init ------------------
+	
+	PreventGameFreeze();	// hacky solution, but seems to work
+
 	InitKeyStates();
-
-	LOG("[Troubleshooting] 2");
-
-	pyInterpreter = findPythonInterpreter();	// find & store filepath to pythonw.exe
-
-	LOG("[Troubleshooting] 3");
+	
+	// find & store filepath to pythonw.exe
+	pyInterpreter = findPythonInterpreter();
 
 	// set global sequenceStoredButtonPresses to default value
 	sequenceStoredButtonPresses["global"].buttonName = "poopfart";
 	sequenceStoredButtonPresses["global"].pressedTime = std::chrono::steady_clock::now();
 
-	LOG("[Troubleshooting] 4");
-
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();
-	LOG("[Troubleshooting] 5");
 	CheckJsonFiles();
-	LOG("[Troubleshooting] 6");
 	UpdateData();
-	LOG("[Troubleshooting] 7");
 	ClearTranscriptionJson();
-	LOG("[Troubleshooting] 8");
 
+	// -----------------------------------------------
 
-	PreventGameFreeze();	// hacky solution, but seems to work
-	LOG("[Troubleshooting] 9");
 
 
 	// execute this stuff in the main thread
 	gameWrapper->Execute([this](GameWrapper* gw) {
 
-		// register CVars
-		cvarManager->registerCvar("customQuickchat_chatsOn", "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
-		cvarManager->registerCvar("customQuickchat_speechToTextNotificationsOn", "1", "Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
-		cvarManager->registerCvar("customQuickchat_macroTimeWindow", "1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
-		cvarManager->registerCvar("customQuickchat_waitForSpeechTimeout", "3", "timeout for starting speech", true, true, 1.5, true, 10);
-		cvarManager->registerCvar("customQuickchat_popupNotificationDuration", "3", "how long a popup notification will stay on the screen", true, true, 1.5, true, 10);
-		cvarManager->registerCvar("customQuickchat_processSpeechTimeout", "10", "timeout for processing speech", true, true, 3, true, 500);
+		// ====================================== cvars ===========================================
 
-		LOG("[Troubleshooting] 10");
+		// bools
+		auto enabledCvar = cvarManager->registerCvar(CvarNames::enabled, "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
+		auto enableSTTNotificationsCvar = cvarManager->registerCvar(CvarNames::enableSTTNotifications, "1","Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
+		
+		// numbers
+		cvarManager->registerCvar(CvarNames::sequenceTimeWindow,			"1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
+		cvarManager->registerCvar(CvarNames::beginSpeechTimeout,			"3", "timeout for starting speech", true, true, 1.5, true, 10);
+		cvarManager->registerCvar(CvarNames::notificationDuration,			"3", "how long a popup notification will stay on the screen", true, true, 1.5, true, 10);
+		cvarManager->registerCvar(CvarNames::speechProcessingTimeout,		"10", "timeout for processing speech", true, true, 3, true, 500);
 
 
-		// load previous saved CVar values from .cfg file
+		// cvar change callbacks
+		enabledCvar.addOnValueChanged(std::bind(&CustomQuickchat::enabled_Changed, this, std::placeholders::_1, std::placeholders::_2));
+		enableSTTNotificationsCvar.addOnValueChanged(std::bind(&CustomQuickchat::enableSTTNotifications_Changed, this, std::placeholders::_1, std::placeholders::_2));
+
+
+		// load previous saved cvar values from .cfg file
 		std::string cfgPathStr = cfgPath.string();
 		LOG("cfgPath: {}", cfgPathStr);
 		cvarManager->loadCfg(cfgPathStr);
 
-		LOG("[Troubleshooting] 11");
+		// ========================================================================================
 
-
-		// do a background speech-to-text test run after onLoad, to help prevent error on first real attempt
-		gameWrapper->SetTimeout([this](GameWrapper* gw) {
-
-			LOG("[Troubleshooting] finna do the background speech-to-text test run after onLoad, to help prevent error ...");
-
-			//StartSpeechToText("lobby", "", true);	// do a dummy test run of speech-to-text
-			StartSpeechToText("lobby", "", true, true);  // calibrate mic energy threshold
-			UpdateMicCalibration(4);
-
-			LOG("[Troubleshooting] did the background speech-to-text test run after onLoad, to help prevent error");
-
-		}, 2);
-
-		LOG("[Troubleshooting] 12");
 
 	});
 	
-	LOG("[Troubleshooting] 13");
-
-	// command to toggle custom quickchats on/off
-	cvarManager->registerNotifier("customQuickchat_toggle", [&](std::vector<std::string> args) {
-
-		CVarWrapper chatsOnCvar = cvarManager->getCvar("customQuickchat_chatsOn");
-		if (!chatsOnCvar) { return; }
-
-		bool chatsOn = chatsOnCvar.getBoolValue();
-		chatsOnCvar.setValue(!chatsOn);
-		chatsOn = chatsOnCvar.getBoolValue();
-
-		LOG(chatsOn ? "<<\tcustom quickchats turned ON\t>>" : "<<\tcustom quickchats turned OFF\t>>");
-
-	}, "", 0);
 	
-	
-	// test stuff... for new features?
-	cvarManager->registerNotifier("customQuickchat_testShit", [&](std::vector<std::string> args) {
-		TestShit();
-	}, "", 0);
+	StartSpeechToText("lobby", "", true, true);  // calibrate mic energy threshold
+	UpdateMicCalibration(4);
+
+
+	// ================================== console commands ====================================
+
+	cvarManager->registerNotifier(CvarNames::toggleEnabled,		std::bind(&CustomQuickchat::toggleEnabled, this, std::placeholders::_1), "", PERMISSION_ALL);
+	cvarManager->registerNotifier(CvarNames::test,				std::bind(&CustomQuickchat::test, this, std::placeholders::_1), "", PERMISSION_ALL);
 	
 
+	// ======================================= hooks ==========================================
 
-	// ------------------------------------------------ hooks -------------------------------------------------
-
-	// on every keypress
-	gameWrapper->HookEventWithCallerPost<ActorWrapper>(KeyPressedEvent,
-		std::bind(&CustomQuickchat::HandleKeyPress, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::KeyPressed,
+		std::bind(&CustomQuickchat::Event_KeyPressed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
 
 
@@ -122,12 +93,13 @@ void CustomQuickchat::onLoad()
 }
 
 
-void CustomQuickchat::onUnload() {
+void CustomQuickchat::onUnload()
+{
 	// just to make sure any unsaved changes are saved before exiting
 	WriteBindingsToJson();
 
 	// save all CVar values to .cfg file
 	cvarManager->backupCfg(cfgPath.string());
 
-	FilterLinesInFile(cfgPath, "customQuickchat_");
+	Files::FilterLinesInFile(cfgPath, "customQuickchat_");
 }

@@ -34,11 +34,17 @@
     <Filter Include="Plugin\src">
       <UniqueIdentifier>{33ae5c6a-718c-410e-bdb8-9c032f65c710}</UniqueIdentifier>
     </Filter>
-    <Filter Include="RLSDK">
-      <UniqueIdentifier>{1a2084d1-bba6-49fe-959e-a52a70f6469a}</UniqueIdentifier>
+    <Filter Include="SDK">
+      <UniqueIdentifier>{12e365f8-df9e-49ba-b199-5c9337be15af}</UniqueIdentifier>
     </Filter>
-    <Filter Include="RLSDK\SDK_HEADERS">
-      <UniqueIdentifier>{4c42ecb2-eda6-407f-be7b-852a64d3b59c}</UniqueIdentifier>
+    <Filter Include="SDK\SDK_HEADERS">
+      <UniqueIdentifier>{6e2e4bf8-fbcd-46cf-a75b-c33643493f83}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Components">
+      <UniqueIdentifier>{3719ac94-a374-4040-9cef-ab9326c3fc8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Components\Components">
+      <UniqueIdentifier>{afe9241a-4d50-4130-aa20-c56110732358}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -87,39 +93,6 @@
     <ClCompile Include="GuiBase.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
-    <ClCompile Include="RLSDK\GameDefines.cpp">
-      <Filter>RLSDK</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\AkAudio_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\Core_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\Engine_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\GFxUI_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\IpDrv_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\OnlineSubsystemEOS_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\ProjectX_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\TAGame_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\WinDrv_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
-    <ClCompile Include="RLSDK\SDK_HEADERS\XAudio2_classes.cpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClCompile>
     <ClCompile Include="Functions.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
@@ -132,7 +105,52 @@
     <ClCompile Include="SpeechToText.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
-    <ClCompile Include="Utils.cpp">
+    <ClCompile Include="SDK\GameDefines.cpp">
+      <Filter>SDK</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\AkAudio_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\Core_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\Engine_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\GFxUI_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\IpDrv_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\OnlineSubsystemEOS_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\ProjectX_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\TAGame_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\WinDrv_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="SDK\SDK_HEADERS\XAudio2_classes.cpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Components\Instances.cpp">
+      <Filter>Components\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Components\Components\Utils.cpp">
+      <Filter>Components\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Commands.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
+    <ClCompile Include="CvarChangeCallbacks.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
+    <ClCompile Include="Events.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
   </ItemGroup>
@@ -194,102 +212,6 @@
     <ClInclude Include="GuiBase.h">
       <Filter>Plugin\header</Filter>
     </ClInclude>
-    <ClInclude Include="RLSDK\GameDefines.hpp">
-      <Filter>RLSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SdkHeaders.hpp">
-      <Filter>RLSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\AkAudio_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\AkAudio_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\AkAudio_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Core_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Core_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Core_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Engine_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Engine_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\Engine_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\GFxUI_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\GFxUI_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\GFxUI_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\IpDrv_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\IpDrv_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\IpDrv_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\OnlineSubsystemEOS_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\OnlineSubsystemEOS_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\OnlineSubsystemEOS_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\ProjectX_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\ProjectX_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\ProjectX_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\TAGame_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\TAGame_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\TAGame_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\WinDrv_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\WinDrv_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\WinDrv_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_classes.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_parameters.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
-    <ClInclude Include="RLSDK\SDK_HEADERS\XAudio2_structs.hpp">
-      <Filter>RLSDK\SDK_HEADERS</Filter>
-    </ClInclude>
     <ClInclude Include="Keys.h">
       <Filter>Plugin\header</Filter>
     </ClInclude>
@@ -299,7 +221,121 @@
     <ClInclude Include="TextEffects.h">
       <Filter>Plugin\header</Filter>
     </ClInclude>
-    <ClInclude Include="Utils.hpp">
+    <ClInclude Include="SDK\GameDefines.hpp">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SdkHeaders.hpp">
+      <Filter>SDK</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\AkAudio_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\AkAudio_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\AkAudio_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Core_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Core_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Core_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Engine_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Engine_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\Engine_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\GFxUI_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\GFxUI_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\GFxUI_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\IpDrv_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\IpDrv_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\IpDrv_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\OnlineSubsystemEOS_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\OnlineSubsystemEOS_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\OnlineSubsystemEOS_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\ProjectX_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\ProjectX_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\ProjectX_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\TAGame_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\TAGame_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\TAGame_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\WinDrv_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\WinDrv_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\WinDrv_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\XAudio2_classes.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\XAudio2_parameters.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="SDK\SDK_HEADERS\XAudio2_structs.hpp">
+      <Filter>SDK\SDK_HEADERS</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Includes.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Components\Instances.hpp">
+      <Filter>Components\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Components\Utils.hpp">
+      <Filter>Components\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="CvarNames.hpp">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
+    <ClInclude Include="Events.hpp">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
+    <ClInclude Include="Structs.hpp">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
+    <ClInclude Include="GuiUtils.hpp">
       <Filter>Plugin\header</Filter>
     </ClInclude>
   </ItemGroup>
