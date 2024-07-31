@@ -56,7 +56,7 @@ void CustomQuickchat::onLoad()
 
 
 	// load previous saved cvar values from .cfg file
-	cvarManager->loadCfg(cfgPath.string());		// cfgPath.stem().string() would just evaluate to 'customQuickchat'
+	cvarManager->loadCfg(cfgPath.stem().string());		// cfgPath.stem().string() should just evaluate to 'customQuickchat'
 
 
 	// ===================================== commands =========================================
