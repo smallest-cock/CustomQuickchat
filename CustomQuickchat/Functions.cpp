@@ -65,7 +65,7 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 	auto enabledCvar = cvarManager->getCvar(CvarNames::enabled);
 	if (!enabledCvar || !enabledCvar.getBoolValue()) return;
 
-	EChatChannel chatChannel;
+	EChatChannel chatChannel = EChatChannel::EChatChannel_Match;
 
 	if (chatMode == "lobby")
 	{
@@ -726,8 +726,8 @@ void CustomQuickchat::PreventGameFreeze()
 
 	LOG("Attempted to prevent game freeze on 1st chat...");
 
-	// for popup notifications
-	Instances.SpawnNotification("custom quickchat", "onload dummy notification", 3);
+	// for notifications
+	//Instances.SpawnNotification("custom quickchat", "onload dummy notification", 3);
 }
 
 
@@ -805,12 +805,12 @@ void CustomQuickchat::GetFilePaths()
 	lobbyInfoChatsFilePath = lobbyInfoFolder / "Chats.json";
 	lobbyInfoRanksFilePath = lobbyInfoFolder / "Ranks.json";
 
-	std::string bmPath = gameWrapper->GetBakkesModPath().string();
+	// for .cfg file
+	fs::path bmPath = gameWrapper->GetBakkesModPath();
+	LOG("bmPath: {}", bmPath.string());
 
-	LOG("bmPath: {}", bmPath);
-
-	// .cfg file
-	cfgPath = gameWrapper->GetBakkesModPath() / "cfg" / "customQuickchat.cfg";
+	cfgPath = bmPath / "cfg" / "customQuickchat.cfg";
+	LOG("cfgPath: {}", cfgPath.string());
 }
 
 

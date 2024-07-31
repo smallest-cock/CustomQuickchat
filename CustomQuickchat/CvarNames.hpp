@@ -4,7 +4,7 @@
 
 namespace CvarNames
 {
-	const std::string prefix = "customquickchat_";
+	const std::string prefix = "cqc_";
 
 	// ========================= vars ========================
 

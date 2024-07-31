@@ -128,12 +128,12 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	}
 
 	// search for pythonw.exe once more if it's not already found & stored
-	if (pyInterpreter.empty())
+	if (pyInterpreter.empty() || pyInterpreter.string() == "")
 	{
 		pyInterpreter = findPythonInterpreter();
 	}
 
-	if (pyInterpreter.empty())
+	if (pyInterpreter.empty() || pyInterpreter.string() == "")
 	{
 		STTLog("[ERROR] Couldn't find pythonw.exe interpreter in PATH variable");
 		return;

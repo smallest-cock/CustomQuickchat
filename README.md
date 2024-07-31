@@ -33,7 +33,7 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 ### To toggle chats on/off:
 
-Run/bind `customquickchat_toggle_enabled`
+Run/bind `cqc_toggle_enabled`
 
 ..... or just toggle the checkbox in plugin settings
 
