@@ -6,13 +6,51 @@
 // search for pythonw.exe filepath
 fs::path CustomQuickchat::findPythonInterpreter()
 {
+	bool autoDetectInterpreterPath = cvarManager->getCvar(CvarNames::autoDetectInterpreterPath).getBoolValue();
+
+	fs::path searchResult;
+
+	if (!autoDetectInterpreterPath)
+	{
+		std::string pythonInterpreterPath = cvarManager->getCvar(CvarNames::pythonInterpreterPath).getStringValue();
+		searchResult = fs::path(pythonInterpreterPath);
+
+		if (fs::exists(searchResult))
+		{ 
+			STTLog("Updated python interpreter filepath");
+			return searchResult;
+		}
+		else if (searchResult.empty())
+		{
+			STTLog("[ERROR] Filepath is empty!");
+		}
+		else {
+			STTLog("[ERROR] Filepath doesn't exist!");
+			LOG("[ERROR] Filepath doesnt exist: {}", pythonInterpreterPath);
+		}
+	}
+
+	searchResult = findInterpreterUsingSearchPathW(L"pythonw.exe");		// 1st option
+
+	if (!fs::exists(searchResult))
+	{
+		// find interpreter by manually checking each directory in PATH
+		searchResult = manuallySearchPathDirectories("pythonw.exe");	// 2nd option (fallback)
+	}
+
+	return searchResult;
+}
+
+
+fs::path CustomQuickchat::findInterpreterUsingSearchPathW(const wchar_t* fileName)
+{
 	wchar_t buffer[MAX_PATH];
-	DWORD result = SearchPath(NULL, L"pythonw.exe", NULL, MAX_PATH, buffer, NULL);
+	DWORD result = SearchPath(NULL, fileName, NULL, MAX_PATH, buffer, NULL);
 
 	if (result > 0 && result < MAX_PATH)
 	{
 		fs::path foundPath = fs::path(buffer);
-		LOG("found filepath to pythonw.exe: {}", foundPath.string());
+		LOG("found pythonw.exe filepath using SearchPathW: {}", foundPath.string());
 		return fs::path(buffer);
 	}
 	else {
@@ -21,8 +59,52 @@ fs::path CustomQuickchat::findPythonInterpreter()
 }
 
 
+fs::path CustomQuickchat::manuallySearchPathDirectories(const std::string& fileName)
+{
+	std::vector<std::string> paths = getPathsFromEnvironmentVariable();
+
+	for (const auto& path : paths)
+	{
+		std::filesystem::path fullPath = path;
+		fullPath /= fileName;
+
+		if (fs::exists(fullPath))
+		{
+			return fullPath;
+		}
+	}
+
+	return fs::path();	// return empty path (same as "")
+}
+
+
+std::vector<std::string> CustomQuickchat::getPathsFromEnvironmentVariable()
+{
+	std::vector<std::string> paths;
+	char* pathEnv = nullptr;
+	size_t pathLen = 0;
+	_dupenv_s(&pathEnv, &pathLen, "PATH");
+
+	if (pathEnv) {
+		std::string pathStr(pathEnv);
+		size_t pos = 0;
+		std::string delimiter = ";";
+		while ((pos = pathStr.find(delimiter)) != std::string::npos) {
+			paths.push_back(pathStr.substr(0, pos));
+			pathStr.erase(0, pos + delimiter.length());
+		}
+		paths.push_back(pathStr); // Add the last path segment
+		free(pathEnv);
+	}
+
+	return paths;
+}
+
+
 void CustomQuickchat::STTLog(const std::string& message)
 {
+	if (!onLoadComplete) return;	// to prevent crash on startup (bc threaded spawnnotification crash bs)
+
 	auto enableSTTNotificationsCvar = cvarManager->getCvar(CvarNames::enableSTTNotifications);
 	if (!enableSTTNotificationsCvar) return;
 
@@ -99,7 +181,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 				}
 			}
 
-		}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
+			}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
 	}
 
 
@@ -113,7 +195,7 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 			ActiveSTTAttemptID = "420_blz_it_lmao";
 		}
 
-	}, processSpeechTimeout);
+		}, processSpeechTimeout);
 
 }
 
@@ -135,7 +217,7 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 	if (pyInterpreter.empty() || pyInterpreter.string() == "")
 	{
-		STTLog("[ERROR] Couldn't find pythonw.exe interpreter in PATH variable");
+		STTLog("[ERROR] Couldn't find pythonw.exe in PATH directories");
 		return;
 	}
 
@@ -253,7 +335,7 @@ void CustomQuickchat::UpdateMicCalibration(float timeOut)
 			micEnergyThreshold = jsonData["micNoiseCalibration"];	// update value of micEnergyThreshold
 		}
 
-	}, timeOut);
+		}, timeOut);
 }
 
 

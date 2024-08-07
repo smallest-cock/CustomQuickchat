@@ -335,7 +335,7 @@
     <ClInclude Include="Structs.hpp">
       <Filter>Plugin\header</Filter>
     </ClInclude>
-    <ClInclude Include="GuiUtils.hpp">
+    <ClInclude Include="GuiTools.hpp">
       <Filter>Plugin\header</Filter>
     </ClInclude>
   </ItemGroup>

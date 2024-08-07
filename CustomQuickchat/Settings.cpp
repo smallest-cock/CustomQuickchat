@@ -1,17 +1,18 @@
 #include "pch.h"
 #include "CustomQuickchat.h"
-#include "GuiUtils.hpp"
+#include "GuiTools.hpp"
 
 
 void CustomQuickchat::RenderSettings()
 {
-	auto enabledCvar =						cvarManager->getCvar(CvarNames::enabled);
-	auto enableSTTNotificationsCvar =		cvarManager->getCvar(CvarNames::enableSTTNotifications);
-	auto sequenceTimeWindowCvar =			cvarManager->getCvar(CvarNames::sequenceTimeWindow);
-	auto speechProcessingTimeoutCvar =		cvarManager->getCvar(CvarNames::speechProcessingTimeout);
-	auto beginSpeechTimeoutCvar =			cvarManager->getCvar(CvarNames::beginSpeechTimeout);
-	auto notificationDurationCvar =			cvarManager->getCvar(CvarNames::notificationDuration);
-	if (!enabledCvar || !enableSTTNotificationsCvar || !sequenceTimeWindowCvar || !speechProcessingTimeoutCvar || !beginSpeechTimeoutCvar || !notificationDurationCvar) return;
+	auto enabled_cvar =							cvarManager->getCvar(CvarNames::enabled);
+	auto enableSTTNotifications_cvar =			cvarManager->getCvar(CvarNames::enableSTTNotifications);
+	auto sequenceTimeWindow_cvar =				cvarManager->getCvar(CvarNames::sequenceTimeWindow);
+	auto speechProcessingTimeout_cvar =			cvarManager->getCvar(CvarNames::speechProcessingTimeout);
+	auto beginSpeechTimeout_cvar =				cvarManager->getCvar(CvarNames::beginSpeechTimeout);
+	auto notificationDuration_cvar =			cvarManager->getCvar(CvarNames::notificationDuration);
+	auto autoDetectInterpreterPath_cvar =		cvarManager->getCvar(CvarNames::autoDetectInterpreterPath);
+	auto pythonInterpreterPath_cvar =			cvarManager->getCvar(CvarNames::pythonInterpreterPath);
 
 
 	// ---------------- calculate ImGui::BeginChild sizes ------------------
@@ -33,7 +34,7 @@ void CustomQuickchat::RenderSettings()
 	{
 		GUI::SettingsHeader("Header##cqc", headerSize, false);
 
-		bool chatsOn = enabledCvar.getBoolValue();
+		bool chatsOn = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &chatsOn))
 		{
 			cvarManager->executeCommand(CvarNames::toggleEnabled);
@@ -41,12 +42,47 @@ void CustomQuickchat::RenderSettings()
 
 		if (chatsOn)
 		{
-			GUI::Spacing(8);
+			GUI::Spacing(4);
 
 			// --------------------------- speech-to-text ------------------------------
 
 			if (ImGui::CollapsingHeader("speech-to-text settings", ImGuiTreeNodeFlags_None))
 			{
+				GUI::Spacing(2);
+				
+				bool autoDetectInterpreterPath = autoDetectInterpreterPath_cvar.getBoolValue();
+				if (ImGui::Checkbox("Auto detect python interpreter", &autoDetectInterpreterPath))
+				{
+					autoDetectInterpreterPath_cvar.setValue(autoDetectInterpreterPath);
+				}
+				if (ImGui::IsItemHovered())
+				{
+					ImGui::SetTooltip("Uncheck and manually enter the filepath to pythonw.exe if you get an error about pythonw.exe not found");
+				}
+
+				if (!autoDetectInterpreterPath)
+				{
+					GUI::Spacing(2);
+
+					// filepath to pythonw.exe
+					std::string pythonInterpreterPath = pythonInterpreterPath_cvar.getStringValue();
+					if (ImGui::InputText("pythonw.exe filepath", &pythonInterpreterPath))
+					{
+						pythonInterpreterPath_cvar.setValue(pythonInterpreterPath);
+					}
+
+					ImGui::SameLine();
+
+					if (ImGui::Button("Apply"))
+					{
+						gameWrapper->Execute([this](GameWrapper* gw)
+							{
+								pyInterpreter = findPythonInterpreter();
+							});
+					}
+
+				}
+
 				GUI::Spacing(4);
 
 				// open bindings window button
@@ -72,23 +108,23 @@ void CustomQuickchat::RenderSettings()
 				std::string thresholdStr = "Energy threshold: " + micThresholdStr;
 				ImGui::Text(thresholdStr.c_str());
 
-				GUI::Spacing(8);
+				GUI::Spacing(4);
 
 				// chat notifications
-				bool speechToTextNotificationsOn = enableSTTNotificationsCvar.getBoolValue();
+				bool speechToTextNotificationsOn = enableSTTNotifications_cvar.getBoolValue();
 				if (ImGui::Checkbox("Enable speech-to-text notifications", &speechToTextNotificationsOn))
 				{
-					enableSTTNotificationsCvar.setValue(speechToTextNotificationsOn);
+					enableSTTNotifications_cvar.setValue(speechToTextNotificationsOn);
 				}
 
 				if (speechToTextNotificationsOn)
 				{
-					GUI::Spacing(4);
+					GUI::Spacing(2);
 
 					// popup notification duration
-					float notificationDuration = notificationDurationCvar.getFloatValue();
+					float notificationDuration = notificationDuration_cvar.getFloatValue();
 					ImGui::SliderFloat("duration of notifications", &notificationDuration, 1.5f, 10.0f, "%.1f seconds");
-					notificationDurationCvar.setValue(notificationDuration);
+					notificationDuration_cvar.setValue(notificationDuration);
 
 					GUI::Spacing(2);
 
@@ -103,12 +139,12 @@ void CustomQuickchat::RenderSettings()
 					}
 				}
 
-				GUI::Spacing(8);
+				GUI::Spacing(4);
 
 				// start speech timeout
-				float waitForSpeechTimeout = beginSpeechTimeoutCvar.getFloatValue();
+				float waitForSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue();
 				ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds");
-				beginSpeechTimeoutCvar.setValue(waitForSpeechTimeout);
+				beginSpeechTimeout_cvar.setValue(waitForSpeechTimeout);
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::SetTooltip("max time to wait for start of speech");
@@ -117,9 +153,9 @@ void CustomQuickchat::RenderSettings()
 				GUI::Spacing(2);
 
 				// processing timeout
-				int processSpeechTimeout = speechProcessingTimeoutCvar.getFloatValue();
+				int processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
 				ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 20.0f, "%.0f seconds");
-				speechProcessingTimeoutCvar.setValue(processSpeechTimeout);
+				speechProcessingTimeout_cvar.setValue(processSpeechTimeout);
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::SetTooltip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");

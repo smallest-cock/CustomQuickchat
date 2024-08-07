@@ -22,9 +22,6 @@ void CustomQuickchat::onLoad()
 	PreventGameFreeze();	// hacky solution, but seems to work
 
 	InitKeyStates();
-	
-	// find & store filepath to pythonw.exe
-	pyInterpreter = findPythonInterpreter();
 
 	// set global sequenceStoredButtonPresses to default value
 	sequenceStoredButtonPresses["global"].buttonName = "poopfart";
@@ -40,8 +37,14 @@ void CustomQuickchat::onLoad()
 	// ====================================== cvars ===========================================
 
 	// bools
-	auto enabledCvar = cvarManager->registerCvar(CvarNames::enabled, "1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
-	auto enableSTTNotificationsCvar = cvarManager->registerCvar(CvarNames::enableSTTNotifications, "1", "Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
+	auto enabled_cvar = cvarManager->registerCvar(CvarNames::enabled,
+		"1", "Toggle custom quick chats on or off", true, true, 0, true, 1);
+	
+	auto enableSTTNotifications_cvar = cvarManager->registerCvar(CvarNames::enableSTTNotifications,
+		"1", "Toggle speech-to-text notifications on or off", true, true, 0, true, 1);
+	
+	auto autoDetectInterpreterPath_cvar = cvarManager->registerCvar(CvarNames::autoDetectInterpreterPath,
+		"1", "Automatically detect python interpreter filepath", true, true, 0, true, 1);
 
 	// numbers
 	cvarManager->registerCvar(CvarNames::sequenceTimeWindow,		"1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
@@ -49,10 +52,19 @@ void CustomQuickchat::onLoad()
 	cvarManager->registerCvar(CvarNames::notificationDuration,		"3", "how long a popup notification will stay on the screen", true, true, 1.5, true, 10);
 	cvarManager->registerCvar(CvarNames::speechProcessingTimeout,	"10", "timeout for processing speech", true, true, 3, true, 500);
 
+	// strings
+	cvarManager->registerCvar(CvarNames::pythonInterpreterPath, "", "filepath to python interpreter");
+
 
 	// cvar change callbacks
-	enabledCvar.addOnValueChanged(std::bind(&CustomQuickchat::enabled_Changed, this, std::placeholders::_1, std::placeholders::_2));
-	enableSTTNotificationsCvar.addOnValueChanged(std::bind(&CustomQuickchat::enableSTTNotifications_Changed, this, std::placeholders::_1, std::placeholders::_2));
+	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::enabled_changed,
+		this, std::placeholders::_1, std::placeholders::_2));
+	
+	enableSTTNotifications_cvar.addOnValueChanged(std::bind(&CustomQuickchat::enableSTTNotifications_changed,
+		this, std::placeholders::_1, std::placeholders::_2));
+	
+	autoDetectInterpreterPath_cvar.addOnValueChanged(std::bind(&CustomQuickchat::autoDetectInterpreterPath_changed,
+		this, std::placeholders::_1, std::placeholders::_2));
 
 
 	// load previous saved cvar values from .cfg file
@@ -61,8 +73,14 @@ void CustomQuickchat::onLoad()
 
 	// ===================================== commands =========================================
 
-	cvarManager->registerNotifier(CvarNames::toggleEnabled,		std::bind(&CustomQuickchat::toggleEnabled, this, std::placeholders::_1), "", PERMISSION_ALL);
-	cvarManager->registerNotifier(CvarNames::test,				std::bind(&CustomQuickchat::test, this, std::placeholders::_1), "", PERMISSION_ALL);
+	cvarManager->registerNotifier(CvarNames::toggleEnabled,
+		std::bind(&CustomQuickchat::toggleEnabled_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
+	
+	cvarManager->registerNotifier(CvarNames::showPathDirectories,
+		std::bind(&CustomQuickchat::showPathDirectories_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
+
+	cvarManager->registerNotifier(CvarNames::test,
+		std::bind(&CustomQuickchat::test_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
 	
 
 	// ======================================= hooks ==========================================
@@ -73,8 +91,13 @@ void CustomQuickchat::onLoad()
 
 	// ========================================================================================
 
+	
+	// find & store filepath to pythonw.exe
+	pyInterpreter = findPythonInterpreter();
+			
 
 
+	onLoadComplete = true;
 	LOG("CustomQuickchat loaded! :)");
 }
 
@@ -87,5 +110,5 @@ void CustomQuickchat::onUnload()
 	// save all CVar values to .cfg file
 	cvarManager->backupCfg(cfgPath.string());
 
-	Files::FilterLinesInFile(cfgPath, "customQuickchat_");
+	Files::FilterLinesInFile(cfgPath, CvarNames::prefix);
 }

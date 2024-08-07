@@ -3,7 +3,7 @@
 
 
 
-void CustomQuickchat::enabled_Changed(std::string cvarName, CVarWrapper updatedCvar)
+void CustomQuickchat::enabled_changed(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool enabled = updatedCvar.getBoolValue();
 
@@ -18,7 +18,18 @@ void CustomQuickchat::enabled_Changed(std::string cvarName, CVarWrapper updatedC
 }
 
 
-void CustomQuickchat::enableSTTNotifications_Changed(std::string cvarName, CVarWrapper updatedCvar)
+void CustomQuickchat::autoDetectInterpreterPath_changed(std::string cvarName, CVarWrapper updatedCvar)
+{
+	//bool autoDetectInterpreterPath = updatedCvar.getBoolValue();
+
+	gameWrapper->Execute([this](GameWrapper* gw)
+		{
+			pyInterpreter = findPythonInterpreter();
+		});
+}
+
+
+void CustomQuickchat::enableSTTNotifications_changed(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool enableSTTNotifications = updatedCvar.getBoolValue();
 

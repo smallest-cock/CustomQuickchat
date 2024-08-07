@@ -30,12 +30,17 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 2. Click `Save` when you're finished
      
 3. Flex your sick ass chats 😎
+   
 
-### To toggle chats on/off:
+### Toggle chats on/off:
 
 Run/bind `cqc_toggle_enabled`
 
 ..... or just toggle the checkbox in plugin settings
+
+### Speech-To-Text troubleshooting:
+
+Run `cqc_show_path_directories` to list the directories in your PATH variable
 
 ## Credits
 

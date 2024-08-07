@@ -11,6 +11,7 @@ namespace CvarNames
 	// bools
 	const std::string enabled = prefix +							"enabled";
 	const std::string enableSTTNotifications = prefix +				"enable_stt_notifications";
+	const std::string autoDetectInterpreterPath = prefix +			"auto_detect_interpreter_path";
 
 	// numbers
 	const std::string sequenceTimeWindow = prefix +					"button_sequence_time_window";
@@ -18,9 +19,13 @@ namespace CvarNames
 	const std::string notificationDuration = prefix +				"notification_duration";
 	const std::string speechProcessingTimeout = prefix +			"speech_processing_timeout";
 
+	// strings
+	const std::string pythonInterpreterPath = prefix +				"python_interpreter_path";
+
 
 	// ======================= commands ======================
 
 	const std::string toggleEnabled = prefix +						"toggle_enabled";
+	const std::string showPathDirectories = prefix +				"show_path_directories";
 	const std::string test = prefix +								"test";
 }	

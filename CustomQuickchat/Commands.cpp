@@ -3,7 +3,7 @@
 
 
 
-void CustomQuickchat::toggleEnabled(std::vector<std::string> args)
+void CustomQuickchat::toggleEnabled_cmd(std::vector<std::string> args)
 {
 	CVarWrapper enabledCvar = cvarManager->getCvar(CvarNames::enabled);
 	if (!enabledCvar) return;
@@ -13,11 +13,19 @@ void CustomQuickchat::toggleEnabled(std::vector<std::string> args)
 }
 
 
-void CustomQuickchat::test(std::vector<std::string> args)
+void CustomQuickchat::showPathDirectories_cmd(std::vector<std::string> args)
+{
+	auto paths = getPathsFromEnvironmentVariable();
+
+	LOG("==================== PATH directories ====================");
+	for (const auto& path : paths)
+	{
+		LOG(path);
+	}
+}
+
+
+void CustomQuickchat::test_cmd(std::vector<std::string> args)
 {
 	// ...
-
-	PreventGameFreeze();
-
-	//Instances.SpawnNotification("test", "hope this doesn't crash", 3);
 }

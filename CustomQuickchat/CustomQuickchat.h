@@ -29,6 +29,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onLoad() override;
 	void onUnload() override;
 
+	bool onLoadComplete = false;
+
 	void SendChat(const std::string& chat, const std::string& chatMode);
 
 	// speech-to-text
@@ -97,6 +99,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
 	fs::path findPythonInterpreter();
+	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
+	fs::path manuallySearchPathDirectories(const std::string& fileName);
+	std::vector<std::string> getPathsFromEnvironmentVariable();
 
 	// CustomQuickchat filepaths
 	fs::path customQuickchatFolder;
@@ -114,12 +119,14 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
 	// commands
-	void toggleEnabled(std::vector<std::string> args);
-	void test(std::vector<std::string> args);
+	void toggleEnabled_cmd(std::vector<std::string> args);
+	void showPathDirectories_cmd(std::vector<std::string> args);
+	void test_cmd(std::vector<std::string> args);
 
 	// cvar change callbacks
-	void enabled_Changed(std::string cvarName, CVarWrapper updatedCvar);
-	void enableSTTNotifications_Changed(std::string cvarName, CVarWrapper updatedCvar);
+	void enabled_changed(std::string cvarName, CVarWrapper updatedCvar);
+	void autoDetectInterpreterPath_changed(std::string cvarName, CVarWrapper updatedCvar);
+	void enableSTTNotifications_changed(std::string cvarName, CVarWrapper updatedCvar);
 
 	// hook callbacks
 	void Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName);

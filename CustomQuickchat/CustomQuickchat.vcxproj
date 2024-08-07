@@ -136,7 +136,7 @@
     <ClInclude Include="Components\Includes.hpp" />
     <ClInclude Include="CvarNames.hpp" />
     <ClInclude Include="Events.hpp" />
-    <ClInclude Include="GuiUtils.hpp" />
+    <ClInclude Include="GuiTools.hpp" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imguivariouscontrols.h" />
