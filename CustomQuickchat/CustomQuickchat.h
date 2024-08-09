@@ -20,6 +20,9 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
 
+const double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.05;
+
+
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	,public SettingsWindowBase
 	,public PluginWindowBase
@@ -118,18 +121,25 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	fs::path lobbyInfoRanksFilePath;
 
 
+	std::chrono::steady_clock::time_point lastCustomChatSent;
+
 	// commands
-	void toggleEnabled_cmd(std::vector<std::string> args);
-	void showPathDirectories_cmd(std::vector<std::string> args);
-	void test_cmd(std::vector<std::string> args);
+	void cmd_toggleEnabled(std::vector<std::string> args);
+	void cmd_showPathDirectories(std::vector<std::string> args);
+	void cmd_listBindings(std::vector<std::string> args);
+	void cmd_test(std::vector<std::string> args);
 
 	// cvar change callbacks
-	void enabled_changed(std::string cvarName, CVarWrapper updatedCvar);
-	void autoDetectInterpreterPath_changed(std::string cvarName, CVarWrapper updatedCvar);
-	void enableSTTNotifications_changed(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_enabled(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
 
 	// hook callbacks
 	void Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName);
+	void Event_ChatPresetPressed(ActorWrapper caller, void* params, std::string eventName);
+	void Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName);
 
 public:
 	// GUI

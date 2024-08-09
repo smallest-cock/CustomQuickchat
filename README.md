@@ -34,13 +34,15 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 ### Toggle chats on/off:
 
-Run/bind `cqc_toggle_enabled`
-
-..... or just toggle the checkbox in plugin settings
+Run/bind `cqc_toggle_enabled` ..... or just toggle the checkbox in settings
 
 ### Speech-To-Text troubleshooting:
 
 Run `cqc_show_path_directories` to list the directories in your PATH variable
+
+### List all bindings:
+
+Run `cqc_list_bindings` to list all your current RL bindings
 
 ## Credits
 

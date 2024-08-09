@@ -3,7 +3,7 @@
 
 
 
-void CustomQuickchat::toggleEnabled_cmd(std::vector<std::string> args)
+void CustomQuickchat::cmd_toggleEnabled(std::vector<std::string> args)
 {
 	CVarWrapper enabledCvar = cvarManager->getCvar(CvarNames::enabled);
 	if (!enabledCvar) return;
@@ -13,7 +13,7 @@ void CustomQuickchat::toggleEnabled_cmd(std::vector<std::string> args)
 }
 
 
-void CustomQuickchat::showPathDirectories_cmd(std::vector<std::string> args)
+void CustomQuickchat::cmd_showPathDirectories(std::vector<std::string> args)
 {
 	auto paths = getPathsFromEnvironmentVariable();
 
@@ -25,7 +25,33 @@ void CustomQuickchat::showPathDirectories_cmd(std::vector<std::string> args)
 }
 
 
-void CustomQuickchat::test_cmd(std::vector<std::string> args)
+void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
+{
+	// list button bindings
+	auto controls = Instances.GetInstanceOf<UGFxData_Controls_TA>();
+	if (!controls) {
+		LOG("UGFxData_Controls_TA* is null!");
+		return;
+	}
+
+	auto gpBindings = controls->GamepadBindings;
+	auto pcBindings = controls->PCBindings;
+
+	LOG("================ PC bindings =================");
+	for (const auto& binding : pcBindings)
+	{
+		LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
+	}
+
+	LOG("============== Gamepad bindings ==============");
+	for (const auto& binding : gpBindings)
+	{
+		LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
+	}
+}
+
+
+void CustomQuickchat::cmd_test(std::vector<std::string> args)
 {
 	// ...
 }

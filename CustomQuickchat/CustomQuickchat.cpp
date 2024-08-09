@@ -46,6 +46,12 @@ void CustomQuickchat::onLoad()
 	auto autoDetectInterpreterPath_cvar = cvarManager->registerCvar(CvarNames::autoDetectInterpreterPath,
 		"1", "Automatically detect python interpreter filepath", true, true, 0, true, 1);
 
+	auto overrideDefaultQuickchats_cvar = cvarManager->registerCvar(CvarNames::overrideDefaultQuickchats,
+		"1", "override default quickchat with the custom one if they share the same binding", true, true, 0, true, 1);
+
+	auto blockDefaultQuickchats_cvar = cvarManager->registerCvar(CvarNames::blockDefaultQuickchats,
+		"0", "block default quickchats (without unbinding them)", true, true, 0, true, 1);
+
 	// numbers
 	cvarManager->registerCvar(CvarNames::sequenceTimeWindow,		"1.1", "Time window given for button sequence macros", true, true, 0, true, 10);
 	cvarManager->registerCvar(CvarNames::beginSpeechTimeout,		"3", "timeout for starting speech", true, true, 1.5, true, 10);
@@ -57,13 +63,19 @@ void CustomQuickchat::onLoad()
 
 
 	// cvar change callbacks
-	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::enabled_changed,
+	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enabled,
 		this, std::placeholders::_1, std::placeholders::_2));
 	
-	enableSTTNotifications_cvar.addOnValueChanged(std::bind(&CustomQuickchat::enableSTTNotifications_changed,
+	enableSTTNotifications_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enableSTTNotifications,
 		this, std::placeholders::_1, std::placeholders::_2));
 	
-	autoDetectInterpreterPath_cvar.addOnValueChanged(std::bind(&CustomQuickchat::autoDetectInterpreterPath_changed,
+	autoDetectInterpreterPath_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_autoDetectInterpreterPath,
+		this, std::placeholders::_1, std::placeholders::_2));
+
+	overrideDefaultQuickchats_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_overrideDefaultQuickchats,
+		this, std::placeholders::_1, std::placeholders::_2));
+
+	blockDefaultQuickchats_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_blockDefaultQuickchats,
 		this, std::placeholders::_1, std::placeholders::_2));
 
 
@@ -74,13 +86,16 @@ void CustomQuickchat::onLoad()
 	// ===================================== commands =========================================
 
 	cvarManager->registerNotifier(CvarNames::toggleEnabled,
-		std::bind(&CustomQuickchat::toggleEnabled_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
+		std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1), "", PERMISSION_ALL);
 	
 	cvarManager->registerNotifier(CvarNames::showPathDirectories,
-		std::bind(&CustomQuickchat::showPathDirectories_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
+		std::bind(&CustomQuickchat::cmd_showPathDirectories, this, std::placeholders::_1), "", PERMISSION_ALL);
+
+	cvarManager->registerNotifier(CvarNames::listBindings,
+		std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1), "", PERMISSION_ALL);
 
 	cvarManager->registerNotifier(CvarNames::test,
-		std::bind(&CustomQuickchat::test_cmd, this, std::placeholders::_1), "", PERMISSION_ALL);
+		std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1), "", PERMISSION_ALL);
 	
 
 	// ======================================= hooks ==========================================
@@ -88,6 +103,12 @@ void CustomQuickchat::onLoad()
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::KeyPressed,
 		std::bind(&CustomQuickchat::Event_KeyPressed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
+	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::ChatPresetPressed,
+		std::bind(&CustomQuickchat::Event_ChatPresetPressed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::ApplyChatSpamFilter,
+		std::bind(&CustomQuickchat::Event_ApplyChatSpamFilter, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+	
 
 	// ========================================================================================
 

@@ -13,6 +13,8 @@ void CustomQuickchat::RenderSettings()
 	auto notificationDuration_cvar =			cvarManager->getCvar(CvarNames::notificationDuration);
 	auto autoDetectInterpreterPath_cvar =		cvarManager->getCvar(CvarNames::autoDetectInterpreterPath);
 	auto pythonInterpreterPath_cvar =			cvarManager->getCvar(CvarNames::pythonInterpreterPath);
+	auto overrideDefaultQuickchats_cvar =		cvarManager->getCvar(CvarNames::overrideDefaultQuickchats);
+	auto blockDefaultQuickchats_cvar =			cvarManager->getCvar(CvarNames::blockDefaultQuickchats);
 
 
 	// ---------------- calculate ImGui::BeginChild sizes ------------------
@@ -42,6 +44,30 @@ void CustomQuickchat::RenderSettings()
 
 		if (chatsOn)
 		{
+			GUI::Spacing(4);
+		
+			bool overrideDefaultQuickchats = overrideDefaultQuickchats_cvar.getBoolValue();
+			if (ImGui::Checkbox("Override default quickchats", &overrideDefaultQuickchats))
+			{
+				overrideDefaultQuickchats_cvar.setValue(overrideDefaultQuickchats);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Block default quickchat if it conflicts with a custom chat (prevents both chats from being sent)");
+			}
+
+			GUI::Spacing(2);
+
+			bool blockDefaultQuickchats = blockDefaultQuickchats_cvar.getBoolValue();
+			if (ImGui::Checkbox("Block all default quickchats", &blockDefaultQuickchats))
+			{
+				blockDefaultQuickchats_cvar.setValue(blockDefaultQuickchats);
+			}
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("Block all default quickchats... without having to unbind them :)");
+			}
+			
 			GUI::Spacing(4);
 
 			// --------------------------- speech-to-text ------------------------------

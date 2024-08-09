@@ -3,13 +3,15 @@
 #include <string>
 #include <vector>
 
+
+
 enum InputEvent
 {
-	Pressed = 0,
-	Released = 1,
-	Repeat = 2,
-	DoubleClick = 3,
-	Axis = 4
+	Pressed			= 0,
+	Released		= 1,
+	Repeat			= 2,
+	DoubleClick		= 3,
+	Axis			= 4
 };
 
 

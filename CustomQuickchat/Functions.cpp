@@ -132,6 +132,7 @@ bool CustomQuickchat::Sequence(const std::string& button1, const std::string& bu
 				if (button2Pressed && correct1stButtonPressed && button2PressedWithinTimeWindow)
 				{
 					ResetFirstButtonPressed();
+					lastCustomChatSent = functionCallTime;
 					return true;
 				}
 			}
@@ -149,6 +150,7 @@ bool CustomQuickchat::Combine(const std::vector<std::string>& buttons)
 	}
 
 	ResetFirstButtonPressed();
+	lastCustomChatSent = std::chrono::steady_clock::now();
 	return true;
 }
 
