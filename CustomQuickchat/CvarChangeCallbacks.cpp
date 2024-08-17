@@ -46,7 +46,7 @@ void CustomQuickchat::changed_overrideDefaultQuickchats(std::string cvarName, CV
 	// there can be only one...
 	if (overrideDefaultQuickchats)
 	{
-		auto blockDefaultQuickchats_cvar = cvarManager->getCvar(CvarNames::blockDefaultQuickchats);
+		auto blockDefaultQuickchats_cvar = GetCvar(Cvars::blockDefaultQuickchats);
 		if (!blockDefaultQuickchats_cvar) return;
 
 		blockDefaultQuickchats_cvar.setValue(false);
@@ -61,7 +61,7 @@ void CustomQuickchat::changed_blockDefaultQuickchats(std::string cvarName, CVarW
 	// there can be only one...
 	if (blockDefaultQuickchats)
 	{
-		auto overrideDefaultQuickchats_cvar = cvarManager->getCvar(CvarNames::overrideDefaultQuickchats);
+		auto overrideDefaultQuickchats_cvar = GetCvar(Cvars::overrideDefaultQuickchats);
 		if (!overrideDefaultQuickchats_cvar) return;
 
 		overrideDefaultQuickchats_cvar.setValue(false);

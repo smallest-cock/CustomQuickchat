@@ -5,16 +5,16 @@
 
 void CustomQuickchat::RenderSettings()
 {
-	auto enabled_cvar =							cvarManager->getCvar(CvarNames::enabled);
-	auto enableSTTNotifications_cvar =			cvarManager->getCvar(CvarNames::enableSTTNotifications);
-	auto sequenceTimeWindow_cvar =				cvarManager->getCvar(CvarNames::sequenceTimeWindow);
-	auto speechProcessingTimeout_cvar =			cvarManager->getCvar(CvarNames::speechProcessingTimeout);
-	auto beginSpeechTimeout_cvar =				cvarManager->getCvar(CvarNames::beginSpeechTimeout);
-	auto notificationDuration_cvar =			cvarManager->getCvar(CvarNames::notificationDuration);
-	auto autoDetectInterpreterPath_cvar =		cvarManager->getCvar(CvarNames::autoDetectInterpreterPath);
-	auto pythonInterpreterPath_cvar =			cvarManager->getCvar(CvarNames::pythonInterpreterPath);
-	auto overrideDefaultQuickchats_cvar =		cvarManager->getCvar(CvarNames::overrideDefaultQuickchats);
-	auto blockDefaultQuickchats_cvar =			cvarManager->getCvar(CvarNames::blockDefaultQuickchats);
+	auto enabled_cvar =							GetCvar(Cvars::enabled);
+	auto enableSTTNotifications_cvar =			GetCvar(Cvars::enableSTTNotifications);
+	auto sequenceTimeWindow_cvar =				GetCvar(Cvars::sequenceTimeWindow);
+	auto speechProcessingTimeout_cvar =			GetCvar(Cvars::speechProcessingTimeout);
+	auto beginSpeechTimeout_cvar =				GetCvar(Cvars::beginSpeechTimeout);
+	auto notificationDuration_cvar =			GetCvar(Cvars::notificationDuration);
+	auto autoDetectInterpreterPath_cvar =		GetCvar(Cvars::autoDetectInterpreterPath);
+	auto pythonInterpreterPath_cvar =			GetCvar(Cvars::pythonInterpreterPath);
+	auto overrideDefaultQuickchats_cvar =		GetCvar(Cvars::overrideDefaultQuickchats);
+	auto blockDefaultQuickchats_cvar =			GetCvar(Cvars::blockDefaultQuickchats);
 
 
 	// ---------------- calculate ImGui::BeginChild sizes ------------------
@@ -34,12 +34,12 @@ void CustomQuickchat::RenderSettings()
 
 	if (ImGui::BeginChild("Content#cqc", contentSize))
 	{
-		GUI::SettingsHeader("Header##cqc", headerSize, false);
+		GUI::SettingsHeader("Header##cqc", pretty_plugin_version, headerSize, false);
 
 		bool chatsOn = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &chatsOn))
 		{
-			cvarManager->executeCommand(CvarNames::toggleEnabled);
+			cvarManager->executeCommand(Cvars::toggleEnabled.name);
 		}
 
 		if (chatsOn)

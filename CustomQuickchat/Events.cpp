@@ -58,9 +58,9 @@ void CustomQuickchat::Event_ChatPresetPressed(ActorWrapper caller, void* params,
 	if (!Params) return;
 
 	// get cvars
-	auto enabled_cvar =						cvarManager->getCvar(CvarNames::enabled);
-	auto overrideDefaultQuickchats_cvar =	cvarManager->getCvar(CvarNames::overrideDefaultQuickchats);
-	auto blockDefaultQuickchats_cvar =		cvarManager->getCvar(CvarNames::blockDefaultQuickchats);
+	auto enabled_cvar =						GetCvar(Cvars::enabled);
+	auto overrideDefaultQuickchats_cvar =	GetCvar(Cvars::overrideDefaultQuickchats);
+	auto blockDefaultQuickchats_cvar =		GetCvar(Cvars::blockDefaultQuickchats);
 
 	if (!enabled_cvar || !overrideDefaultQuickchats_cvar || !blockDefaultQuickchats_cvar) return;	// prolly unnecessary, idk
 	if (!enabled_cvar.getBoolValue()) return;

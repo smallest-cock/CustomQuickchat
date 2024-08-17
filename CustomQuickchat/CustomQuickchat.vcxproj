@@ -115,6 +115,7 @@
     </ClCompile>
     <ClCompile Include="CustomQuickchat.cpp" />
     <ClCompile Include="GuiBase.cpp" />
+    <ClCompile Include="RegisterCvars.cpp" />
     <ClCompile Include="SDK\GameDefines.cpp" />
     <ClCompile Include="SDK\SDK_HEADERS\AkAudio_classes.cpp" />
     <ClCompile Include="SDK\SDK_HEADERS\Core_classes.cpp" />
@@ -134,7 +135,7 @@
     <ClInclude Include="Components\Components\Instances.hpp" />
     <ClInclude Include="Components\Components\Utils.hpp" />
     <ClInclude Include="Components\Includes.hpp" />
-    <ClInclude Include="CvarNames.hpp" />
+    <ClInclude Include="Cvars.hpp" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="GuiTools.hpp" />
     <ClInclude Include="imgui\imconfig.h" />

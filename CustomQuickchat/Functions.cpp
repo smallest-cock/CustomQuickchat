@@ -62,7 +62,7 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 	if (chat == "") return;
 
 	// only send chat if custom quickchats are turned on
-	auto enabledCvar = cvarManager->getCvar(CvarNames::enabled);
+	auto enabledCvar = GetCvar(Cvars::enabled);
 	if (!enabledCvar || !enabledCvar.getBoolValue()) return;
 
 	EChatChannel chatChannel = EChatChannel::EChatChannel_Match;
@@ -104,7 +104,7 @@ bool CustomQuickchat::Sequence(const std::string& button1, const std::string& bu
 		}
 		else {
 			// convert float timeWindow cvar into something addable to a chrono time_point
-			auto sequenceTimeWindowCvar = cvarManager->getCvar(CvarNames::sequenceTimeWindow);
+			auto sequenceTimeWindowCvar = GetCvar(Cvars::sequenceTimeWindow);
 			if (!sequenceTimeWindowCvar) return false;
 
 			double timeWindowRaw = sequenceTimeWindowCvar.getFloatValue();
@@ -726,7 +726,7 @@ void CustomQuickchat::PreventGameFreeze()
 	// for sending chats
 	Instances.SendChat("custom quickchats activated", EChatChannel::EChatChannel_Match);
 
-	LOG("Attempted to prevent game freeze on 1st chat...");
+	LOG("Sent dummy chat to prevent game freeze...");
 
 	// for notifications
 	//Instances.SpawnNotification("custom quickchat", "onload dummy notification", 3);
@@ -813,6 +813,24 @@ void CustomQuickchat::GetFilePaths()
 
 	cfgPath = bmPath / "cfg" / "customQuickchat.cfg";
 	LOG("cfgPath: {}", cfgPath.string());
+}
+
+
+void CustomQuickchat::InitStuffOnLoad()
+{
+	PreventGameFreeze();	// hacky solution, but seems to work
+
+	InitKeyStates();
+
+	// set global sequenceStoredButtonPresses to default value
+	sequenceStoredButtonPresses["global"].buttonName = "poopfart";
+	sequenceStoredButtonPresses["global"].pressedTime = std::chrono::steady_clock::now();
+
+	// make sure JSON files are good to go, then read them to update data
+	GetFilePaths();
+	CheckJsonFiles();
+	UpdateData();
+	ClearTranscriptionJson();
 }
 
 

@@ -5,7 +5,7 @@
 
 void CustomQuickchat::cmd_toggleEnabled(std::vector<std::string> args)
 {
-	CVarWrapper enabledCvar = cvarManager->getCvar(CvarNames::enabled);
+	CVarWrapper enabledCvar = GetCvar(Cvars::enabled);
 	if (!enabledCvar) return;
 
 	bool enabled = enabledCvar.getBoolValue();

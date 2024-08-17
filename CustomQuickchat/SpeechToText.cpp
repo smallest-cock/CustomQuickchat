@@ -6,13 +6,14 @@
 // search for pythonw.exe filepath
 fs::path CustomQuickchat::findPythonInterpreter()
 {
-	bool autoDetectInterpreterPath = cvarManager->getCvar(CvarNames::autoDetectInterpreterPath).getBoolValue();
+	auto autoDetectInterpreterPath_cvar = GetCvar(Cvars::autoDetectInterpreterPath);
+	if (!autoDetectInterpreterPath_cvar) return fs::path();
 
 	fs::path searchResult;
 
-	if (!autoDetectInterpreterPath)
+	if (!autoDetectInterpreterPath_cvar.getBoolValue())
 	{
-		std::string pythonInterpreterPath = cvarManager->getCvar(CvarNames::pythonInterpreterPath).getStringValue();
+		std::string pythonInterpreterPath = GetCvar(Cvars::pythonInterpreterPath).getStringValue();
 		searchResult = fs::path(pythonInterpreterPath);
 
 		if (fs::exists(searchResult))
@@ -105,12 +106,12 @@ void CustomQuickchat::STTLog(const std::string& message)
 {
 	if (!onLoadComplete) return;	// to prevent crash on startup (bc threaded spawnnotification crash bs)
 
-	auto enableSTTNotificationsCvar = cvarManager->getCvar(CvarNames::enableSTTNotifications);
+	auto enableSTTNotificationsCvar = GetCvar(Cvars::enableSTTNotifications);
 	if (!enableSTTNotificationsCvar) return;
 
 	if (enableSTTNotificationsCvar.getBoolValue())
 	{
-		auto notificationDurationCvar = cvarManager->getCvar(CvarNames::notificationDuration);
+		auto notificationDurationCvar = GetCvar(Cvars::notificationDuration);
 		if (!notificationDurationCvar) return;
 
 		Instances.SpawnNotification("Speech-To-Text", message, notificationDurationCvar.getFloatValue());
@@ -120,7 +121,7 @@ void CustomQuickchat::STTLog(const std::string& message)
 
 void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
 {
-	auto speechProcessingTimeoutCvar = cvarManager->getCvar(CvarNames::speechProcessingTimeout);
+	auto speechProcessingTimeoutCvar = GetCvar(Cvars::speechProcessingTimeout);
 	if (!speechProcessingTimeoutCvar) return;
 	int processSpeechTimeout = speechProcessingTimeoutCvar.getIntValue();
 
@@ -223,7 +224,7 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 
 
 	// get CVar for start speech timeout
-	auto beginSpeechTimeoutCvar = cvarManager->getCvar(CvarNames::beginSpeechTimeout);
+	auto beginSpeechTimeoutCvar = GetCvar(Cvars::beginSpeechTimeout);
 	if (!beginSpeechTimeoutCvar) return;
 	float beginSpeechTimeout = beginSpeechTimeoutCvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
 
