@@ -11,10 +11,11 @@ void CustomQuickchat::RenderSettings()
 	auto speechProcessingTimeout_cvar =			GetCvar(Cvars::speechProcessingTimeout);
 	auto beginSpeechTimeout_cvar =				GetCvar(Cvars::beginSpeechTimeout);
 	auto notificationDuration_cvar =			GetCvar(Cvars::notificationDuration);
-	auto autoDetectInterpreterPath_cvar =		GetCvar(Cvars::autoDetectInterpreterPath);
-	auto pythonInterpreterPath_cvar =			GetCvar(Cvars::pythonInterpreterPath);
 	auto overrideDefaultQuickchats_cvar =		GetCvar(Cvars::overrideDefaultQuickchats);
 	auto blockDefaultQuickchats_cvar =			GetCvar(Cvars::blockDefaultQuickchats);
+	auto searchForPyInterpreter_cvar =			GetCvar(Cvars::searchForPyInterpreter);
+	auto autoDetectInterpreterPath_cvar =		GetCvar(Cvars::autoDetectInterpreterPath);
+	auto pythonInterpreterPath_cvar =			GetCvar(Cvars::pythonInterpreterPath);
 
 
 	// ---------------- calculate ImGui::BeginChild sizes ------------------
@@ -39,7 +40,7 @@ void CustomQuickchat::RenderSettings()
 		bool chatsOn = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &chatsOn))
 		{
-			cvarManager->executeCommand(Cvars::toggleEnabled.name);
+			RUN_COMMAND(Cvars::toggleEnabled);
 		}
 
 		if (chatsOn)
@@ -76,37 +77,49 @@ void CustomQuickchat::RenderSettings()
 			{
 				GUI::Spacing(2);
 				
-				bool autoDetectInterpreterPath = autoDetectInterpreterPath_cvar.getBoolValue();
-				if (ImGui::Checkbox("Auto detect python interpreter", &autoDetectInterpreterPath))
+				bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
+				if (ImGui::Checkbox("Search for python interpreter", &searchForPyInterpreter))
 				{
-					autoDetectInterpreterPath_cvar.setValue(autoDetectInterpreterPath);
+					searchForPyInterpreter_cvar.setValue(searchForPyInterpreter);
 				}
 				if (ImGui::IsItemHovered())
 				{
-					ImGui::SetTooltip("Uncheck and manually enter the filepath to pythonw.exe if you get an error about pythonw.exe not found");
+					ImGui::SetTooltip("Enable this to search for pythonw.exe (if your speech-to-text isn't working)");
 				}
 
-				if (!autoDetectInterpreterPath)
+				if (searchForPyInterpreter)
 				{
-					GUI::Spacing(2);
-
-					// filepath to pythonw.exe
-					std::string pythonInterpreterPath = pythonInterpreterPath_cvar.getStringValue();
-					if (ImGui::InputText("pythonw.exe filepath", &pythonInterpreterPath))
+					bool autoDetectInterpreterPath = autoDetectInterpreterPath_cvar.getBoolValue();
+					int radioState = autoDetectInterpreterPath ? 0 : 1;
+					if (ImGui::RadioButton("Auto detect path to pythonw.exe", &radioState, 0))
 					{
-						pythonInterpreterPath_cvar.setValue(pythonInterpreterPath);
+						autoDetectInterpreterPath_cvar.setValue(true);
+					}
+					if (ImGui::RadioButton("Manually specify path to pythonw.exe", &radioState, 1))
+					{
+						autoDetectInterpreterPath_cvar.setValue(false);
 					}
 
-					ImGui::SameLine();
-
-					if (ImGui::Button("Apply"))
+					if (!autoDetectInterpreterPath)
 					{
-						gameWrapper->Execute([this](GameWrapper* gw)
-							{
+						GUI::Spacing(2);
+
+						// filepath to pythonw.exe
+						std::string pythonInterpreterPath = pythonInterpreterPath_cvar.getStringValue();
+						if (ImGui::InputText("pythonw.exe filepath", &pythonInterpreterPath))
+						{
+							pythonInterpreterPath_cvar.setValue(pythonInterpreterPath);
+						}
+
+						ImGui::SameLine();
+
+						if (ImGui::Button("Apply"))
+						{
+							GAME_THREAD_EXECUTE(
 								pyInterpreter = findPythonInterpreter();
-							});
+							);
+						}
 					}
-
 				}
 
 				GUI::Spacing(4);
@@ -114,10 +127,10 @@ void CustomQuickchat::RenderSettings()
 				// open bindings window button
 				if (ImGui::Button("Calibrate Microphone"))
 				{
-					gameWrapper->Execute([this](GameWrapper* gw) {
+					GAME_THREAD_EXECUTE(
 						StartSpeechToText("lobby", "", true, true);  // calibrate mic energy threshold
 						UpdateMicCalibration(4);
-						});
+					);
 				}
 				if (ImGui::IsItemHovered())
 				{
@@ -157,11 +170,9 @@ void CustomQuickchat::RenderSettings()
 					// test popup notifications
 					if (ImGui::Button("Test Notification"))
 					{
-						gameWrapper->Execute([this, notificationDuration](GameWrapper* gw) {
-
+						GAME_THREAD_EXECUTE_CAPTURE(notificationDuration,
 							Instances.SpawnNotification("Terry A Davis", "You can see 'em if you're driving. You just run them over. That's what you do.", notificationDuration);
-							
-							});
+						);
 					}
 				}
 
@@ -196,11 +207,10 @@ void CustomQuickchat::RenderSettings()
 			// open bindings window button
 			if (ImGui::Button("Open Bindings Menu"))
 			{
-				gameWrapper->Execute([this](GameWrapper* gw) {
+				GAME_THREAD_EXECUTE(
 					cvarManager->executeCommand("togglemenu " + GetMenuName());
-					});
+				);
 			}
-
 		}
 	}
 	ImGui::EndChild();
@@ -440,7 +450,8 @@ void CustomQuickchat::RenderVariationListDetails()
 
 		GUI::Spacing(4);
 
-		if (ImGui::Button("Save")) {
+		if (ImGui::Button("Save"))
+		{
 			UpdateDataFromVariationStr();
 			WriteVariationsToJson();
 		}

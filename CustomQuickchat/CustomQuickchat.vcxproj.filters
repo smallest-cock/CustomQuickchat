@@ -341,6 +341,9 @@
     <ClInclude Include="GuiTools.hpp">
       <Filter>Plugin\header</Filter>
     </ClInclude>
+    <ClInclude Include="Macros.hpp">
+      <Filter>Plugin\header</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CustomQuickchat.rc">

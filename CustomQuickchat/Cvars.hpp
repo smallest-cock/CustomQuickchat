@@ -25,6 +25,7 @@ namespace Cvars
 	const CvarData autoDetectInterpreterPath =	{ "auto_detect_interpreter_path",	"Automatically detect python interpreter filepath" };
 	const CvarData overrideDefaultQuickchats =	{ "override_default_quickchats",	"override default quickchat with custom one if they share the same binding" };
 	const CvarData blockDefaultQuickchats =		{ "block_default_quickchats",		"block default quickchats (without unbinding them)" };
+	const CvarData searchForPyInterpreter =		{ "search_for_python_interpreter",	"search for full path to pythonw.exe, instead of using the 'pythonw' command line argument" };
 
 	// numbers
 	const CvarData sequenceTimeWindow =			{ "button_sequence_time_window",	"Time window given for button sequence macros" };

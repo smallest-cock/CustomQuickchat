@@ -12,6 +12,7 @@
 
 #include "version.h"
 
+#include "Macros.hpp"
 #include "Events.hpp"
 #include "Cvars.hpp"
 #include "Components/Includes.hpp"

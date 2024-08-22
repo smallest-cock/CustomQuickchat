@@ -26,9 +26,10 @@ void CustomQuickchat::onLoad()
 	// bools
 	auto enabled_cvar =						RegisterCvar_Bool(Cvars::enabled,					true);
 	auto enableSTTNotifications_cvar =		RegisterCvar_Bool(Cvars::enableSTTNotifications,	true);
-	auto autoDetectInterpreterPath_cvar =	RegisterCvar_Bool(Cvars::autoDetectInterpreterPath,	true);
 	auto overrideDefaultQuickchats_cvar =	RegisterCvar_Bool(Cvars::overrideDefaultQuickchats,	true);
 	auto blockDefaultQuickchats_cvar =		RegisterCvar_Bool(Cvars::blockDefaultQuickchats,	false);
+	auto searchForPyInterpreter_cvar =		RegisterCvar_Bool(Cvars::searchForPyInterpreter,	false);
+	auto autoDetectInterpreterPath_cvar =	RegisterCvar_Bool(Cvars::autoDetectInterpreterPath,	true);
 
 
 	// numbers
@@ -88,8 +89,13 @@ void CustomQuickchat::onLoad()
 	// ========================================================================================
 
 	
-	// find & store filepath to pythonw.exe
-	pyInterpreter = findPythonInterpreter();
+	DELAY(2.0f,
+		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
+		if (!searchForPyInterpreter_cvar || !searchForPyInterpreter_cvar.getBoolValue()) return;
+
+		// find & store filepath to pythonw.exe
+		pyInterpreter = findPythonInterpreter();
+	);
 			
 
 

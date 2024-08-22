@@ -210,43 +210,51 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 		return;
 	}
 
-	// search for pythonw.exe once more if it's not already found & stored
-	if (pyInterpreter.empty() || pyInterpreter.string() == "")
+	auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
+	if (!searchForPyInterpreter_cvar) return;
+	bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
+
+	if (searchForPyInterpreter)
 	{
-		pyInterpreter = findPythonInterpreter();
+		// search for pythonw.exe once more if it's not already found & stored
+		if (pyInterpreter.empty() || pyInterpreter.string() == "")
+		{
+			pyInterpreter = findPythonInterpreter();
+		}
+
+		if (pyInterpreter.empty() || pyInterpreter.string() == "")
+		{
+			STTLog("[ERROR] Couldn't find pythonw.exe in PATH directories");
+			return;
+		}
 	}
 
-	if (pyInterpreter.empty() || pyInterpreter.string() == "")
-	{
-		STTLog("[ERROR] Couldn't find pythonw.exe in PATH directories");
-		return;
-	}
 
-
-	// get CVar for start speech timeout
-	auto beginSpeechTimeoutCvar = GetCvar(Cvars::beginSpeechTimeout);
-	if (!beginSpeechTimeoutCvar) return;
-	float beginSpeechTimeout = beginSpeechTimeoutCvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
+	// get cvar for timeout to start speech
+	auto beginSpeechTimeout_cvar = GetCvar(Cvars::beginSpeechTimeout);
+	if (!beginSpeechTimeout_cvar) return;
+	float beginSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
 
 	// generate unique attempt ID
 	std::string attemptID = Format::GenRandomString(10);
 	ActiveSTTAttemptID = attemptID;		// store in global variable (so other attempts can see/compare to it)
 	LOG("ID for current speech-to-text attempt: {}", ActiveSTTAttemptID);
 
+	// determine python interpreter argument
+	std::string pyInterpreterArg = searchForPyInterpreter ? ("\"" + pyInterpreter.string() + "\"") : "pythonw";
 
-	std::string pathToPyInterpreter = "\"" + pyInterpreter.string() + "\"";
 	std::string pathToPywScript = "\"" + speechToTextPyScriptFilePath.string() + "\"";
 	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
 
-	// Command-line to execute Python script with JSON filepath as 1st arg
-	std::string command = pathToPyInterpreter + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(beginSpeechTimeout) + " " + attemptID;
+	// command to start speech-to-text python script
+	std::string command = pyInterpreterArg + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(beginSpeechTimeout) + " " + attemptID;
 
-	if (calibrateMic) {
+	if (calibrateMic)
+	{
 		command += " --calibrate";
 	}
 
-	std::wstring wCommand(command.begin(), command.end());		// convert to wide string
-
+	LOG("STT command: {}", command);
 
 	// CreateProcess variables
 	STARTUPINFO si;
@@ -257,20 +265,20 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 	si.cb = sizeof(si);
 	ZeroMemory(&pi, sizeof(pi));
 
-	// Create the process
+	// Create the process to start python script
 	if (CreateProcess(
-		NULL,                   // Application name (use NULL to use command line)
-		const_cast<wchar_t*>(wCommand.c_str()),  // Command line
-		NULL,                   // Process security attributes
-		NULL,                   // Thread security attributes
-		FALSE,                  // Inherit handles from the calling process
-		CREATE_NEW_CONSOLE,    // Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
-		NULL,                   // Use parent's environment block
-		NULL,                   // Use parent's starting directory
-		&si,                    // Pointer to STARTUPINFO
-		&pi                     // Pointer to PROCESS_INFORMATION
-	)) {
-
+		NULL,								// Application name (set NULL to use command)
+		Format::ToWcharString(command),		// Command
+		NULL,								// Process security attributes
+		NULL,								// Thread security attributes
+		FALSE,								// Inherit handles from the calling process
+		CREATE_NEW_CONSOLE,					// Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
+		NULL,								// Use parent's environment block
+		NULL,								// Use parent's starting directory
+		&si,								// Pointer to STARTUPINFO
+		&pi									// Pointer to PROCESS_INFORMATION
+	))
+	{
 		// -------------- after successfully starting the process -----------
 
 		// Close process handle to allow it to run asynchronously
@@ -285,17 +293,18 @@ void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::
 			// wait for speech, and probe JSON file for response
 			STTWaitAndProbe(chatMode, effect, attemptID, test);
 		}
-		else {
+		else
+		{
 			// reset active attempt ID
 			ActiveSTTAttemptID = "420_blz_it_lmao";
 		}
-
 	}
-	else {
+	else
+	{
 		// Failed to create process
 		DWORD error = GetLastError();
 
-		STTLog("Error executing Python script with CreateProcess. Error code: " + std::to_string(error));
+		STTLog("Error starting python script with CreateProcess. Error code: " + std::to_string(error));
 	}
 }
 
