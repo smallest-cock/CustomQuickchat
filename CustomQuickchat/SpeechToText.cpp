@@ -13,7 +13,10 @@ fs::path CustomQuickchat::findPythonInterpreter()
 
 	if (!autoDetectInterpreterPath_cvar.getBoolValue())
 	{
-		std::string pythonInterpreterPath = GetCvar(Cvars::pythonInterpreterPath).getStringValue();
+		auto pythonInterpreterPath_cvar = GetCvar(Cvars::pythonInterpreterPath);
+		if (!pythonInterpreterPath_cvar) return fs::path();
+
+		std::string pythonInterpreterPath = pythonInterpreterPath_cvar.getStringValue();
 		searchResult = fs::path(pythonInterpreterPath);
 
 		if (fs::exists(searchResult))

@@ -9,23 +9,21 @@ void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedC
 
 	std::string msg = "Custom quickchats turned " + std::string(enabled ? "ON" : "OFF");
 
-	gameWrapper->Execute([this, msg](GameWrapper* gw) {
+	GAME_THREAD_EXECUTE_CAPTURE(msg,
 
-			Instances.SpawnNotification("Custom Quickchat", msg, 3);
-
-		});
-
+		Instances.SpawnNotification("Custom Quickchat", msg, 3);
+	
+	);
 }
 
 
 void CustomQuickchat::changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar)
 {
-	//bool autoDetectInterpreterPath = updatedCvar.getBoolValue();
+	GAME_THREAD_EXECUTE(
 
-	gameWrapper->Execute([this](GameWrapper* gw)
-		{
-			pyInterpreter = findPythonInterpreter();
-		});
+		pyInterpreter = findPythonInterpreter();
+
+	);
 }
 
 

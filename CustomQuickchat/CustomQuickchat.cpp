@@ -2,7 +2,7 @@
 #include "CustomQuickchat.h"
 
 
-BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_THREADED)
+BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -17,9 +17,6 @@ void CustomQuickchat::onLoad()
 	if (!Instances.CheckGlobals()) return;
 
 
-	// other init
-	InitStuffOnLoad();
-
 
 	// ====================================== cvars ===========================================
 
@@ -31,19 +28,16 @@ void CustomQuickchat::onLoad()
 	auto searchForPyInterpreter_cvar =		RegisterCvar_Bool(Cvars::searchForPyInterpreter,	false);
 	auto autoDetectInterpreterPath_cvar =	RegisterCvar_Bool(Cvars::autoDetectInterpreterPath,	true);
 
-
 	// numbers
-	RegisterCvar_Number(Cvars::sequenceTimeWindow,			1.1,	true, 0,	10);
-	RegisterCvar_Number(Cvars::beginSpeechTimeout,			3,		true, 1.5,	10);
-	RegisterCvar_Number(Cvars::notificationDuration,		3,		true, 1.5,	10);
-	RegisterCvar_Number(Cvars::speechProcessingTimeout,		10,		true, 3,	500);
-
+	auto sequenceTimeWindow_cvar =			RegisterCvar_Number(Cvars::sequenceTimeWindow,		1.1,	true, 0,	10);
+	auto beginSpeechTimeout_cvar =			RegisterCvar_Number(Cvars::beginSpeechTimeout,		3,		true, 1.5,	10);
+	auto notificationDuration_cvar =		RegisterCvar_Number(Cvars::notificationDuration,	3,		true, 1.5,	10);
+	auto speechProcessingTimeout_cvar =		RegisterCvar_Number(Cvars::speechProcessingTimeout,	10,		true, 3,	500);
 
 	// strings
-	RegisterCvar_String(Cvars::pythonInterpreterPath,	"");
+	auto pythonInterpreterPath_cvar =		RegisterCvar_String(Cvars::pythonInterpreterPath,	"");
 
 
-	
 	// cvar change callbacks
 	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enabled,
 		this, std::placeholders::_1, std::placeholders::_2));
@@ -59,11 +53,6 @@ void CustomQuickchat::onLoad()
 
 	blockDefaultQuickchats_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_blockDefaultQuickchats,
 		this, std::placeholders::_1, std::placeholders::_2));
-
-
-
-	// load previous saved cvar values from .cfg file
-	cvarManager->loadCfg(cfgPath.stem().string());		// cfgPath.stem().string() should just evaluate to 'customQuickchat'
 
 
 	// ===================================== commands =========================================
@@ -98,6 +87,9 @@ void CustomQuickchat::onLoad()
 	);
 			
 
+	// other init
+	InitStuffOnLoad();
+
 
 	onLoadComplete = true;
 	LOG("CustomQuickchat loaded! :)");
@@ -109,8 +101,8 @@ void CustomQuickchat::onUnload()
 	// just to make sure any unsaved changes are saved before exiting
 	WriteBindingsToJson();
 
-	// save all CVar values to .cfg file
-	cvarManager->backupCfg(cfgPath.string());
+	//// save all CVar values to .cfg file
+	//cvarManager->backupCfg(cfgPath.string());
 
-	Files::FilterLinesInFile(cfgPath, Cvars::prefix);
+	//Files::FilterLinesInFile(cfgPath, Cvars::prefix);
 }

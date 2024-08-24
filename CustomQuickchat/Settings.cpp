@@ -162,8 +162,10 @@ void CustomQuickchat::RenderSettings()
 
 					// popup notification duration
 					float notificationDuration = notificationDuration_cvar.getFloatValue();
-					ImGui::SliderFloat("duration of notifications", &notificationDuration, 1.5f, 10.0f, "%.1f seconds");
-					notificationDuration_cvar.setValue(notificationDuration);
+					if (ImGui::SliderFloat("duration of notifications", &notificationDuration, 1.5f, 10.0f, "%.1f seconds"))
+					{
+						notificationDuration_cvar.setValue(notificationDuration);
+					}
 
 					GUI::Spacing(2);
 
@@ -180,8 +182,10 @@ void CustomQuickchat::RenderSettings()
 
 				// start speech timeout
 				float waitForSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue();
-				ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds");
-				beginSpeechTimeout_cvar.setValue(waitForSpeechTimeout);
+				if (ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds"))
+				{
+					beginSpeechTimeout_cvar.setValue(waitForSpeechTimeout);
+				}
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::SetTooltip("max time to wait for start of speech");
@@ -191,8 +195,10 @@ void CustomQuickchat::RenderSettings()
 
 				// processing timeout
 				int processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
-				ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 20.0f, "%.0f seconds");
-				speechProcessingTimeout_cvar.setValue(processSpeechTimeout);
+				if (ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 20.0f, "%.0f seconds"))
+				{
+					speechProcessingTimeout_cvar.setValue(processSpeechTimeout);
+				}
 				if (ImGui::IsItemHovered())
 				{
 					ImGui::SetTooltip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");

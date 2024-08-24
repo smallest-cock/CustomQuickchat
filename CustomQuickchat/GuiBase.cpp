@@ -63,5 +63,6 @@ void PluginWindowBase::Render()
 	if (!isWindowOpen_)
 	{
 		_globalCvarManager->executeCommand("togglemenu " + GetMenuName());
+		_globalCvarManager->executeCommand("writeconfig");
 	}
 }

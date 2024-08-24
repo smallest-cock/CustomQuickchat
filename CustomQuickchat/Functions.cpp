@@ -818,7 +818,9 @@ void CustomQuickchat::GetFilePaths()
 
 void CustomQuickchat::InitStuffOnLoad()
 {
-	PreventGameFreeze();	// hacky solution, but seems to work
+	// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
+	std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
+	newThread.detach();		// don't wait for thread to finish... let it be freee
 
 	InitKeyStates();
 
