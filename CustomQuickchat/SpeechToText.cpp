@@ -55,7 +55,7 @@ fs::path CustomQuickchat::findInterpreterUsingSearchPathW(const wchar_t* fileNam
 	{
 		fs::path foundPath = fs::path(buffer);
 		LOG("found pythonw.exe filepath using SearchPathW: {}", foundPath.string());
-		return fs::path(buffer);
+		return foundPath;
 	}
 	else {
 		return fs::path(); // return empty path (same as "")

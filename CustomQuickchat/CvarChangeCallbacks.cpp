@@ -19,10 +19,13 @@ void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedC
 
 void CustomQuickchat::changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar)
 {
+	// to prevent accidentally triggering callback when config.cfg is loaded when RL/bakkesmod starts
+	// (cvar callbacks get triggered after any value is set... even if the new value is the same/hasn't changed)
+	if (!onLoadComplete) return;
+
+
 	GAME_THREAD_EXECUTE(
-
 		pyInterpreter = findPythonInterpreter();
-
 	);
 }
 

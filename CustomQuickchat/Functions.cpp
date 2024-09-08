@@ -818,10 +818,6 @@ void CustomQuickchat::GetFilePaths()
 
 void CustomQuickchat::InitStuffOnLoad()
 {
-	// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
-	std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
-	newThread.detach();		// don't wait for thread to finish... let it be freee
-
 	InitKeyStates();
 
 	// set global sequenceStoredButtonPresses to default value
@@ -833,6 +829,10 @@ void CustomQuickchat::InitStuffOnLoad()
 	CheckJsonFiles();
 	UpdateData();
 	ClearTranscriptionJson();
+
+	// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
+	std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
+	newThread.detach();		// don't wait for thread to finish... let it be freee
 }
 
 

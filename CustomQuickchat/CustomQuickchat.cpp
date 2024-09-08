@@ -78,20 +78,25 @@ void CustomQuickchat::onLoad()
 	// ========================================================================================
 
 	
-	DELAY(2.0f,
-		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
-		if (!searchForPyInterpreter_cvar || !searchForPyInterpreter_cvar.getBoolValue()) return;
-
-		// find & store filepath to pythonw.exe
-		pyInterpreter = findPythonInterpreter();
-	);
-			
-
 	// other init
 	InitStuffOnLoad();
 
 
-	onLoadComplete = true;
+	DELAY(2.0f,
+		onLoadComplete = true;
+
+		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
+		if (!searchForPyInterpreter_cvar) return;
+
+		bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
+		LOG("[onLoad] searchForPyInterpreter: {}", searchForPyInterpreter);
+		if (!searchForPyInterpreter) return;
+
+		// find & store filepath to pythonw.exe
+		pyInterpreter = findPythonInterpreter();
+	);
+
+
 	LOG("CustomQuickchat loaded! :)");
 }
 
