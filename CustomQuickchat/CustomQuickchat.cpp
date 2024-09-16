@@ -17,25 +17,30 @@ void CustomQuickchat::onLoad()
 	if (!Instances.CheckGlobals()) return;
 
 
-
 	// ====================================== cvars ===========================================
 
 	// bools
-	auto enabled_cvar =						RegisterCvar_Bool(Cvars::enabled,					true);
-	auto enableSTTNotifications_cvar =		RegisterCvar_Bool(Cvars::enableSTTNotifications,	true);
-	auto overrideDefaultQuickchats_cvar =	RegisterCvar_Bool(Cvars::overrideDefaultQuickchats,	true);
-	auto blockDefaultQuickchats_cvar =		RegisterCvar_Bool(Cvars::blockDefaultQuickchats,	false);
-	auto searchForPyInterpreter_cvar =		RegisterCvar_Bool(Cvars::searchForPyInterpreter,	false);
-	auto autoDetectInterpreterPath_cvar =	RegisterCvar_Bool(Cvars::autoDetectInterpreterPath,	true);
+	auto enabled_cvar =						RegisterCvar_Bool(Cvars::enabled,						true);
+	auto enableSTTNotifications_cvar =		RegisterCvar_Bool(Cvars::enableSTTNotifications,		true);
+	auto overrideDefaultQuickchats_cvar =	RegisterCvar_Bool(Cvars::overrideDefaultQuickchats,		true);
+	auto blockDefaultQuickchats_cvar =		RegisterCvar_Bool(Cvars::blockDefaultQuickchats,		false);
+	auto searchForPyInterpreter_cvar =		RegisterCvar_Bool(Cvars::searchForPyInterpreter,		false);
+	auto autoDetectInterpreterPath_cvar =	RegisterCvar_Bool(Cvars::autoDetectInterpreterPath,		true);
+	auto disablePostMatchQuickchats_cvar =	RegisterCvar_Bool(Cvars::disablePostMatchQuickchats,	false);
+	auto disableChatTimeout_cvar =			RegisterCvar_Bool(Cvars::disableChatTimeout,			true);
+	auto useCustomChatTimeoutMsg_cvar =		RegisterCvar_Bool(Cvars::useCustomChatTimeoutMsg,		false);
+	auto removeTimestamps_cvar =			RegisterCvar_Bool(Cvars::removeTimestamps,				true);
 
 	// numbers
 	auto sequenceTimeWindow_cvar =			RegisterCvar_Number(Cvars::sequenceTimeWindow,		1.1,	true, 0,	10);
+	auto minBindingDelay_cvar =				RegisterCvar_Number(Cvars::minBindingDelay,			0.05,	true, 0,	1);
 	auto beginSpeechTimeout_cvar =			RegisterCvar_Number(Cvars::beginSpeechTimeout,		3,		true, 1.5,	10);
 	auto notificationDuration_cvar =		RegisterCvar_Number(Cvars::notificationDuration,	3,		true, 1.5,	10);
 	auto speechProcessingTimeout_cvar =		RegisterCvar_Number(Cvars::speechProcessingTimeout,	10,		true, 3,	500);
 
 	// strings
 	auto pythonInterpreterPath_cvar =		RegisterCvar_String(Cvars::pythonInterpreterPath,	"");
+	auto customChatTimeoutMsg_cvar =		RegisterCvar_String(Cvars::customChatTimeoutMsg,	"Wait [Time] seconds lil bro");
 
 
 	// cvar change callbacks
@@ -52,6 +57,12 @@ void CustomQuickchat::onLoad()
 		this, std::placeholders::_1, std::placeholders::_2));
 
 	blockDefaultQuickchats_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_blockDefaultQuickchats,
+		this, std::placeholders::_1, std::placeholders::_2));
+
+	useCustomChatTimeoutMsg_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_useCustomChatTimeoutMsg,
+		this, std::placeholders::_1, std::placeholders::_2));
+
+	customChatTimeoutMsg_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_customChatTimeoutMsg,
 		this, std::placeholders::_1, std::placeholders::_2));
 
 
@@ -73,7 +84,39 @@ void CustomQuickchat::onLoad()
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::ApplyChatSpamFilter,
 		std::bind(&CustomQuickchat::Event_ApplyChatSpamFilter, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-	
+
+	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::NotifyChatDisabled,
+		std::bind(&CustomQuickchat::Event_NotifyChatDisabled, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::HUDDestroyed,
+		std::bind(&CustomQuickchat::Event_HUDDestroyed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnChatMessage,
+		std::bind(&CustomQuickchat::Event_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PushMenu,
+		std::bind(&CustomQuickchat::Event_PushMenu, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PopMenu,
+		std::bind(&CustomQuickchat::Event_PopMenu, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+	gameWrapper->HookEventPost(Events::MatchEnded,			[this](std::string eventName) { matchEnded = true; });
+	gameWrapper->HookEventPost(Events::EnterStartState,		[this](std::string eventName) { inGameEvent = true; });
+
+	gameWrapper->HookEventPost(Events::LoadingScreenStart, [this](std::string eventName) { 
+		gamePaused = false;
+		matchEnded = false;
+		inGameEvent = false;
+		});
+
+	gameWrapper->HookEvent(Events::SendChatPresetMessage, [this](std::string eventName) {
+
+		// reset/update data for all bindings
+		lastBindingActivated = std::chrono::steady_clock::now();
+		ResetAllFirstButtonStates();
+		
+		});
+
 
 	// ========================================================================================
 
@@ -105,9 +148,4 @@ void CustomQuickchat::onUnload()
 {
 	// just to make sure any unsaved changes are saved before exiting
 	WriteBindingsToJson();
-
-	//// save all CVar values to .cfg file
-	//cvarManager->backupCfg(cfgPath.string());
-
-	//Files::FilterLinesInFile(cfgPath, Cvars::prefix);
 }

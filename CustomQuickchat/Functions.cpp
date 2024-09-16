@@ -16,34 +16,28 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 		if (keyword == "speechToText")
 		{
 			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-			{
-				StartSpeechToText(possibleChatModes[binding.chatMode]);
-			}
-			else {
+				StartSpeechToText(binding.chatMode);
+			else
 				STTLog("Speech-to-text is already active!");
-			}
+			
 			return;
 		}
 		else if (keyword == "speechToText sarcasm")
 		{
 			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-			{
-				StartSpeechToText(possibleChatModes[binding.chatMode], "sarcasm");
-			}
-			else {
+				StartSpeechToText(binding.chatMode, "sarcasm");
+			else
 				STTLog("Speech-to-text is already active!");
-			}
+			
 			return;
 		}
 		else if (keyword == "speechToText uwu")
 		{
 			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-			{
-				StartSpeechToText(possibleChatModes[binding.chatMode], "uwu");
-			}
-			else {
+				StartSpeechToText(binding.chatMode, "uwu");
+			else
 				STTLog("Speech-to-text is already active!");
-			}
+			
 			return;
 		}
 	}
@@ -53,11 +47,12 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	if (processedChat == "") return;
 
 	// send processed chat
-	SendChat(processedChat, possibleChatModes[binding.chatMode]);
+	SendChat(processedChat, binding.chatMode);
 }
 
 
-void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode)
+//void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode)
+void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 {
 	if (chat == "") return;
 
@@ -65,99 +60,22 @@ void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatM
 	auto enabledCvar = GetCvar(Cvars::enabled);
 	if (!enabledCvar || !enabledCvar.getBoolValue()) return;
 
-	EChatChannel chatChannel = EChatChannel::EChatChannel_Match;
-
-	if (chatMode == "lobby")
-	{
-		chatChannel = EChatChannel::EChatChannel_Match;
-	}
-	else if (chatMode == "team")
-	{
-		chatChannel = EChatChannel::EChatChannel_Team;
-	}
-	else if (chatMode == "party")
-	{
-		chatChannel = EChatChannel::EChatChannel_Party;
-	}
-
-	Instances.SendChat(chat, chatChannel);
+	Instances.SendChat(chat, chatMode);
 }
 
 
-bool CustomQuickchat::Sequence(const std::string& button1, const std::string& button2)
+void CustomQuickchat::ResetAllFirstButtonStates()
 {
-	bool button1Pressed = keyStates[button1];
-	bool button2Pressed = keyStates[button2];
-
-	if (button1Pressed || button2Pressed)
+	for (Binding& binding : Bindings)
 	{
-		// get current time
-		auto functionCallTime = std::chrono::steady_clock::now();
-
-		if (sequenceStoredButtonPresses["global"].buttonName == "poopfart")
-		{
-			if (button1Pressed)
-			{
-				sequenceStoredButtonPresses["global"].buttonName = button1;
-				sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
-			}
-		}
-		else {
-			// convert float timeWindow cvar into something addable to a chrono time_point
-			auto sequenceTimeWindowCvar = GetCvar(Cvars::sequenceTimeWindow);
-			if (!sequenceTimeWindowCvar) return false;
-
-			double timeWindowRaw = sequenceTimeWindowCvar.getFloatValue();
-			auto timeWindow = std::chrono::duration<double>(timeWindowRaw);
-
-			// so sequence bindings with the same 1st & 2nd button aren't accidentally triggered (bc firstButtonPressed is global & the fact all bindings are attempted in for loop)
-			double tooFastTimeWindowRaw = 0.05;
-			auto tooFastTimeWindow = std::chrono::duration<double>(tooFastTimeWindowRaw);
-
-			if (functionCallTime > sequenceStoredButtonPresses["global"].pressedTime + timeWindow)
-			{
-				if (button1Pressed)
-				{
-					sequenceStoredButtonPresses["global"].buttonName = button1;
-					sequenceStoredButtonPresses["global"].pressedTime = functionCallTime;
-				}
-				else {
-					ResetFirstButtonPressed();
-				}
-			}
-			else {
-				bool correct1stButtonPressed = sequenceStoredButtonPresses["global"].buttonName == button1;
-				bool button2PressedWithinTimeWindow = functionCallTime > sequenceStoredButtonPresses["global"].pressedTime + tooFastTimeWindow;
-
-				if (button2Pressed && correct1stButtonPressed && button2PressedWithinTimeWindow)
-				{
-					ResetFirstButtonPressed();
-					lastCustomChatSent = functionCallTime;
-					return true;
-				}
-			}
-		}
+		binding.firstButtonState.Reset(epochTime);
 	}
-	return false;
 }
 
 
-bool CustomQuickchat::Combine(const std::vector<std::string>& buttons)
+void CustomQuickchat::ResetChatTimeoutMsg()
 {
-	for (const std::string& button : buttons)
-	{
-		if (!keyStates[button]) return false;
-	}
-
-	ResetFirstButtonPressed();
-	lastCustomChatSent = std::chrono::steady_clock::now();
-	return true;
-}
-
-
-void CustomQuickchat::ResetFirstButtonPressed(const std::string& scope)
-{
-	sequenceStoredButtonPresses[scope].buttonName = "poopfart";
+	chatTimeoutMsg = "Chat disabled for [Time] second(s).";
 }
 
 
@@ -173,10 +91,6 @@ void CustomQuickchat::InitKeyStates()
 void CustomQuickchat::AddEmptyBinding()
 {
 	Binding newBinding;
-	newBinding.typeNameIndex = 0;
-	newBinding.chat = "";
-	newBinding.chatMode = ChatMode::Lobby;
-
 	Bindings.push_back(newBinding);
 }
 
@@ -184,10 +98,6 @@ void CustomQuickchat::AddEmptyBinding()
 void CustomQuickchat::AddEmptyVariationList()
 {
 	VariationList list;
-	list.listName = "";
-	list.unparsedString = "";
-	list.wordList = {};
-
 	Variations.push_back(list);
 }
 
@@ -383,13 +293,15 @@ std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, co
 
 void CustomQuickchat::UpdateDataFromVariationStr()
 {
-	for (auto& list : Variations)	// not const bc list should get modified
+	for (auto& variation : Variations)	// <--- not const bc variation instances should be modified
 	{
-		std::vector<std::string> parsedVariations = Format::SplitStrByNewline(list.unparsedString);
-		list.wordList = parsedVariations;
+		// update word list based on parsed string
+		std::vector<std::string> parsedVariations = Format::SplitStrByNewline(variation.unparsedString);
+		variation.wordList = parsedVariations;
 
-		list.shuffledWordList = ShuffleWordList(list.wordList);
-		list.nextUsableIndex = 0;
+		// reset & create new shuffled word list
+		variation.nextUsableIndex = 0;
+		variation.shuffledWordList = ShuffleWordList(variation.wordList);
 	}
 }
 
@@ -667,12 +579,12 @@ void CustomQuickchat::UpdateData()
 				
 				Binding binding;
 				binding.chat = bindingObj["chat"];
-				binding.typeNameIndex = bindingObj["typeNameIndex"];
-				binding.chatMode = bindingObj["chatMode"];
+				binding.chatMode = static_cast<EChatChannel>(bindingObj["chatMode"]);
+				binding.bindingType = static_cast<BindingType>(bindingObj["bindingType"]);
 
-				for (int i = 0; i < bindingObj["buttonNameIndexes"].size(); i++)
+				for (const std::string& buttonName : bindingObj["buttons"])
 				{
-					binding.buttonNameIndexes.push_back(bindingObj["buttonNameIndexes"][i]);
+					binding.buttons.push_back(buttonName);
 				}
 
 				Bindings.push_back(binding);
@@ -689,7 +601,7 @@ void CustomQuickchat::UpdateData()
 
 	try {
 		auto variationsJsonData = json::parse(jsonFileRawStr);
-		auto variationsList = variationsJsonData["variationLists"];
+		auto variationsList = variationsJsonData["variations"];
 
 		if (variationsList.size() > 0)
 		{
@@ -700,12 +612,11 @@ void CustomQuickchat::UpdateData()
 
 				VariationList variationList;
 				variationList.listName = variationListObj["listName"];
-				variationList.unparsedString = variationListObj["unparsedString"];
-				variationList.nextUsableIndex = 0;
 
-				for (int i = 0; i < variationListObj["wordList"].size(); i++)
+				for (const std::string& word : variationListObj["wordList"])
 				{
-					variationList.wordList.push_back(variationListObj["wordList"][i]);
+					variationList.wordList.push_back(word);
+					variationList.unparsedString += (word + "\n");
 				}
 
 				variationList.shuffledWordList = ShuffleWordList(variationList.wordList);
@@ -736,20 +647,19 @@ void CustomQuickchat::PreventGameFreeze()
 void CustomQuickchat::WriteBindingsToJson()
 {
 	json bindingsJsonObj;
-	bindingsJsonObj["bindings"] = {};
 	
 	for (const auto& binding: Bindings)
 	{
 		json singleBinding;
 
 		singleBinding["chat"] = binding.chat;
-		singleBinding["typeNameIndex"] = binding.typeNameIndex;
-		singleBinding["chatMode"] = binding.chatMode;
-		singleBinding["buttonNameIndexes"] = {};
-
-		for (int buttonIndex : binding.buttonNameIndexes)
+		singleBinding["chatMode"] = static_cast<int>(binding.chatMode);
+		singleBinding["bindingType"] = static_cast<int>(binding.bindingType);
+		
+		singleBinding["buttons"] = {};
+		for (const auto& button : binding.buttons)
 		{
-			singleBinding["buttonNameIndexes"].push_back(buttonIndex);
+			singleBinding["buttons"].push_back(button);
 		}
 
 		bindingsJsonObj["bindings"].push_back(singleBinding);
@@ -763,29 +673,20 @@ void CustomQuickchat::WriteBindingsToJson()
 void CustomQuickchat::WriteVariationsToJson()
 {
 	json variationsJsonObj;
-	variationsJsonObj["variationLists"] = {};
 
 	for (const auto& list : Variations)
 	{
 		json variationList;
 
 		variationList["listName"] = list.listName;
-		variationList["unparsedString"] = list.unparsedString;
-		variationList["nextUsableIndex"] = list.nextUsableIndex;
 		variationList["wordList"] = {};
-		variationList["shuffledWordList"] = {};
 
-		for (const auto& variation : list.wordList)
+		for (const auto& word : list.wordList)
 		{
-			variationList["wordList"].push_back(variation);
-		}
-		
-		for (const auto& variation : list.shuffledWordList)
-		{
-			variationList["shuffledWordList"].push_back(variation);
+			variationList["wordList"].push_back(word);
 		}
 
-		variationsJsonObj["variationLists"].push_back(variationList);
+		variationsJsonObj["variations"].push_back(variationList);
 	}
 
 	writeJsonToFile(variationsFilePath, variationsJsonObj);
@@ -819,10 +720,6 @@ void CustomQuickchat::GetFilePaths()
 void CustomQuickchat::InitStuffOnLoad()
 {
 	InitKeyStates();
-
-	// set global sequenceStoredButtonPresses to default value
-	sequenceStoredButtonPresses["global"].buttonName = "poopfart";
-	sequenceStoredButtonPresses["global"].pressedTime = std::chrono::steady_clock::now();
 
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();

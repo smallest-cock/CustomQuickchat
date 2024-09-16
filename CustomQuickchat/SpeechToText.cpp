@@ -122,7 +122,8 @@ void CustomQuickchat::STTLog(const std::string& message)
 }
 
 
-void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
+//void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
+void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& effect, const std::string& attemptID, bool test)
 {
 	auto speechProcessingTimeoutCvar = GetCvar(Cvars::speechProcessingTimeout);
 	if (!speechProcessingTimeoutCvar) return;
@@ -204,7 +205,8 @@ void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::st
 }
 
 
-void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic)
+//void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic)
+void CustomQuickchat::StartSpeechToText(EChatChannel chatMode, const std::string& effect, bool test, bool calibrateMic)
 {
 	// reset transcription data
 	if (!ClearTranscriptionJson())

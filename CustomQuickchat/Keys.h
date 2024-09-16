@@ -4,18 +4,8 @@
 #include <vector>
 
 
-
-enum InputEvent
+const std::vector<std::string> possibleKeyNames =
 {
-	Pressed			= 0,
-	Released		= 1,
-	Repeat			= 2,
-	DoubleClick		= 3,
-	Axis			= 4
-};
-
-
-const std::vector<std::string> possibleKeyNames = {
 	"",
 	"XboxTypeS_DPad_Up",
 	"XboxTypeS_DPad_Left",

@@ -68,3 +68,42 @@ void CustomQuickchat::changed_blockDefaultQuickchats(std::string cvarName, CVarW
 		overrideDefaultQuickchats_cvar.setValue(false);
 	}
 }
+
+
+void CustomQuickchat::changed_useCustomChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar)
+{
+	bool useCustomChatTimeoutMsg = updatedCvar.getBoolValue();
+
+	if (useCustomChatTimeoutMsg)
+	{
+		auto customChatTimeoutMsg_cvar = GetCvar(Cvars::customChatTimeoutMsg);
+		if (!customChatTimeoutMsg_cvar) return;
+	
+		chatTimeoutMsg = customChatTimeoutMsg_cvar.getStringValue();
+	}
+	else
+	{
+		ResetChatTimeoutMsg();
+	}
+	
+	GAME_THREAD_EXECUTE(
+		Instances.SetChatTimeoutMsg(chatTimeoutMsg);
+	);
+
+}
+
+
+void CustomQuickchat::changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar)
+{
+	auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+	if (!useCustomChatTimeoutMsg_cvar) return;
+
+	if (useCustomChatTimeoutMsg_cvar.getBoolValue())
+	{
+		chatTimeoutMsg = updatedCvar.getStringValue();
+
+		GAME_THREAD_EXECUTE(
+			Instances.SetChatTimeoutMsg(chatTimeoutMsg);
+		);
+	}
+}

@@ -21,40 +21,46 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
 
-const double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.05;
+constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;		// maybe turn into a cvar w slider in settings
 
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	,public SettingsWindowBase
 	,public PluginWindowBase
 {
-
 	//Boilerplate
 	void onLoad() override;
 	void onUnload() override;
 
-	bool onLoadComplete = false;
+	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
+	std::chrono::steady_clock::time_point lastBindingActivated;
 
-	void SendChat(const std::string& chat, const std::string& chatMode);
+	bool onLoadComplete = false;
+	bool gamePaused = false;
+	bool matchEnded = false;
+	bool inGameEvent = false;
+
+	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
+	void ResetChatTimeoutMsg();
+
+	void ResetAllFirstButtonStates();
+
+	void SendChat(const std::string& chat, EChatChannel chatMode);
 
 	// speech-to-text
-	void StartSpeechToText(const std::string& chatMode, const std::string& effect = "", bool test = false, bool calibrateMic = false);
-	void STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test);
+	void StartSpeechToText(EChatChannel chatMode, const std::string& effect = "", bool test = false, bool calibrateMic = false);
+	void STTWaitAndProbe(EChatChannel chatMode, const std::string& effect, const std::string& attemptID, bool test);
 	void STTLog(const std::string& message);
 	void ResetJsonFile(float micCalibration = 69420);
 	bool ClearTranscriptionJson();
-	std::string ActiveSTTAttemptID = "420_blz_it_lmao";
+	std::string ActiveSTTAttemptID = "420_blz_it_lmao";		// magic string... needs to be refactored
 	double micEnergyThreshold = 420;
 	void UpdateMicCalibration(float timeOut);
 
 	void InitKeyStates();
-	bool Sequence(const std::string& button1, const std::string& button2);
-	bool Combine(const std::vector<std::string>& buttons);
 
 	int FindButtonIndex(const std::string& buttonName);
 
-	void ResetFirstButtonPressed(const std::string& scope = "global");
-	
 	void InitStuffOnLoad();
 
 	void CheckJsonFiles();
@@ -93,7 +99,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	json getJsonFromFile(const fs::path& filePath);
 
 	void UpdateData();
-	void PreventGameFreeze();	// hacky solution to prevent game hanging for few seconds on 1st chat sent
+	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
 
 	std::vector<Binding> Bindings;
 	std::vector<VariationList> Variations;
@@ -102,7 +108,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	int selectedVariationIndex = 0;
 
 	std::unordered_map<std::string, bool> keyStates;
-	std::unordered_map<std::string, ButtonPress> sequenceStoredButtonPresses;
 
 	fs::path findPythonInterpreter();
 	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
@@ -123,8 +128,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	fs::path lobbyInfoChatsFilePath;
 	fs::path lobbyInfoRanksFilePath;
 
-
-	std::chrono::steady_clock::time_point lastCustomChatSent;
 
 
 	// register cvars
@@ -148,16 +151,27 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_useCustomChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
 
 	// hook callbacks
 	void Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName);
 	void Event_ChatPresetPressed(ActorWrapper caller, void* params, std::string eventName);
 	void Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName);
+	void Event_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName);
+	void Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName);
+	void Event_HUDDestroyed(ActorWrapper caller, void* params, std::string eventName);
+	void Event_PushMenu(ActorWrapper caller, void* params, std::string eventName);
+	void Event_PopMenu(ActorWrapper caller, void* params, std::string eventName);
 
 public:
 	// GUI
-	void RenderSettings() override; // Uncomment if you wanna render your own tab in the settings menu
-	void RenderWindow() override; // Uncomment if you want to render your own plugin window
+	void RenderSettings() override;
+	void RenderWindow() override;
+
+	void GeneralSettings();
+	void ChatTimeoutSettings();
+	void SpeechToTextSettings();
 
 	void RenderAllBindings();
 	void RenderBindingDetails();
