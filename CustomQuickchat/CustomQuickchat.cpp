@@ -100,14 +100,10 @@ void CustomQuickchat::onLoad()
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PopMenu,
 		std::bind(&CustomQuickchat::Event_PopMenu, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
+	gameWrapper->HookEventPost(Events::LoadingScreenStart, std::bind(&CustomQuickchat::Event_LoadingScreenStart, this, std::placeholders::_1));
+
 	gameWrapper->HookEventPost(Events::MatchEnded,			[this](std::string eventName) { matchEnded = true; });
 	gameWrapper->HookEventPost(Events::EnterStartState,		[this](std::string eventName) { inGameEvent = true; });
-
-	gameWrapper->HookEventPost(Events::LoadingScreenStart, [this](std::string eventName) { 
-		gamePaused = false;
-		matchEnded = false;
-		inGameEvent = false;
-		});
 
 	gameWrapper->HookEvent(Events::SendChatPresetMessage, [this](std::string eventName) {
 

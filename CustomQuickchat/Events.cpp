@@ -156,3 +156,17 @@ void CustomQuickchat::Event_PopMenu(ActorWrapper caller, void* params, std::stri
 	if (Params->MenuName.ToString() == "MidGameMenuMovie")
 		gamePaused = false;
 }
+
+
+void CustomQuickchat::Event_LoadingScreenStart(std::string eventName)
+{
+	gamePaused = false;
+	matchEnded = false;
+	inGameEvent = false;
+
+	// reset all "pressed" buttons (to fix bug of bindings mistakenly firing bc a key's state is stuck in "pressed" mode upon joining a game/freeplay)
+	for (auto& [key, state] : keyStates)
+	{
+		state = false;
+	}
+}
