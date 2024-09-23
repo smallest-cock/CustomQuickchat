@@ -36,7 +36,7 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 ### Commands
 
 | Command | Description | Preferred usage |
-|---|---|---|
+|---|---|:---:|
 `cqc_toggle_enabled` | toggle custom quickchats on/off | key bind
 `cqc_forfeit` | forfeit the current match | key bind
 `cqc_show_path_directories` | list the directories in your PATH variable (helpful for speech-to-text troubleshooting) | console
