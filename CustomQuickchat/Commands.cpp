@@ -51,6 +51,17 @@ void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
 }
 
 
+void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
+{
+	auto shell = Instances.GetInstanceOf<UGFxShell_TA>();
+	if (!shell) return;
+
+	shell->VoteToForfeit();
+
+	LOG("voted to forfeit...");
+}
+
+
 void CustomQuickchat::cmd_test(std::vector<std::string> args)
 {
 	// ...

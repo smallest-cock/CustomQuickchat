@@ -143,6 +143,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void cmd_toggleEnabled(std::vector<std::string> args);
 	void cmd_showPathDirectories(std::vector<std::string> args);
 	void cmd_listBindings(std::vector<std::string> args);
+	void cmd_forfeit(std::vector<std::string> args);
 	void cmd_test(std::vector<std::string> args);
 
 	// cvar change callbacks

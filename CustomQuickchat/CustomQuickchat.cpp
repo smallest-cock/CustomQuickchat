@@ -71,6 +71,7 @@ void CustomQuickchat::onLoad()
 	RegisterCommand(Cvars::toggleEnabled,		std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1));
 	RegisterCommand(Cvars::showPathDirectories, std::bind(&CustomQuickchat::cmd_showPathDirectories, this, std::placeholders::_1));
 	RegisterCommand(Cvars::listBindings,		std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1));
+	RegisterCommand(Cvars::forfeit,				std::bind(&CustomQuickchat::cmd_forfeit, this, std::placeholders::_1));
 	RegisterCommand(Cvars::test,				std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1));
 
 
