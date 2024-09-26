@@ -38,10 +38,12 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 
 
 >[!TIP]
->Don't name your variation lists the same as these
+>Don't name your word variation lists the same as these
 
 | keyword | description |
 |:---|:---:|
+`[[menu]]` | exit to the main menu
+`[[forfeit]]` | forfeit the current match
 `[[blast 1v1]]` | blast the last chatter's 1v1 rank and # of games played
 `[[blast 2v2]]` | blast the last chatter's 2v2 rank and # of games played
 `[[blast 3v3]]` | blast the last chatter's 3v3 rank and # of games played
