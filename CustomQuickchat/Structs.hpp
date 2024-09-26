@@ -3,7 +3,7 @@
 
 
 
-// ------------------------- for imgui -------------------------
+// ------------------------------ for imgui -----------------------------------
 
 const std::vector<std::string> possibleBindingTypes =
 {
@@ -18,7 +18,52 @@ const std::vector<std::string> possibleChatModes =
 	"party"
 };
 
-// -------------------------------------------------------------
+
+
+// ---------------------------- keyword stuff ---------------------------------
+
+enum class EKeyword : uint8_t
+{
+	SpeechToText =			0,
+	SpeechToTextUwu =		1,
+	SpeechToTextSarcasm =	3,
+	LastChat =				4,
+	LastChatUwu =			5,
+	LastChatSarcasm =		6,
+	BlastAll =				7,
+	BlastCasual =			8,
+	Blast1v1 =				9,
+	Blast2v2 =				10,
+	Blast3v3 =				11,
+	Forfeit =				12,
+	ExitToMainMenu =		13
+};
+
+enum class ETextEffect : uint8_t
+{
+	None =			0,
+	Uwu =			1,
+	Sarcasm =		2,
+};
+
+const std::unordered_map<std::string, EKeyword> keywordsMap =
+{
+	{ "speechToText",				EKeyword::SpeechToText			},
+	{ "speechToText sarcasm",		EKeyword::SpeechToTextSarcasm	},
+	{ "speechToText uwu",			EKeyword::SpeechToTextUwu		},
+	{ "lastChat",					EKeyword::LastChat				},
+	{ "lastChat uwu",				EKeyword::LastChatUwu			},
+	{ "lastChat sarcasm",			EKeyword::LastChatSarcasm		},
+	{ "blast all",					EKeyword::BlastAll				},
+	{ "blast casual",				EKeyword::BlastCasual			},
+	{ "blast 1v1",					EKeyword::Blast1v1				},
+	{ "blast 2v2",					EKeyword::Blast2v2				},
+	{ "blast 3v3",					EKeyword::Blast3v3				},
+	{ "forfeit",					EKeyword::Forfeit				},
+	{ "menu",						EKeyword::ExitToMainMenu		},
+};
+
+// ----------------------------------------------------------------------------
 
 
 enum class BindingType : uint8_t

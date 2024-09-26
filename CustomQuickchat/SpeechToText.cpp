@@ -123,7 +123,7 @@ void CustomQuickchat::STTLog(const std::string& message)
 
 
 //void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
-void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& effect, const std::string& attemptID, bool test)
+void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect, const std::string& attemptID, bool test)
 {
 	auto speechProcessingTimeoutCvar = GetCvar(Cvars::speechProcessingTimeout);
 	if (!speechProcessingTimeoutCvar) return;
@@ -140,7 +140,8 @@ void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& 
 				std::string jsonFileRawStr = readContent(speechToTextFilePath);
 
 				// prevent crash on reading invalid JSON data
-				try {
+				try
+				{
 					auto transcriptionData = json::parse(jsonFileRawStr);
 					auto transcription = transcriptionData["transcription"];
 
@@ -150,35 +151,42 @@ void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& 
 					std::string jsonAttemptID = transcriptionData["transcription"]["ID"];
 					if (jsonAttemptID != attemptID) return;
 
-
 					bool error = transcriptionData["transcription"]["error"];
 
 					// clear active attempt ID
 					ActiveSTTAttemptID = "420_blz_it_lmao";
 
-					if (!test) {
-						if (!error) {
+					if (!test)
+					{
+						if (!error)
+						{
 							std::string text = transcription["text"];
 
 							// apply text effect if necessary
-							if (effect == "sarcasm") {
-								text = toSarcasm(text);
-							}
-							else if (effect == "uwu") {
+							switch (effect)
+							{
+							case ETextEffect::Uwu:
 								text = toUwu(text);
+								break;
+							case ETextEffect::Sarcasm:
+								text = toSarcasm(text);
+								break;
+							default:
+								break;
 							}
 
 							SendChat(text, chatMode);
 						}
-						else {
+						else
+						{
 							std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
 							LOG("[SPEECH-TO-TEXT] Error: {}", errorMsg);
 							STTLog("[ERROR] " + errorMsg);
 						}
 					}
-
 				}
-				catch (...) {
+				catch (...)
+				{
 					// clear active attempt ID
 					ActiveSTTAttemptID = "420_blz_it_lmao";
 
@@ -186,7 +194,7 @@ void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& 
 				}
 			}
 
-			}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
+		}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
 	}
 
 
@@ -206,7 +214,7 @@ void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, const std::string& 
 
 
 //void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic)
-void CustomQuickchat::StartSpeechToText(EChatChannel chatMode, const std::string& effect, bool test, bool calibrateMic)
+void CustomQuickchat::StartSpeechToText(EChatChannel chatMode, ETextEffect effect, bool test, bool calibrateMic)
 {
 	// reset transcription data
 	if (!ClearTranscriptionJson())

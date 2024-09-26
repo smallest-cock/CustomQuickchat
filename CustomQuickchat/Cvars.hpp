@@ -48,6 +48,7 @@ namespace Cvars
 	const CvarData toggleEnabled =				{ "toggle_enabled",					"toggle turning custom quidchats on/off"};
 	const CvarData showPathDirectories =		{ "show_path_directories",			"show all the directories found in your windows PATH variable" };
 	const CvarData listBindings =				{ "list_bindings",					"show a list of all current bindings"};
+	const CvarData exitToMainMenu =				{ "exit_to_main_menu",				"exit to the main menu"};
 	const CvarData forfeit =					{ "forfeit",						"forfeit the current match"};
 	const CvarData test =						{ "test",							"test"};
 }

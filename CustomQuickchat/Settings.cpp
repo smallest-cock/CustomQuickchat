@@ -270,9 +270,9 @@ void CustomQuickchat::SpeechToTextSettings()
 	if (ImGui::Button("Calibrate Microphone"))
 	{
 		GAME_THREAD_EXECUTE(
-			StartSpeechToText(EChatChannel::EChatChannel_Match, "", true, true);  // calibrate mic energy threshold
-		UpdateMicCalibration(4);
-			);
+			StartSpeechToText(EChatChannel::EChatChannel_Match, ETextEffect::None, true, true);  // calibrate mic energy threshold
+			UpdateMicCalibration(4);
+		);
 	}
 	if (ImGui::IsItemHovered())
 	{

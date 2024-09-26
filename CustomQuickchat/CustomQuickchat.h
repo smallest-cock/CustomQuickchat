@@ -32,24 +32,38 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onLoad() override;
 	void onUnload() override;
 
-	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
-	std::chrono::steady_clock::time_point lastBindingActivated;
 
+	// bools
 	bool onLoadComplete = false;
 	bool gamePaused = false;
 	bool matchEnded = false;
 	bool inGameEvent = false;
 
+
+	// plugin init
+	void InitStuffOnLoad();
+	void InitKeyStates();
+	void CheckJsonFiles();
+	void GetFilePaths();
+	void UpdateData();
+	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
+
+
+	// sending chat stuff
+	void SendChat(const std::string& chat, EChatChannel chatMode);
+	ETextEffect GetTextEffect(EKeyword keyword);
+	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
+	std::vector<std::string> GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr);
+
+
+	// chat timeout stuff
 	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
 	void ResetChatTimeoutMsg();
 
-	void ResetAllFirstButtonStates();
 
-	void SendChat(const std::string& chat, EChatChannel chatMode);
-
-	// speech-to-text
-	void StartSpeechToText(EChatChannel chatMode, const std::string& effect = "", bool test = false, bool calibrateMic = false);
-	void STTWaitAndProbe(EChatChannel chatMode, const std::string& effect, const std::string& attemptID, bool test);
+	// speech-to-text stuff
+	void StartSpeechToText(EChatChannel chatMode, ETextEffect effect = ETextEffect::None, bool test = false, bool calibrateMic = false);
+	void STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect, const std::string& attemptID, bool test);
 	void STTLog(const std::string& message);
 	void ResetJsonFile(float micCalibration = 69420);
 	bool ClearTranscriptionJson();
@@ -57,14 +71,27 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	double micEnergyThreshold = 420;
 	void UpdateMicCalibration(float timeOut);
 
-	void InitKeyStates();
+	// speech-to-text python interpreter stuff
+	fs::path findPythonInterpreter();
+	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
+	fs::path manuallySearchPathDirectories(const std::string& fileName);
+	std::vector<std::string> getPathsFromEnvironmentVariable();
 
+
+	// bindings & variations stuff
+	std::vector<Binding> Bindings;
+	std::vector<VariationList> Variations;
+
+	int selectedBindingIndex = 0;
+	int selectedVariationIndex = 0;
+
+	std::unordered_map<std::string, bool> keyStates;
+
+	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
+	std::chrono::steady_clock::time_point lastBindingActivated;
+
+	void ResetAllFirstButtonStates();
 	int FindButtonIndex(const std::string& buttonName);
-
-	void InitStuffOnLoad();
-
-	void CheckJsonFiles();
-	void GetFilePaths();
 
 	void WriteBindingsToJson();
 	void WriteVariationsToJson();
@@ -76,17 +103,17 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void DeleteVariationList(int idx);
 	void UpdateDataFromVariationStr();
 
-
 	std::string Variation(const std::string& listName);
 	std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
 	void ReshuffleWordList(int idx);
 
 	void PerformBindingAction(const Binding& binding);
 
-	std::string ReplacePatternInStr(const std::string& inputStr, const std::vector<std::string>& substrings);
-	std::vector<std::string> GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr);
 
+
+	// Lobby Info stuff (blast ranks & last chat)
 	std::string LastChat();
+	std::string GetRankStr(EKeyword keyword);
 	std::string AllRanks();
 	std::string SpecificRank(const std::string& playlist);
 	std::string GetRankStr(const Rank& rank);
@@ -98,21 +125,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void writeJsonToFile(const fs::path& filePath, const json& jsonData);
 	json getJsonFromFile(const fs::path& filePath);
 
-	void UpdateData();
-	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
-
-	std::vector<Binding> Bindings;
-	std::vector<VariationList> Variations;
-
-	int selectedBindingIndex = 0;
-	int selectedVariationIndex = 0;
-
-	std::unordered_map<std::string, bool> keyStates;
-
-	fs::path findPythonInterpreter();
-	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
-	fs::path manuallySearchPathDirectories(const std::string& fileName);
-	std::vector<std::string> getPathsFromEnvironmentVariable();
 
 	// CustomQuickchat filepaths
 	fs::path customQuickchatFolder;
@@ -130,19 +142,22 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
 
-	// register cvars
+	// cvar helper stuff
 	CVarWrapper RegisterCvar_Bool(const Cvars::CvarData& cvar, bool startingValue);
 	CVarWrapper RegisterCvar_String(const Cvars::CvarData& cvar, const std::string& startingValue);
 	CVarWrapper RegisterCvar_Number(const Cvars::CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
 	CVarWrapper RegisterCvar_Color(const Cvars::CvarData& cvar, const std::string& startingValue);
 	CVarWrapper GetCvar(const Cvars::CvarData& cvar);
 	void RegisterCommand(const Cvars::CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
+	void RunCommand(const Cvars::CvarData& command, float delaySeconds = 0);
+	void RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
 
 
 	// commands
 	void cmd_toggleEnabled(std::vector<std::string> args);
 	void cmd_showPathDirectories(std::vector<std::string> args);
 	void cmd_listBindings(std::vector<std::string> args);
+	void cmd_exitToMainMenu(std::vector<std::string> args);
 	void cmd_forfeit(std::vector<std::string> args);
 	void cmd_test(std::vector<std::string> args);
 

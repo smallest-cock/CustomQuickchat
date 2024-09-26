@@ -8,50 +8,91 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 {
 	// get keywords in chat string
 	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]] ... maybe turn into CVar and make editable?
-	std::vector<std::string> keywords = GetSubstringsUsingRegexPattern(binding.chat, pattern);
+	std::vector<std::string> stringsFoundInBrackets = GetSubstringsUsingRegexPattern(binding.chat, pattern);
 
-	// start speech-to-text if necessary
-	for (const std::string& keyword : keywords)
+	// processedChat starts out as the original raw chat string, and will get processed one stringFoundInBrackets at a time
+	std::string processedChat = binding.chat;
+
+	// handle any words in double brackets, like special keywords or word variations
+	for (const std::string& stringFoundInBrackets : stringsFoundInBrackets)
 	{
-		if (keyword == "speechToText")
+		auto it = keywordsMap.find(stringFoundInBrackets);
+		
+		// if a special keyword was found (not a variation list name)
+		if (it != keywordsMap.end())
 		{
-			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-				StartSpeechToText(binding.chatMode);
-			else
-				STTLog("Speech-to-text is already active!");
+			// get keyword and text effect (if any)
+			EKeyword keyword = it->second;
+			ETextEffect textEffect = GetTextEffect(keyword);
+
+			// initialize variables outside switch
+			std::string rankStr;
+			std::string specificPattern;
+			std::regex specificRegexPattern;
+			bool replaceWithLastChat = false;  // whether or not to replace keyword with last chat after switch
+
+			switch (keyword)
+			{
+			case EKeyword::SpeechToText:
+			case EKeyword::SpeechToTextSarcasm:
+			case EKeyword::SpeechToTextUwu:
+				if (ActiveSTTAttemptID == "420_blz_it_lmao")
+					StartSpeechToText(binding.chatMode, textEffect);
+				else
+					STTLog("Speech-to-text is already active!");
+				return;
+			case EKeyword::BlastAll:
+			case EKeyword::BlastCasual:
+			case EKeyword::Blast1v1:
+			case EKeyword::Blast2v2:
+			case EKeyword::Blast3v3:
+				rankStr = GetRankStr(keyword);
+				if (rankStr.empty()) return;
+				SendChat(rankStr, binding.chatMode);
+				return;
+			case EKeyword::Forfeit:
+				RunCommand(Cvars::forfeit);
+				return;
+			case EKeyword::ExitToMainMenu:
+				RunCommand(Cvars::exitToMainMenu);
+				return;
+			case EKeyword::LastChat:
+			case EKeyword::LastChatSarcasm:
+			case EKeyword::LastChatUwu:
+				replaceWithLastChat = true;
+				specificPattern = "\\[\\[" + stringFoundInBrackets + "\\]\\]";
+				specificRegexPattern = std::regex(specificPattern);
+				break;
+			default:
+				break;
+			}
 			
-			return;
+			// replace keyword with last chat (with text effect if necessary)
+			if (replaceWithLastChat)
+			{
+				std::string lastChat = LastChat();
+				if (lastChat == "") return;
+
+				std::string chatWithEffect = ApplyTextEffect(lastChat, textEffect);
+				processedChat = std::regex_replace(processedChat, specificRegexPattern, chatWithEffect);
+			}
 		}
-		else if (keyword == "speechToText sarcasm")
+		// if something else, like a variation list name (or nothing), was found inside brackets
+		else
 		{
-			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-				StartSpeechToText(binding.chatMode, "sarcasm");
-			else
-				STTLog("Speech-to-text is already active!");
-			
-			return;
-		}
-		else if (keyword == "speechToText uwu")
-		{
-			if (ActiveSTTAttemptID == "420_blz_it_lmao")
-				StartSpeechToText(binding.chatMode, "uwu");
-			else
-				STTLog("Speech-to-text is already active!");
-			
-			return;
+			// replace keyword with word variation
+			std::string specificPattern = "\\[\\[" + stringFoundInBrackets + "\\]\\]";
+			std::regex specificRegexPattern(specificPattern);
+
+			processedChat = std::regex_replace(processedChat, specificRegexPattern, Variation(stringFoundInBrackets));
 		}
 	}
-
-	// replace keywords with appropriate text ...
-	std::string processedChat = ReplacePatternInStr(binding.chat, keywords);
-	if (processedChat == "") return;
 
 	// send processed chat
 	SendChat(processedChat, binding.chatMode);
 }
 
 
-//void CustomQuickchat::SendChat(const std::string& chat, const std::string& chatMode)
 void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 {
 	if (chat == "") return;
@@ -230,67 +271,6 @@ std::vector<std::string> CustomQuickchat::GetSubstringsUsingRegexPattern(const s
 }
 
 
-std::string CustomQuickchat::ReplacePatternInStr(const std::string& inputStr, const std::vector<std::string>& substrings)
-{
-	std::string newString = inputStr;
-
-	for (const std::string& substring : substrings)
-	{
-		std::string specificPattern = "\\[\\[" + substring + "\\]\\]";
-		std::regex specificRegexPattern(specificPattern);
-
-		if (substring == "blast all")
-		{
-			return AllRanks();
-		}
-		else if (substring == "blast 1v1")
-		{
-			return SpecificRank("1v1");
-		}
-		else if (substring == "blast 2v2")
-		{
-			return SpecificRank("2v2");
-		}
-		else if (substring == "blast 3v3")
-		{
-			return SpecificRank("3v3");
-		}
-		else if (substring == "blast casual")
-		{
-			return SpecificRank("casual");
-		}
-		else if (substring == "lastChat")
-		{
-			std::string lastChat = LastChat();
-			if (lastChat == "") return "";
-
-			newString = std::regex_replace(newString, specificRegexPattern, lastChat);
-		}
-		else if (substring == "lastChat sarcasm")
-		{
-			std::string lastChat = LastChat();
-			if (lastChat == "") return "";
-
-			std::string sarcasmChat = toSarcasm(lastChat);
-			newString = std::regex_replace(newString, specificRegexPattern, sarcasmChat);
-		}
-		else if (substring == "lastChat uwu")
-		{
-			std::string lastChat = LastChat();
-			if (lastChat == "") return "";
-
-			std::string uwuChat = toUwu(lastChat);
-			newString = std::regex_replace(newString, specificRegexPattern, uwuChat);
-		}
-		else {
-			newString = std::regex_replace(newString, specificRegexPattern, Variation(substring));
-		}
-	}
-
-	return newString;
-}
-
-
 void CustomQuickchat::UpdateDataFromVariationStr()
 {
 	for (auto& variation : Variations)	// <--- not const bc variation instances should be modified
@@ -305,6 +285,25 @@ void CustomQuickchat::UpdateDataFromVariationStr()
 	}
 }
 
+
+std::string CustomQuickchat::GetRankStr(EKeyword keyword)
+{
+	switch (keyword)
+	{
+	case EKeyword::BlastAll:
+		return AllRanks();
+	case EKeyword::BlastCasual:
+		return SpecificRank("casual");
+	case EKeyword::Blast1v1:
+		return SpecificRank("1v1");
+	case EKeyword::Blast2v2:
+		return SpecificRank("2v2");
+	case EKeyword::Blast3v3:
+		return SpecificRank("3v3");
+	default:
+		return "";
+	}
+}
 
 std::string CustomQuickchat::LastChat()
 {
@@ -631,11 +630,44 @@ void CustomQuickchat::UpdateData()
 }
 
 
+ETextEffect CustomQuickchat::GetTextEffect(EKeyword keyword)
+{
+	switch (keyword)
+	{
+	case EKeyword::LastChatUwu:
+	case EKeyword::SpeechToTextUwu:
+		return ETextEffect::Uwu;
+	case EKeyword::LastChatSarcasm:
+	case EKeyword::SpeechToTextSarcasm:
+		return ETextEffect::Sarcasm;
+	default:
+		return ETextEffect::None;
+	}
+}
+
+
+std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
+{
+	switch (effect)
+	{
+	case ETextEffect::None:
+		return originalText;
+	case ETextEffect::Uwu:
+		return toUwu(originalText);
+	case ETextEffect::Sarcasm:
+		return toSarcasm(originalText);
+	default:
+		return originalText;
+	}
+}
+
+
+
 // to be called in separate thread (in onLoad)
 void CustomQuickchat::PreventGameFreeze()
 {
 	// for sending chats
-	Instances.SendChat("custom quickchats activated", EChatChannel::EChatChannel_Match);
+	Instances.SendChat(" ", EChatChannel::EChatChannel_Match);
 
 	LOG("Sent dummy chat to prevent game freeze...");
 
@@ -726,10 +758,11 @@ void CustomQuickchat::InitStuffOnLoad()
 	CheckJsonFiles();
 	UpdateData();
 	ClearTranscriptionJson();
+	PreventGameFreeze();
 
-	// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
-	std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
-	newThread.detach();		// don't wait for thread to finish... let it be freee
+	//// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
+	//std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
+	//newThread.detach();		// don't wait for thread to finish... let it be freee
 }
 
 

@@ -48,3 +48,33 @@ void CustomQuickchat::RegisterCommand(const Cvars::CvarData& cvar, std::function
 {
 	cvarManager->registerNotifier(cvar.name, callback, cvar.description, PERMISSION_ALL);
 }
+
+
+void CustomQuickchat::RunCommand(const Cvars::CvarData& command, float delaySeconds)
+{
+	if (delaySeconds == 0)
+	{
+		cvarManager->executeCommand(command.name);
+	}
+	else if (delaySeconds > 0)
+	{
+		gameWrapper->SetTimeout([this, command](GameWrapper* gw) {
+			cvarManager->executeCommand(command.name);
+		}, delaySeconds);
+	}
+}
+
+
+void CustomQuickchat::RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand)
+{
+	if (!delayFirstCommand)
+	{
+		RunCommand(command);
+		numIntervals--;
+	}
+
+	for (int i = 1; i <= numIntervals; i++)
+	{
+		RunCommand(command, delaySeconds * i);
+	}
+}

@@ -51,6 +51,17 @@ void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
 }
 
 
+void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
+{
+	auto shell = Instances.GetInstanceOf<UGFxShell_X>();
+	if (!shell) return;
+
+	shell->ExitToMainMenu();
+
+	LOG("exited to main menu");
+}
+
+
 void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 {
 	auto shell = Instances.GetInstanceOf<UGFxShell_TA>();
