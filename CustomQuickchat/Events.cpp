@@ -134,7 +134,7 @@ void CustomQuickchat::Event_OnChatMessage(ActorWrapper caller, void* params, std
 
 	FGFxChatMessage* Params = reinterpret_cast<FGFxChatMessage*>(params);
 	if (!Params) return;
-	Params->TimeStamp = FString("");
+	Params->TimeStamp = "";
 }
 
 

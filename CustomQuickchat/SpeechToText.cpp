@@ -11,7 +11,31 @@ fs::path CustomQuickchat::findPythonInterpreter()
 
 	fs::path searchResult;
 
-	if (!autoDetectInterpreterPath_cvar.getBoolValue())
+	// if auto detect py interpreter is enabled
+	if (autoDetectInterpreterPath_cvar.getBoolValue())
+	{
+		//// set outputOfWherePythonw if it's empty
+		//if (outputOfWherePythonw.empty())
+		//{
+		//	outputOfWherePythonw = Files::GetCommandOutput("where pythonw");	// can't do this here, bc GetCommandOutput() must be run in a separate thread
+		//}
+
+		if (!outputOfWherePythonw.empty())
+		{
+			searchResult = outputOfWherePythonw;								// 1st option (preferred) ... prolly most reliable way of getting interpreter path
+			if (fs::exists(searchResult)) return searchResult;
+		}
+
+		searchResult = findInterpreterUsingSearchPathW(L"pythonw.exe");			// 2nd option
+
+		// as last resort, try to find interpreter by manually checking each directory in PATH
+		if (!fs::exists(searchResult))
+		{
+			searchResult = manuallySearchPathDirectories("pythonw.exe");		// 3rd option
+		}
+	}
+	// if manually specify py interpreter is enabled
+	else
 	{
 		auto pythonInterpreterPath_cvar = GetCvar(Cvars::pythonInterpreterPath);
 		if (!pythonInterpreterPath_cvar) return fs::path();
@@ -32,14 +56,6 @@ fs::path CustomQuickchat::findPythonInterpreter()
 			STTLog("[ERROR] Filepath doesn't exist!");
 			LOG("[ERROR] Filepath doesnt exist: {}", pythonInterpreterPath);
 		}
-	}
-
-	searchResult = findInterpreterUsingSearchPathW(L"pythonw.exe");		// 1st option
-
-	if (!fs::exists(searchResult))
-	{
-		// find interpreter by manually checking each directory in PATH
-		searchResult = manuallySearchPathDirectories("pythonw.exe");	// 2nd option (fallback)
 	}
 
 	return searchResult;
@@ -213,7 +229,6 @@ void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect,
 }
 
 
-//void CustomQuickchat::StartSpeechToText(const std::string& chatMode, const std::string& effect, bool test, bool calibrateMic)
 void CustomQuickchat::StartSpeechToText(EChatChannel chatMode, ETextEffect effect, bool test, bool calibrateMic)
 {
 	// reset transcription data

@@ -33,6 +33,10 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void onUnload() override;
 
 
+	// constants
+	static constexpr const char* keywordRegexPattern = R"(\[\[(.*?)\]\])";
+
+
 	// bools
 	bool onLoadComplete = false;
 	bool gamePaused = false;
@@ -45,15 +49,13 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void InitKeyStates();
 	void CheckJsonFiles();
 	void GetFilePaths();
-	void UpdateData();
+	void ReadDataFromJson();
 	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
 
 
 	// sending chat stuff
 	void SendChat(const std::string& chat, EChatChannel chatMode);
-	ETextEffect GetTextEffect(EKeyword keyword);
 	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
-	std::vector<std::string> GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr);
 
 
 	// chat timeout stuff
@@ -72,6 +74,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void UpdateMicCalibration(float timeOut);
 
 	// speech-to-text python interpreter stuff
+	std::string outputOfWherePythonw;
 	fs::path findPythonInterpreter();
 	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
 	fs::path manuallySearchPathDirectories(const std::string& fileName);
@@ -93,6 +96,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void ResetAllFirstButtonStates();
 	int FindButtonIndex(const std::string& buttonName);
 
+	void UpdateBindingsData();
 	void WriteBindingsToJson();
 	void WriteVariationsToJson();
 

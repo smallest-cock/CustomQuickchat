@@ -6,85 +6,83 @@
 
 void CustomQuickchat::PerformBindingAction(const Binding& binding)
 {
-	// get keywords in chat string
-	std::string pattern = R"(\[\[(.*?)\]\])"; // Regex pattern to match double brackets [[...]] ... maybe turn into CVar and make editable?
-	std::vector<std::string> stringsFoundInBrackets = GetSubstringsUsingRegexPattern(binding.chat, pattern);
-
-	// processedChat starts out as the original raw chat string, and will get processed one stringFoundInBrackets at a time
+	// processedChat starts out as the original raw chat string, and will get processed if it includes word variations or relevant keywords (i.e. lastChat)
 	std::string processedChat = binding.chat;
 
-	// handle any words in double brackets, like special keywords or word variations
-	for (const std::string& stringFoundInBrackets : stringsFoundInBrackets)
+	bool shouldProcessChatStr = false;
+
+	switch (binding.keyWord)
 	{
-		auto it = keywordsMap.find(stringFoundInBrackets);
-		
-		// if a special keyword was found (not a variation list name)
-		if (it != keywordsMap.end())
-		{
-			// get keyword and text effect (if any)
-			EKeyword keyword = it->second;
-			ETextEffect textEffect = GetTextEffect(keyword);
-
-			// initialize variables outside switch
-			std::string rankStr;
-			std::string specificPattern;
-			std::regex specificRegexPattern;
-			bool replaceWithLastChat = false;  // whether or not to replace keyword with last chat after switch
-
-			switch (keyword)
-			{
-			case EKeyword::SpeechToText:
-			case EKeyword::SpeechToTextSarcasm:
-			case EKeyword::SpeechToTextUwu:
-				if (ActiveSTTAttemptID == "420_blz_it_lmao")
-					StartSpeechToText(binding.chatMode, textEffect);
-				else
-					STTLog("Speech-to-text is already active!");
-				return;
-			case EKeyword::BlastAll:
-			case EKeyword::BlastCasual:
-			case EKeyword::Blast1v1:
-			case EKeyword::Blast2v2:
-			case EKeyword::Blast3v3:
-				rankStr = GetRankStr(keyword);
-				if (rankStr.empty()) return;
-				SendChat(rankStr, binding.chatMode);
-				return;
-			case EKeyword::Forfeit:
-				RunCommand(Cvars::forfeit);
-				return;
-			case EKeyword::ExitToMainMenu:
-				RunCommand(Cvars::exitToMainMenu);
-				return;
-			case EKeyword::LastChat:
-			case EKeyword::LastChatSarcasm:
-			case EKeyword::LastChatUwu:
-				replaceWithLastChat = true;
-				specificPattern = "\\[\\[" + stringFoundInBrackets + "\\]\\]";
-				specificRegexPattern = std::regex(specificPattern);
-				break;
-			default:
-				break;
-			}
-			
-			// replace keyword with last chat (with text effect if necessary)
-			if (replaceWithLastChat)
-			{
-				std::string lastChat = LastChat();
-				if (lastChat == "") return;
-
-				std::string chatWithEffect = ApplyTextEffect(lastChat, textEffect);
-				processedChat = std::regex_replace(processedChat, specificRegexPattern, chatWithEffect);
-			}
-		}
-		// if something else, like a variation list name (or nothing), was found inside brackets
+	case EKeyword::SpeechToText:
+	case EKeyword::SpeechToTextSarcasm:
+	case EKeyword::SpeechToTextUwu:
+		if (ActiveSTTAttemptID == "420_blz_it_lmao")
+			StartSpeechToText(binding.chatMode, binding.textEffect);
 		else
-		{
-			// replace keyword with word variation
-			std::string specificPattern = "\\[\\[" + stringFoundInBrackets + "\\]\\]";
-			std::regex specificRegexPattern(specificPattern);
+			STTLog("Speech-to-text is already active!");
+		return;
+	case EKeyword::BlastAll:
+	case EKeyword::BlastCasual:
+	case EKeyword::Blast1v1:
+	case EKeyword::Blast2v2:
+	case EKeyword::Blast3v3:
+		SendChat(GetRankStr(binding.keyWord), binding.chatMode);
+		return;
+	case EKeyword::Forfeit:
+		RunCommand(Cvars::forfeit);
+		return;
+	case EKeyword::ExitToMainMenu:
+		RunCommand(Cvars::exitToMainMenu);
+		return;
 
-			processedChat = std::regex_replace(processedChat, specificRegexPattern, Variation(stringFoundInBrackets));
+	// lastChat and word variations need to parse the chat string every time binding is triggered (but im prolly wrong, and theres a way to eliminate the need)
+	// ... the others only need to do it when the binding is created
+	case EKeyword::LastChat:
+	case EKeyword::LastChatSarcasm:
+	case EKeyword::LastChatUwu:
+	case EKeyword::WordVariation:
+		shouldProcessChatStr = true;
+		break;
+	default:
+		break;
+	}
+
+	// parse the chat string for relevant keywords/variations and replace the text as necessary
+	if (shouldProcessChatStr)
+	{
+		auto stringsToReplace = binding.GetMatchedSubstrings(keywordRegexPattern);
+
+		for (const auto& strToBeReplaced : stringsToReplace)
+		{
+			const std::string regexPatternStr = "\\[\\[" + strToBeReplaced + "\\]\\]";
+			std::regex regexPattern(regexPatternStr);
+
+			auto it = keywordsMap.find(strToBeReplaced);
+
+			// if a special keyword was found (not a variation list name) .... which, at this point, would be just one of the lastChat keywords
+			if (it != keywordsMap.end())
+			{
+				std::string lastChat;
+
+				switch (it->second)
+				{
+				case EKeyword::LastChat:
+				case EKeyword::LastChatUwu:
+				case EKeyword::LastChatSarcasm:
+					lastChat = LastChat();
+					if (lastChat == "") return;
+					lastChat = ApplyTextEffect(lastChat, binding.textEffect);
+					processedChat = std::regex_replace(processedChat, regexPattern, lastChat);
+					break;
+				default:
+					break;	// this should never get executed bc keyword should be a lastChat atp, but who knows
+				}
+			}
+			// if something else was found, like a word variation list name
+			else
+			{
+				processedChat = std::regex_replace(processedChat, regexPattern, Variation(strToBeReplaced));
+			}
 		}
 	}
 
@@ -252,25 +250,6 @@ std::string CustomQuickchat::Variation(const std::string& listName)
 }
 
 
-std::vector<std::string> CustomQuickchat::GetSubstringsUsingRegexPattern(const std::string& inputStr, const std::string& patternRawStr)
-{
-	std::regex regexPattern(patternRawStr);
-
-	std::vector<std::string> matchedSubstrings;
-	std::sregex_iterator it(inputStr.begin(), inputStr.end(), regexPattern);
-	std::sregex_iterator end;
-
-	while (it != end)
-	{
-		std::string matchedSubstring = (*it)[1].str();
-		matchedSubstrings.push_back(matchedSubstring);
-		++it;
-	}
-
-	return matchedSubstrings;
-}
-
-
 void CustomQuickchat::UpdateDataFromVariationStr()
 {
 	for (auto& variation : Variations)	// <--- not const bc variation instances should be modified
@@ -304,6 +283,7 @@ std::string CustomQuickchat::GetRankStr(EKeyword keyword)
 		return "";
 	}
 }
+
 
 std::string CustomQuickchat::LastChat()
 {
@@ -560,7 +540,7 @@ std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std:
  }
 
 
-void CustomQuickchat::UpdateData()
+void CustomQuickchat::ReadDataFromJson()
 {
 	std::string jsonFileRawStr = readContent(bindingsFilePath);
 
@@ -579,12 +559,15 @@ void CustomQuickchat::UpdateData()
 				Binding binding;
 				binding.chat = bindingObj["chat"];
 				binding.chatMode = static_cast<EChatChannel>(bindingObj["chatMode"]);
-				binding.bindingType = static_cast<BindingType>(bindingObj["bindingType"]);
+				binding.bindingType = static_cast<EBindingType>(bindingObj["bindingType"]);
 
 				for (const std::string& buttonName : bindingObj["buttons"])
 				{
 					binding.buttons.push_back(buttonName);
 				}
+
+				// lastly, update binding's keyWord and textEffect values (which depend on the chat value above)
+				binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
 
 				Bindings.push_back(binding);
 			}
@@ -630,22 +613,6 @@ void CustomQuickchat::UpdateData()
 }
 
 
-ETextEffect CustomQuickchat::GetTextEffect(EKeyword keyword)
-{
-	switch (keyword)
-	{
-	case EKeyword::LastChatUwu:
-	case EKeyword::SpeechToTextUwu:
-		return ETextEffect::Uwu;
-	case EKeyword::LastChatSarcasm:
-	case EKeyword::SpeechToTextSarcasm:
-		return ETextEffect::Sarcasm;
-	default:
-		return ETextEffect::None;
-	}
-}
-
-
 std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
 {
 	switch (effect)
@@ -662,7 +629,6 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 }
 
 
-
 // to be called in separate thread (in onLoad)
 void CustomQuickchat::PreventGameFreeze()
 {
@@ -676,11 +642,20 @@ void CustomQuickchat::PreventGameFreeze()
 }
 
 
+void CustomQuickchat::UpdateBindingsData()
+{
+	for (auto& binding : Bindings)
+	{
+		binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
+	}
+}
+
+
 void CustomQuickchat::WriteBindingsToJson()
 {
 	json bindingsJsonObj;
 	
-	for (const auto& binding: Bindings)
+	for (const auto& binding : Bindings)
 	{
 		json singleBinding;
 
@@ -756,9 +731,18 @@ void CustomQuickchat::InitStuffOnLoad()
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();
 	CheckJsonFiles();
-	UpdateData();
+	ReadDataFromJson();
 	ClearTranscriptionJson();
 	PreventGameFreeze();
+
+	inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
+
+	std::thread([this]() {
+
+		outputOfWherePythonw = Files::GetCommandOutput("where pythonw");
+		LOG("outputOfWherePythonw: {}", outputOfWherePythonw);
+
+		}).detach();
 
 	//// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
 	//std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));

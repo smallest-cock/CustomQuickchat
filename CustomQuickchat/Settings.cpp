@@ -54,6 +54,15 @@ void CustomQuickchat::RenderSettings()
 				SpeechToTextSettings();
 			}
 
+			GUI::Spacing(4);
+
+			if (ImGui::Button("Send a test chat"))
+			{
+				GAME_THREAD_EXECUTE(
+					Instances.SendChat("this is a test...", EChatChannel::EChatChannel_Match);
+				);
+			}
+
 			GUI::Spacing(8);
 
 			// open bindings window button
@@ -468,7 +477,7 @@ void CustomQuickchat::RenderBindingDetails()
 
 				const std::string& bindingTypeStr = possibleBindingTypes[i];
 				if (ImGui::Selectable(bindingTypeStr.c_str(), static_cast<int>(selectedBinding.bindingType) == i))
-					selectedBinding.bindingType = static_cast<BindingType>(i);
+					selectedBinding.bindingType = static_cast<EBindingType>(i);
 				
 				ImGui::PopID();
 			}
@@ -478,7 +487,7 @@ void CustomQuickchat::RenderBindingDetails()
 
 		GUI::Spacing(4);
 		
-		if (selectedBinding.bindingType == BindingType::Sequence && selectedBinding.buttons.size() < 2)
+		if (selectedBinding.bindingType == EBindingType::Sequence && selectedBinding.buttons.size() < 2)
 		{
 			ImGui::Text("*** Button sequence bindings must use 2 buttons! ***");
 			GUI::Spacing(2);
@@ -539,7 +548,7 @@ void CustomQuickchat::RenderBindingDetails()
 			GUI::Spacing(2);
 		}
 
-		if (!(selectedBinding.bindingType == BindingType::Sequence && selectedBinding.buttons.size() >= 2))
+		if (!(selectedBinding.bindingType == EBindingType::Sequence && selectedBinding.buttons.size() >= 2))
 		{
 			// add new button
 			if (ImGui::Button("Add New Button"))
@@ -550,6 +559,8 @@ void CustomQuickchat::RenderBindingDetails()
 
 		if (ImGui::Button("Save"))
 		{
+			// update data for all bindings then write it to json
+			UpdateBindingsData();
 			WriteBindingsToJson();
 
 			GAME_THREAD_EXECUTE(

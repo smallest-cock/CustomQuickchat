@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-
+#include <regex>
 
 
 // ------------------------------ for imgui -----------------------------------
@@ -24,19 +24,21 @@ const std::vector<std::string> possibleChatModes =
 
 enum class EKeyword : uint8_t
 {
-	SpeechToText =			0,
-	SpeechToTextUwu =		1,
-	SpeechToTextSarcasm =	3,
-	LastChat =				4,
-	LastChatUwu =			5,
-	LastChatSarcasm =		6,
-	BlastAll =				7,
-	BlastCasual =			8,
-	Blast1v1 =				9,
-	Blast2v2 =				10,
-	Blast3v3 =				11,
-	Forfeit =				12,
-	ExitToMainMenu =		13
+	None =					0,
+	WordVariation =			1,
+	SpeechToText =			2,
+	SpeechToTextUwu =		3,
+	SpeechToTextSarcasm =	4,
+	LastChat =				5,
+	LastChatUwu =			6,
+	LastChatSarcasm =		7,
+	BlastAll =				8,
+	BlastCasual =			9,
+	Blast1v1 =				10,
+	Blast2v2 =				11,
+	Blast3v3 =				12,
+	Forfeit =				13,
+	ExitToMainMenu =		14
 };
 
 enum class ETextEffect : uint8_t
@@ -66,7 +68,7 @@ const std::unordered_map<std::string, EKeyword> keywordsMap =
 // ----------------------------------------------------------------------------
 
 
-enum class BindingType : uint8_t
+enum class EBindingType : uint8_t
 {
 	Combination =	0,
 	Sequence =		1
@@ -98,8 +100,10 @@ struct ButtonPress
 struct Binding
 {
 	std::string chat;
-	EChatChannel chatMode = EChatChannel::EChatChannel_Match;
-	BindingType bindingType = BindingType::Combination;
+	EChatChannel chatMode =				EChatChannel::EChatChannel_Match;
+	EBindingType bindingType =			EBindingType::Combination;
+	EKeyword keyWord =					EKeyword::None;
+	ETextEffect textEffect =			ETextEffect::None;
 	std::vector<std::string> buttons;
 	ButtonPress firstButtonState;
 
@@ -114,9 +118,9 @@ struct Binding
 	{
 		switch (bindingType)
 		{
-		case BindingType::Combination:
+		case EBindingType::Combination:
 			return CheckCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
-		case BindingType::Sequence:
+		case EBindingType::Sequence:
 			return CheckSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
 		default:
 			return false;	// if there's no valid binding type for some reason
@@ -197,6 +201,63 @@ struct Binding
 		}
 
 		return false;
+	}
+
+	// determine if chat contains any special keyword or text effect (once, at the time of binding creation, rather than every time binding is triggered)
+	void UpdateKeywordAndTextEffect(const std::string& regexPatternStr)
+	{
+		std::vector<std::string> matchedSubstrings = GetMatchedSubstrings(regexPatternStr);
+		
+		// handle any words in double brackets, like special keywords or word variations
+		for (const std::string& stringFoundInBrackets : matchedSubstrings)
+		{
+			auto it = keywordsMap.find(stringFoundInBrackets);
+
+			// if a special keyword was found
+			if (it != keywordsMap.end())
+			{
+				keyWord = it->second;					// update binding's keyword
+				textEffect = GetTextEffect(keyWord);	// update binding's text effect (if any)
+			}
+			// if something else was found in double brackets (aka a word variation)
+			else if (keyWord == EKeyword::None)
+			{
+				keyWord = EKeyword::WordVariation;
+			}
+		}
+	}
+
+	static ETextEffect GetTextEffect(EKeyword keyword)
+	{
+		switch (keyword)
+		{
+		case EKeyword::LastChatUwu:
+		case EKeyword::SpeechToTextUwu:
+			return ETextEffect::Uwu;
+		case EKeyword::LastChatSarcasm:
+		case EKeyword::SpeechToTextSarcasm:
+			return ETextEffect::Sarcasm;
+		default:
+			return ETextEffect::None;
+		}
+	}
+
+	std::vector<std::string> GetMatchedSubstrings(const std::string& regexPatternStr) const
+	{
+		std::regex regexPattern(regexPatternStr);
+
+		std::vector<std::string> matchedSubstrings;
+		std::sregex_iterator it(chat.begin(), chat.end(), regexPattern);
+		std::sregex_iterator end;
+
+		while (it != end)
+		{
+			std::string matchedSubstring = (*it)[1].str();
+			matchedSubstrings.push_back(matchedSubstring);
+			++it;
+		}
+
+		return matchedSubstrings;
 	}
 };
 

@@ -129,6 +129,10 @@ void CustomQuickchat::onLoad()
 		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
 		if (!searchForPyInterpreter_cvar) return;
 
+		std::string wherePythonSuccessMsg = "Filepath from output of 'where pythonw' is ";
+		wherePythonSuccessMsg += fs::exists(outputOfWherePythonw) ? "valid :)" : "invalid :(";
+		LOG(wherePythonSuccessMsg);
+			 
 		bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
 		LOG("[onLoad] searchForPyInterpreter: {}", searchForPyInterpreter);
 		if (!searchForPyInterpreter) return;
