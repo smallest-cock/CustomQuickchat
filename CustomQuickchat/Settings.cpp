@@ -29,7 +29,7 @@ void CustomQuickchat::RenderSettings()
 		bool enabled = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &enabled))
 		{
-			RUN_COMMAND(Cvars::toggleEnabled);
+			RunCommand(Cvars::toggleEnabled);
 		}
 
 		if (enabled)
@@ -323,9 +323,9 @@ void CustomQuickchat::SpeechToTextSettings()
 		// test popup notifications
 		if (ImGui::Button("Test"))
 		{
-			GAME_THREAD_EXECUTE_CAPTURE(notificationDuration,
+			GAME_THREAD_EXECUTE_CAPTURE(
 				Instances.SpawnNotification("Terry A Davis", "You can see 'em if you're driving. You just run them over. That's what you do.", notificationDuration);
-			);
+			, notificationDuration);
 		}
 	}
 

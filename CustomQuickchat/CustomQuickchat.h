@@ -68,13 +68,14 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect, const std::string& attemptID, bool test);
 	void STTLog(const std::string& message);
 	void ResetJsonFile(float micCalibration = 69420);
-	bool ClearTranscriptionJson();
+	bool ClearTranscriptionJsonSTT();
 	std::string ActiveSTTAttemptID = "420_blz_it_lmao";		// magic string... needs to be refactored
 	double micEnergyThreshold = 420;
 	void UpdateMicCalibration(float timeOut);
 
 	// speech-to-text python interpreter stuff
 	std::string outputOfWherePythonw;
+	void GetOutputOfWherePythonw();
 	fs::path findPythonInterpreter();
 	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
 	fs::path manuallySearchPathDirectories(const std::string& fileName);
@@ -167,6 +168,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// cvar change callbacks
 	void changed_enabled(std::string cvarName, CVarWrapper updatedCvar);
+	void changed_searchForPyInterpreter(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);

@@ -50,6 +50,9 @@ void CustomQuickchat::onLoad()
 	enableSTTNotifications_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enableSTTNotifications,
 		this, std::placeholders::_1, std::placeholders::_2));
 	
+	searchForPyInterpreter_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_searchForPyInterpreter,
+		this, std::placeholders::_1, std::placeholders::_2));
+
 	autoDetectInterpreterPath_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_autoDetectInterpreterPath,
 		this, std::placeholders::_1, std::placeholders::_2));
 
@@ -123,22 +126,35 @@ void CustomQuickchat::onLoad()
 	InitStuffOnLoad();
 
 
+	// search for python interpreter path (if neccessary)
 	DELAY(2.0f,
 		onLoadComplete = true;
 
 		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
 		if (!searchForPyInterpreter_cvar) return;
-
-		std::string wherePythonSuccessMsg = "Filepath from output of 'where pythonw' is ";
-		wherePythonSuccessMsg += fs::exists(outputOfWherePythonw) ? "valid :)" : "invalid :(";
-		LOG(wherePythonSuccessMsg);
-			 
 		bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
+
 		LOG("[onLoad] searchForPyInterpreter: {}", searchForPyInterpreter);
-		if (!searchForPyInterpreter) return;
 
 		// find & store filepath to pythonw.exe
-		pyInterpreter = findPythonInterpreter();
+		if (searchForPyInterpreter)
+		{
+			auto autoDetectInterpreterPath_cvar = GetCvar(Cvars::autoDetectInterpreterPath);
+			if (!autoDetectInterpreterPath_cvar) return;
+
+			if (autoDetectInterpreterPath_cvar.getBoolValue())
+			{
+				GetOutputOfWherePythonw();
+
+				DELAY(2.0f,
+					pyInterpreter = findPythonInterpreter();
+				);
+			}
+			else
+			{
+				pyInterpreter = findPythonInterpreter();
+			}
+		}
 	);
 
 

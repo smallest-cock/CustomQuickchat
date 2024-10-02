@@ -726,27 +726,16 @@ void CustomQuickchat::GetFilePaths()
 
 void CustomQuickchat::InitStuffOnLoad()
 {
-	InitKeyStates();
-
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();
 	CheckJsonFiles();
 	ReadDataFromJson();
-	ClearTranscriptionJson();
+
+	InitKeyStates();
+	ClearTranscriptionJsonSTT();
 	PreventGameFreeze();
 
 	inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
-
-	std::thread([this]() {
-
-		outputOfWherePythonw = Files::GetCommandOutput("where pythonw");
-		LOG("outputOfWherePythonw: {}", outputOfWherePythonw);
-
-		}).detach();
-
-	//// start a new thread to send a dummy 1st chat (so it wont freeze game thread)
-	//std::thread newThread(std::bind(&CustomQuickchat::PreventGameFreeze, this));
-	//newThread.detach();		// don't wait for thread to finish... let it be freee
 }
 
 
