@@ -10,6 +10,9 @@ Enables custom quickchats in Rocket League
 Chats are sent through the native Rocket League chat system ✔️
   - Better than using a script + macros to simulate keypresses, which is error prone and hacky (temporarily blocks gameplay inputs while chats are typed out)
 
+>[!WARNING]
+>This plugin seems to be incompatible with the latest version of [BetterChat](https://bakkesplugins.com/plugins/view/416). If you have both installed your game may crash!
+
 ## 🎥 Video Tutorial
 
 https://youtu.be/P4UZTl09oYo
