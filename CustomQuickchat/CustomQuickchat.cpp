@@ -93,9 +93,6 @@ void CustomQuickchat::onLoad()
 	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::NotifyChatDisabled,
 		std::bind(&CustomQuickchat::Event_NotifyChatDisabled, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::HUDDestroyed,
-		std::bind(&CustomQuickchat::Event_HUDDestroyed, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
 	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnChatMessage,
 		std::bind(&CustomQuickchat::Event_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 

@@ -182,7 +182,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName);
 	void Event_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName);
 	void Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName);
-	void Event_HUDDestroyed(ActorWrapper caller, void* params, std::string eventName);
 	void Event_PushMenu(ActorWrapper caller, void* params, std::string eventName);
 	void Event_PopMenu(ActorWrapper caller, void* params, std::string eventName);
 	void Event_LoadingScreenStart(std::string eventName);

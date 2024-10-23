@@ -56,14 +56,30 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 `[[speechToText sarcasm]]` | start listening for speech-to-text, then send the result in chat (with sarcasm effect)
 `[[speechToText uwu]]` | start listening for speech-to-text, then send the result in chat (with UωU effect)
 
-**For example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and look as if it were said by a toxic nerd
+<br>
 
-### Speech-to-text
+**For example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and be displayed as if it were said by a toxic nerd
+
+## Speech-to-text
 
 `[[speechToText]]` uses whatever mic is set as your default input device in Windows sound settings:
 
 ![](./images/default_device.png)
 
-... so if you have multiple mics connected, make sure the one you're using in RL is the default device. If you continuously get the `You didn't speak or your mic is muted` speech-to-text error, disable all other active mics from this list.
-
 **To change the default mic:** select it in the list, then click the `Set Default` button
+
+If you have multiple mics connected, make sure the one you're using in RL is the default device. If you continuously get the `No speech detected from 'microphone' ...` error, try disabling all other active mics from the list.
+
+### Troubleshooting speech-to-text errors:
+
+Most errors will be logged in the `ErrorLog.txt` file (located in the `bakkesmod\data\CustomQuickchat` folder). The log will usually give a good idea of what's causing your issue. For example, if you see this error:
+
+```
+[ERROR] Failed to import module: No module named 'pyaudio'
+```
+
+that means you dont have the `pyaudio` python package installed. You can fix that by opening a cmd window and running this command:
+
+```
+pip install pyaudio
+```

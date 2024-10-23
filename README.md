@@ -24,7 +24,7 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 ## 📖 Usage
 
-Check out the [Settings guide](./docs/Settings.md) for info about all the special features
+Check out the [Settings guide](./docs/Settings.md) for info about troubleshooting & special features
    
 ## 💻 Commands
 You can run these commands in the bakkesmod console window (F6), or bind them to a key
@@ -43,6 +43,6 @@ Inspired by Blaku's [CustomBindingPlugin](https://github.com/blaku-rl/CustomBind
 
 ## ☕ Support
 
-If you enjoy this plugin, consider funding my coffee addiction 🧡
+If you enjoy this plugin, consider supporting 🧡
 
 <a href="https://www.buymeacoffee.com/sslowdev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 200px !important;" ></a>

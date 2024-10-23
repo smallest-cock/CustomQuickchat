@@ -117,15 +117,6 @@ void CustomQuickchat::Event_NotifyChatDisabled(ActorWrapper caller, void* params
 }
 
 
-void CustomQuickchat::Event_HUDDestroyed(ActorWrapper caller, void* params, std::string eventName)
-{
-	AGFxHUD_TA* hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
-	if (!hud) return;
-
-	Instances.OnHudDestroyed(hud, caller.memory_address);
-}
-
-
 // remove chat timestamps
 void CustomQuickchat::Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName)
 {
