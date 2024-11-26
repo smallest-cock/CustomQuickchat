@@ -3,6 +3,10 @@
 
 
 
+/*
+* TODO: refactor STT stuff to use websockets instead of JSON file
+*/
+
 void CustomQuickchat::StartSpeechToText(const Binding& binding)
 {
 #if !defined(USE_SPEECH_TO_TEXT)
