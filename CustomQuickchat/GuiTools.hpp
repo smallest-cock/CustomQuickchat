@@ -15,7 +15,7 @@ namespace GUI
 		ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
 		if (ImGui::Selectable(label, false, ImGuiSelectableFlags_None, size)) {
-			ShellExecute(NULL, L"open", Format::ToWcharStringOld(url), NULL, NULL, SW_SHOWNORMAL);
+			ShellExecute(NULL, L"open", Format::ToWcharString(url), NULL, NULL, SW_SHOWNORMAL);
 		}
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);

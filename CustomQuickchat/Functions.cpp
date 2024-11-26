@@ -16,8 +16,8 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	case EKeyword::SpeechToText:
 	case EKeyword::SpeechToTextSarcasm:
 	case EKeyword::SpeechToTextUwu:
-		if (ActiveSTTAttemptID == "420_blz_it_lmao")
-			StartSpeechToText(binding.chatMode, binding.textEffect);
+		if (!attemptingSTT)
+			StartSpeechToText(binding);
 		else
 			STTLog("Speech-to-text is already active!");
 		return;
@@ -99,7 +99,17 @@ void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 	auto enabledCvar = GetCvar(Cvars::enabled);
 	if (!enabledCvar || !enabledCvar.getBoolValue()) return;
 
-	Instances.SendChat(chat, chatMode);
+	Instances.SendChat(chat, chatMode, true);
+}
+
+
+void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& message, int duration)
+{
+	GAME_THREAD_EXECUTE_CAPTURE(
+		Instances.SpawnNotification(title, message, duration);
+	, title, message, duration);
+	
+	LOG("{}: {}", title, message);
 }
 
 
@@ -208,13 +218,6 @@ void CustomQuickchat::CheckJsonFiles()
 		NewFile << "{ \"variations\": [] }";
 		NewFile.close();
 		LOG("'Variations.json' didn't exist... so I created it.");
-	}
-	if (!fs::exists(speechToTextFilePath))
-	{
-		std::ofstream NewFile(speechToTextFilePath);
-		NewFile << "{ \"transcription\": {} }";
-		NewFile.close();
-		LOG("'SpeechToText.json' didn't exist... so I created it.");
 	}
 }
 
@@ -610,6 +613,50 @@ void CustomQuickchat::ReadDataFromJson()
 	catch (...) {
 		LOG("*** Couldn't read the 'Variations.json' file! Make sure it contains valid JSON... ***");
 	}
+
+
+#ifdef USE_SPEECH_TO_TEXT
+
+	// store saved microphone energy threshold if it exists in SpeechToText.json
+	if (fs::exists(speechToTextJsonPath))
+	{
+		std::string jsonFileRawStr = readContent(speechToTextJsonPath);
+
+		// prevent crash on reading invalid JSON data
+		try
+		{
+			auto jsonData = json::parse(jsonFileRawStr);
+			auto calibrationData = jsonData["microphoneCalibration"];
+
+			if (!calibrationData.empty() && calibrationData.contains("energyThreshold"))
+			{
+				int energyThreshold = calibrationData["energyThreshold"];
+
+				LOG("Found saved microphone energy threshold in JSON: {}", energyThreshold);
+
+				// wait 1s to update cvar (after plugins.cfg is executed)
+				DELAY_CAPTURE(1.0f,
+					
+					auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
+					if (micEnergyThreshold_cvar)
+					{
+						micEnergyThreshold_cvar.setValue(energyThreshold);
+					}
+					LOG("Set micEnergyThreshold cvar to saved value from JSON: {}", energyThreshold);
+
+				, energyThreshold);
+			}
+		}
+		catch (...) {
+			LOG("Couldn't parse '{}'! Make sure it contains valid JSON... ", speechToTextJsonPath.string());
+		}
+	}
+	else
+	{
+		LOG("[ERROR] STT JSON file not found: '{}'", speechToTextJsonPath.string());
+	}
+
+#endif
 }
 
 
@@ -636,9 +683,6 @@ void CustomQuickchat::PreventGameFreeze()
 	Instances.SendChat(" ", EChatChannel::EChatChannel_Match);
 
 	LOG("Sent dummy chat to prevent game freeze...");
-
-	// for notifications
-	//Instances.SpawnNotification("custom quickchat", "onload dummy notification", 3);
 }
 
 
@@ -704,23 +748,20 @@ void CustomQuickchat::WriteVariationsToJson()
 void CustomQuickchat::GetFilePaths()
 {
 	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
-	customQuickchatFolder = bmDataFolderFilePath / "CustomQuickchat";
-	bindingsFilePath = customQuickchatFolder / "Bindings.json";
-	variationsFilePath = customQuickchatFolder / "Variations.json";
-	speechToTextFilePath = customQuickchatFolder / "SpeechToText.json";
-	speechToTextPyScriptFilePath = customQuickchatFolder / "speechToText.pyw";
+	customQuickchatFolder =			bmDataFolderFilePath / "CustomQuickchat";
+	bindingsFilePath =				customQuickchatFolder / "Bindings.json";
+	variationsFilePath =			customQuickchatFolder / "Variations.json";
+
+#ifdef USE_SPEECH_TO_TEXT
+	speechToTextJsonPath =			customQuickchatFolder / "SpeechToText.json";
+	speechToTextExePath =			customQuickchatFolder / "SpeechToText" / "SpeechToText.exe";
+	speechToTextErrorLogPath =		customQuickchatFolder / "SpeechToText" / "ErrorLog.txt";
+#endif
 	
 	// Lobby Info JSON files
-	lobbyInfoFolder = bmDataFolderFilePath / "Lobby Info";
-	lobbyInfoChatsFilePath = lobbyInfoFolder / "Chats.json";
-	lobbyInfoRanksFilePath = lobbyInfoFolder / "Ranks.json";
-
-	// for .cfg file
-	fs::path bmPath = gameWrapper->GetBakkesModPath();
-	LOG("bmPath: {}", bmPath.string());
-
-	cfgPath = bmPath / "cfg" / "customQuickchat.cfg";
-	LOG("cfgPath: {}", cfgPath.string());
+	lobbyInfoFolder =				bmDataFolderFilePath / "Lobby Info";
+	lobbyInfoChatsFilePath =		lobbyInfoFolder / "Chats.json";
+	lobbyInfoRanksFilePath =		lobbyInfoFolder / "Ranks.json";
 }
 
 
@@ -731,11 +772,53 @@ void CustomQuickchat::InitStuffOnLoad()
 	CheckJsonFiles();
 	ReadDataFromJson();
 
+#ifdef USE_SPEECH_TO_TEXT
+	ClearSttErrorLog();
+#endif
+
 	InitKeyStates();
-	ClearTranscriptionJsonSTT();
 	PreventGameFreeze();
 
 	inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
+}
+
+
+DWORD CustomQuickchat::CreateProcessUsingCommand(const std::string& command)
+{
+	// CreateProcess variables
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+
+	// Initialize STARTUPINFO
+	ZeroMemory(&si, sizeof(si));
+	si.cb = sizeof(si);
+	ZeroMemory(&pi, sizeof(pi));
+
+	// Create the process to start python script
+	if (CreateProcess(
+		NULL,									// Application name (set NULL to use command)
+		Format::ToWcharString(command),			// Command
+		NULL,									// Process security attributes
+		NULL,									// Thread security attributes
+		FALSE,									// Inherit handles from the calling process
+		CREATE_NEW_CONSOLE,						// Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
+		NULL,									// Use parent's environment block
+		NULL,									// Use parent's starting directory
+		&si,									// Pointer to STARTUPINFO
+		&pi										// Pointer to PROCESS_INFORMATION
+	))
+	{
+		// After successfully starting process, close handle to allow it to run asynchronously
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+
+		return 0;
+	}
+	else
+	{
+		// Failed to create process
+		return GetLastError();
+	}
 }
 
 
