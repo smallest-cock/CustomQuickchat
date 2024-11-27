@@ -107,12 +107,7 @@ IF %ERRORLEVEL% EQU 0 (
 )
 
 
-rem ----------- upgrade pip and install required python packages (for speech-to-text) -----------
-
-cd %~dp0
-
-python.exe -m pip install --upgrade pip
-pip install -r requirements.txt
+rem ------------------------------ success message -------------------------------
 
 
 echo.
