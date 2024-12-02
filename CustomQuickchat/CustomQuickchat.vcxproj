@@ -50,6 +50,12 @@
     <OutDir>$(SolutionDir)plugins\</OutDir>
     <IntDir>$(SolutionDir)build\.intermediates\$(Configuration)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -95,6 +101,7 @@
     <ClCompile Include="Commands.cpp" />
     <ClCompile Include="Components\Components\Instances.cpp" />
     <ClCompile Include="Components\Components\Utils.cpp" />
+    <ClCompile Include="Components\Components\WebsocketManager.cpp" />
     <ClCompile Include="CvarChangeCallbacks.cpp" />
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="Functions.cpp" />
@@ -135,6 +142,7 @@
   <ItemGroup>
     <ClInclude Include="Components\Components\Instances.hpp" />
     <ClInclude Include="Components\Components\Utils.hpp" />
+    <ClInclude Include="Components\Components\WebsocketManager.hpp" />
     <ClInclude Include="Components\Includes.hpp" />
     <ClInclude Include="Cvars.hpp" />
     <ClInclude Include="Events.hpp" />

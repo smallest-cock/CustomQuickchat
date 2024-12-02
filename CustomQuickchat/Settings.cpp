@@ -237,6 +237,13 @@ void CustomQuickchat::SpeechToTextSettings()
 	if (!micEnergyThreshold_cvar) return;
 
 	GUI::Spacing(2);
+	
+	// display websocket connection status
+	std::string connection_status =  Websocket->IsConnectedToServer() ? ("Connected (port " stringify(WS_PORT) ")") : "Not connected";
+	std::string ws_status_str = "Websocket status:\t" + connection_status;
+	ImGui::Text(ws_status_str.c_str());
+
+	GUI::Spacing(2);
 
 	bool autoCalibrateMic = autoCalibrateMic_cvar.getBoolValue();
 	int radioButtonVal = autoCalibrateMic ? 0 : 1;

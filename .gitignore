@@ -2,5 +2,6 @@
 .vscode
 build
 plugins
+vcpkg_installed
 CustomQuickchat/SDK
 CustomQuickchat/Components

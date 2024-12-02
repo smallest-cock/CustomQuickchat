@@ -23,6 +23,16 @@
 
 
 
+#ifdef USE_SPEECH_TO_TEXT
+
+#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <websocketpp/client.hpp>
+
+typedef websocketpp::client<websocketpp::config::asio_client> client;
+
+#endif
+
+
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 #if !defined(USE_SPEECH_TO_TEXT)
@@ -33,6 +43,12 @@ constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringif
 
 
 #ifdef USE_SPEECH_TO_TEXT
+
+struct ActiveSTTAttempt
+{
+	std::string attemptID;
+	Binding binding;
+};
 
 struct SpeechToTextResult
 {
@@ -175,7 +191,33 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	fs::path speechToTextErrorLogPath;
 
 	// mutable values
+	ActiveSTTAttempt Active_STT_Attempt;
 	std::string ActiveSTTAttemptID;
+
+
+	// websocket stuff
+	#define WS_PORT 8003
+
+	static constexpr const char* ws_url = "ws://localhost:" stringify(WS_PORT);
+
+	std::shared_ptr<WebsocketClientManager> Websocket;
+	
+	void process_ws_response(const json& response);
+
+	std::string generate_STT_attempt_id();
+
+	json generate_data_for_STT_attempt();
+
+	std::mutex mtx;
+	std::condition_variable cv;
+	std::string received_message;
+	std::atomic<bool> message_ready = false;
+
+	void start_websocket_server();
+	void websocket_thread();
+	void on_ws_message(websocketpp::connection_hdl, client::message_ptr msg);
+
+
 
 	// mic calibration
 	void CalibrateMicrophone();
@@ -185,7 +227,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// speech-to-text
 	std::string GenerateSTTCommand(bool calibrateMic);
-	std::string CreateSTTCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
+	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void STTWaitAndProbe(const Binding& binding);
 	void StartProbingJsonForSTTResult(const Binding& binding);
 	SpeechToTextResult CheckJsonForSTTResult();

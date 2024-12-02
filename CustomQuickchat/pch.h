@@ -22,7 +22,8 @@
 #include <fstream>
 #include <shellapi.h>
 
-#include "nlohmann.hpp"
+//#include "nlohmann.hpp"
+#include <nlohmann/json.hpp>
 #include "SDK/SdkHeaders.hpp"
 
 #include "logging.h"

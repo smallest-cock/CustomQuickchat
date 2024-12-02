@@ -156,6 +156,9 @@
     <ClCompile Include="RegisterCvars.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
+    <ClCompile Include="Components\Components\WebsocketManager.cpp">
+      <Filter>Components\Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imgui_rangeslider.h">
@@ -343,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="Macros.hpp">
       <Filter>Plugin\header</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Components\WebsocketManager.hpp">
+      <Filter>Components\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

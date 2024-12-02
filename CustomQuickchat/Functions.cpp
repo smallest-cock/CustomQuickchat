@@ -106,10 +106,8 @@ void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& message, int duration)
 {
 	GAME_THREAD_EXECUTE_CAPTURE(
-		Instances.SpawnNotification(title, message, duration);
+		Instances.SpawnNotification(title, message, duration, true);
 	, title, message, duration);
-	
-	LOG("{}: {}", title, message);
 }
 
 
@@ -773,7 +771,22 @@ void CustomQuickchat::InitStuffOnLoad()
 	ReadDataFromJson();
 
 #ifdef USE_SPEECH_TO_TEXT
+	
 	ClearSttErrorLog();
+
+	// start websocket sever (spawn python process)
+	start_websocket_server();
+
+	// create websocket object
+	std::function<void(json serverResponse)> ws_response_callback = std::bind(&CustomQuickchat::process_ws_response, this, std::placeholders::_1);
+	
+	Websocket = std::make_shared<WebsocketClientManager>(cvarManager, ws_url, ws_response_callback);
+
+	// wait 10s after python websocket server is started to start client
+	DELAY(10.0f,
+		Websocket->StartClient();
+	);
+
 #endif
 
 	InitKeyStates();

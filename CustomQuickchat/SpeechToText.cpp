@@ -3,10 +3,6 @@
 
 
 
-/*
-* TODO: refactor STT stuff to use websockets instead of JSON file
-*/
-
 void CustomQuickchat::StartSpeechToText(const Binding& binding)
 {
 #if !defined(USE_SPEECH_TO_TEXT)
@@ -27,30 +23,196 @@ void CustomQuickchat::StartSpeechToText(const Binding& binding)
 		return;
 	}
 
-	ResetSTTJsonFile();
+	// update Active_STT_Attempt data
+	Active_STT_Attempt.binding = binding;
+	Active_STT_Attempt.attemptID = generate_STT_attempt_id();
 
-	std::string command = GenerateSTTCommand(false);		// also updates ActiveSTTAttemptID
-
-	DWORD error = CreateProcessUsingCommand(command);
-	if (error != 0)
+	json data = generate_data_for_STT_attempt();
+	if (data.empty())
 	{
-		STTLog("Error starting speech-to-text using CreateProcess. Error code: " + std::to_string(error));
+		STTLog("Error generating JSON data for speech-to-text attempt");
 		return;
 	}
+
+	Websocket->SendEvent("start_speech_to_text", data);
 
 	attemptingSTT = true;
 
 	// prompt user for speech
 	STTLog("listening......");
 
-	// wait for speech, and probe JSON file for response
-	STTWaitAndProbe(binding);
-
 #endif // USE_SPEECH_TO_TEXT
 }
 
 
+json CustomQuickchat::generate_data_for_STT_attempt()
+{
+	json data;
+
+	auto beginSpeechTimeout_cvar =			GetCvar(Cvars::beginSpeechTimeout);
+	auto speechProcessingTimeout_cvar =		GetCvar(Cvars::speechProcessingTimeout);
+	auto autoCalibrateMic_cvar =			GetCvar(Cvars::autoCalibrateMic);
+	auto micEnergyThreshold_cvar =			GetCvar(Cvars::micEnergyThreshold);
+
+	if (!beginSpeechTimeout_cvar || !speechProcessingTimeout_cvar) return data;
+
+	float beginSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
+	float processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
+	float micEnergyThreshold = micEnergyThreshold_cvar.getFloatValue();
+	bool autoCalibrateMic = autoCalibrateMic_cvar.getBoolValue();
+
+	data["args"] =
+	{
+		{ "beginSpeechTimeout",		beginSpeechTimeout },
+		{ "processSpeechTimeout",	processSpeechTimeout },
+		{ "autoCalibrateMic",		autoCalibrateMic },
+		{ "micEnergyThreshold",		micEnergyThreshold },
+		{ "attemptId",				Active_STT_Attempt.attemptID }
+	};
+}
+
+
+std::string CustomQuickchat::generate_STT_attempt_id()
+{
+	std::string id = Format::GenRandomString(10);
+	LOG("Generated ID for current speech-to-text attempt: {}", id);
+	return id;
+}
+
 #ifdef USE_SPEECH_TO_TEXT
+
+void CustomQuickchat::start_websocket_server()
+{
+	// start websocket sever (spawn python process)
+	std::string command = CreateCommandString(speechToTextExePath.string(), { stringify(WS_PORT) });	// args: py exe, websocket port
+	
+	CreateProcessUsingCommand(command);
+
+	LOG("Created process using command: {}", command);
+}
+
+
+void CustomQuickchat::process_ws_response(const json& response)
+{
+	if (response.contains("testResponse"))
+	{
+		auto testResponse = response["testResponse"];
+
+		std::string message = testResponse["message"];
+
+		STTLog(message);
+	}
+	else if (response["event"] == "speech_to_text_result")
+	{
+		if (!response.contains("data"))
+		{
+			STTLog("[ERROR] Missing 'data' field in speech-to-text response JSON");
+			return;
+		}
+
+		auto stt_result_data = response["data"];
+
+		if (!stt_result_data.contains("attemptId"))
+		{
+			STTLog("[ERROR] Missing 'attemptId' field in speech-to-text response JSON");
+			return;
+		}
+
+		if (stt_result_data["attemptId"] != Active_STT_Attempt.attemptID)
+		{
+			LOG("[ERROR] Attempt ID in response JSON doesn't match active STT attempt ID");
+			return;
+		}
+
+		if (stt_result_data.contains("success"))
+		{
+			if (stt_result_data["success"])
+			{
+				if (stt_result_data.contains("transcription"))
+				{
+					std::string text = stt_result_data["transcription"];
+					const Binding& binding = Active_STT_Attempt.binding;
+
+					// apply text effect if necessary
+					text = ApplyTextEffect(text, binding.textEffect);
+
+					// send chat
+					GAME_THREAD_EXECUTE_CAPTURE(
+						SendChat(text, binding.chatMode);
+					, text, binding);
+				}
+				else
+				{
+					STTLog("[ERROR] No transcription data found in speech-to-text response JSON");
+				}
+			}
+			else
+			{
+				if (stt_result_data.contains("errorMsg"))
+				{
+					STTLog(stt_result_data["errorMsg"]);
+				}
+				else
+				{
+					STTLog("Unknown error occurred during speech-to-text processing");
+				}
+			}
+		}
+		else
+		{
+			STTLog("[ERROR] Missing 'success' field in speech-to-text response JSON");
+		}
+	}
+	else if (response.contains("micCalibrationResponse"))
+	{
+		auto micCalibrationResponse = response["micCalibrationResponse"];
+
+		// ...
+	}
+	else
+	{
+		STTLog("[ERROR] Unknown response JSON from websocket server");
+	}
+}
+
+
+void CustomQuickchat::websocket_thread()
+{
+	client ws_client;
+
+	try
+	{
+		ws_client.init_asio();
+		ws_client.set_message_handler(std::bind(&CustomQuickchat::on_ws_message, this, std::placeholders::_1, std::placeholders::_2));
+
+		websocketpp::lib::error_code ec;
+		client::connection_ptr con = ws_client.get_connection(ws_url, ec);
+		if (ec)
+		{
+			STTLog("WebSocket connection error: " + ec.message());
+			return;
+		}
+
+		ws_client.connect(con);
+
+		// Run the WebSocket loop
+		ws_client.run();
+	}
+	catch (const std::exception& e)
+	{
+		STTLog("WebSocket exception: " + std::string(e.what()));
+	}
+}
+
+
+void CustomQuickchat::on_ws_message(websocketpp::connection_hdl, client::message_ptr msg)
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	received_message = msg->get_payload();
+	message_ready = true;
+	cv.notify_all();
+}
+
 
 // ======================================== MIC CALIBRATION ========================================
 
@@ -340,7 +502,7 @@ std::string CustomQuickchat::GenerateSTTCommand(bool calibrateMic)
 		args.emplace_back("--use-saved-calibration-value");
 	}
 
-	command = CreateSTTCommandString(speechToTextExePath, args);
+	command = CreateCommandString(speechToTextExePath, args);
 
 	LOG("STT command: {}", command);
 
@@ -348,7 +510,7 @@ std::string CustomQuickchat::GenerateSTTCommand(bool calibrateMic)
 }
 
 
-std::string CustomQuickchat::CreateSTTCommandString(const fs::path& executablePath, const std::vector<std::string>& args)
+std::string CustomQuickchat::CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args)
 {
 	std::string commandStr = "\"" + executablePath.string() + "\"";
 
@@ -414,8 +576,8 @@ void CustomQuickchat::ClearSttErrorLog()
 
 void CustomQuickchat::STTLog(const std::string& message)
 {
-	auto enableSTTNotifications_cvar = GetCvar(Cvars::enableSTTNotifications);
-	auto notificationDuration_cvar = GetCvar(Cvars::notificationDuration);
+	auto enableSTTNotifications_cvar =	GetCvar(Cvars::enableSTTNotifications);
+	auto notificationDuration_cvar =	GetCvar(Cvars::notificationDuration);
 	if (!enableSTTNotifications_cvar || !notificationDuration_cvar) return;
 
 	if (enableSTTNotifications_cvar.getBoolValue())

@@ -123,4 +123,11 @@ void CustomQuickchat::onLoad()
 void CustomQuickchat::onUnload()
 {
 	WriteBindingsToJson();		// just to make sure any unsaved changes are saved before exiting
+
+#ifdef USE_SPEECH_TO_TEXT
+
+	Websocket->StopClient();
+
+#endif // USE_SPEECH_TO_TEXT
+
 }
