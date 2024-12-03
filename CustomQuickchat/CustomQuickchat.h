@@ -18,19 +18,7 @@
 #include "Components/Includes.hpp"
 
 
-
 #define USE_SPEECH_TO_TEXT
-
-
-
-#ifdef USE_SPEECH_TO_TEXT
-
-#include <websocketpp/config/asio_no_tls_client.hpp>
-#include <websocketpp/client.hpp>
-
-typedef websocketpp::client<websocketpp::config::asio_client> client;
-
-#endif
 
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -202,39 +190,33 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	std::shared_ptr<WebsocketClientManager> Websocket;
 	
+	void start_websocket_server();
 	void process_ws_response(const json& response);
+	void process_STT_result(const json& response_data);
+	void process_mic_calibration_result(const json& response_data);
+
 
 	std::string generate_STT_attempt_id();
-
 	json generate_data_for_STT_attempt();
-
-	std::mutex mtx;
-	std::condition_variable cv;
-	std::string received_message;
-	std::atomic<bool> message_ready = false;
-
-	void start_websocket_server();
-	void websocket_thread();
-	void on_ws_message(websocketpp::connection_hdl, client::message_ptr msg);
-
+	json generate_data_for_mic_calibration_attempt();
 
 
 	// mic calibration
 	void CalibrateMicrophone();
-	void MicCalibrationWaitAndProbe(int micCalibrationTimeout);
-	void StartProbingJsonForMicCalibrationResult(int micCalibrationTimeout);
-	MicCalibrationResult CheckJsonForCalibrationResult();
+	//void MicCalibrationWaitAndProbe(int micCalibrationTimeout);
+	//void StartProbingJsonForMicCalibrationResult(int micCalibrationTimeout);
+	//MicCalibrationResult CheckJsonForCalibrationResult();
 
 	// speech-to-text
-	std::string GenerateSTTCommand(bool calibrateMic);
+	//std::string GenerateSTTCommand(bool calibrateMic);
 	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
-	void STTWaitAndProbe(const Binding& binding);
-	void StartProbingJsonForSTTResult(const Binding& binding);
-	SpeechToTextResult CheckJsonForSTTResult();
+	//void STTWaitAndProbe(const Binding& binding);
+	//void StartProbingJsonForSTTResult(const Binding& binding);
+	//SpeechToTextResult CheckJsonForSTTResult();
 
 	// misc
 	void ClearSttErrorLog();
-	void ResetSTTJsonFile();
+	//void ResetSTTJsonFile();
 
 	void STTLog(const std::string& message);
 

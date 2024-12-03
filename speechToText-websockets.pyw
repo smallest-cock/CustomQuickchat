@@ -10,7 +10,6 @@ log_file = os.path.join(executable_folder, 'ErrorLog.txt')
 logging.basicConfig(filename=log_file, level=logging.ERROR, 
                     format='%(asctime)s [%(levelname)s] %(message)s')
 
-
 try:
     import asyncio
     import websockets
@@ -30,78 +29,157 @@ class ArgumentParserWithLogging(argparse.ArgumentParser):
         super().error(message)  # prints the error and raises SystemExit
 
 
-def create_STT_result_dict(data : dict, attempt_id : str) -> dict:
-    data["attemptId"] = attempt_id
-    return {"event": "speech_to_text_result", "data": data}
+class WebsocketHandler:
+    # def __init__(self, websocket: websockets.server.ServerConnection):    # <-- websockets.server.ServerConnection isn't defined when ran?
+    def __init__(self, websocket):
+        self.websocket = websocket
+
+    # --------------------- sending/formatting responses ---------------------
+
+    async def send_response(self, response : dict):
+        await self.websocket.send(json.dumps(response))
+
+    def format_response(self, event_name : str, data : dict, attempt_id : str = "") -> dict:
+        if attempt_id:
+            data["attemptId"] = attempt_id
+
+        return { "event": event_name, "data": data }
+    
+    def error_response(self, errorMsg: str, attempt_id : str = "") -> dict:
+        return self.format_response("error_response", { "errorMsg": errorMsg }, attempt_id)
+    
+    # ------------------------------------------------------------------------
 
 
-def process_speech_to_text(start_speech_timeout : float,
-                        process_request_timeout : float,
-                        auto_calibrate_mic : bool,
-                        mic_energy_threshold : float,
-                        attempt_ID : str):
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("Listening for audio...")
+    async def handle_message(self, message):
         try:
-            # set mic energy threshold
-            if auto_calibrate_mic:
-                recognizer.adjust_for_ambient_noise()
-            else:
-                recognizer.energy_threshold = mic_energy_threshold
+            request : dict = json.loads(message)    # parse the message as JSON
+            print(f"Received request: {request}")
 
-            audio = recognizer.listen(source, timeout=start_speech_timeout, phrase_time_limit=process_request_timeout)
-            result = recognizer.recognize_google(audio)
+            event = request.get("event")
+            data = request.get("data")
             
-            return create_STT_result_dict({"success": True, "transcription": result}, attempt_ID)
-        
-        except sr.WaitTimeoutError:
-            return create_STT_result_dict({"success": False, "errorMsg": "Timeout: No speech detected"}, attempt_ID)
-        except sr.UnknownValueError:
-            return create_STT_result_dict({"success": False, "errorMsg": "Could not understand audio"}, attempt_ID)
-        except sr.RequestError as e:
-            return create_STT_result_dict({"success": False, "errorMsg": f"API request failed: {e}"}, attempt_ID)
+            if event is None or data is None:
+                response = self.error_response("Invalid JSON in websocket message")
+            else:
+                response = await self.get_response_from_event(event, data)
+
+            await self.send_response(response)  # send reponse back to client as serialized JSON
+
+        except json.JSONDecodeError:    # Handle invalid JSON
+            response = self.error_response("Invalid JSON format")
+            await self.send_response(response)
+
+
+    async def get_response_from_event(self, event : str, request_data : dict) -> dict:
+        response = self.error_response("Invalid event name in websocket request JSON")
+
+        if event == "start_speech_to_text":
+            response = await self.process_STT_request(request_data)
+
+        elif event == "calibrate_microphone":
+            response = await self.process_calibration_request(request_data)
+
+        elif event == "test":
+            response = self.format_response("test_response", {"message": "this is a message from the other side"})
+
+        return response
+
+
+    async def process_STT_request(self, request_data: dict):
+        response = self.error_response("Unable to parse the STT request data")  # default response
+
+        if stt_args := request_data.get("args"):
+            if attempt_id := stt_args.get("attemptId"):
+                stt_result = await self.speech_to_text(
+                    stt_args["beginSpeechTimeout"],
+                    stt_args["processSpeechTimeout"],
+                    stt_args["autoCalibrateMic"],
+                    stt_args["micEnergyThreshold"],
+                    attempt_id)
+                
+                response = self.format_response("speech_to_text_result", stt_result, attempt_id)
+
+        return response
+
+    async def process_calibration_request(self, data : dict) -> dict:
+        response = self.error_response("Unable to parse the mic calibration request data")  # default response
+
+        if attempt_id := data.get("attemptId"):
+            calibration_result = await self.calibrate_microphone(attempt_id)
+            response = self.format_response("mic_calibration_result", calibration_result, attempt_id)
+
+        return response
+    
+
+    async def speech_to_text(self,
+        start_speech_timeout :      float,
+        process_request_timeout :   float,
+        auto_calibrate_mic :        bool,
+        mic_energy_threshold :      float,
+        attempt_id:                 str
+        ) -> dict:
+        with mic as source:
+            print("Listening for audio...")
+            try:
+                await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))    # notify client mic is listening...
+
+                # set mic energy threshold
+                if auto_calibrate_mic:
+                    recognizer.adjust_for_ambient_noise(source)
+                else:
+                    recognizer.energy_threshold = mic_energy_threshold
+
+                audio = recognizer.listen(source, timeout=start_speech_timeout, phrase_time_limit=process_request_timeout)
+                result = recognizer.recognize_google(audio)
+                
+                return { "success": True, "transcription": result }
+            
+            except sr.WaitTimeoutError:
+                return { "success": False, "errorMsg": "Timeout: No speech detected" }
+            except sr.UnknownValueError:
+                return { "success": False, "errorMsg": "Could not understand audio" }
+            except sr.RequestError as e:
+                return { "success": False, "errorMsg": f"API request failed: {str(e)}" }
+            except Exception as e:
+                return { "success": False, "errorMsg": str(e) }
+
+
+    async def calibrate_microphone(self, attempt_id: str) -> dict:
+        try:
+            print(f'BEFORE: energy_threshold = {recognizer.energy_threshold}')
+
+            await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))    # notify client mic is listening...
+
+            with mic as source:
+                recognizer.adjust_for_ambient_noise(source)
+
+            print(f'AFTER: energy_threshold = {recognizer.energy_threshold}')
+
+            return { "success" : True, "mic_energy_threshold" : recognizer.energy_threshold }
+
+        except OSError as e:
+            return { "success" : False, "errorMsg" : "No microphone detected" }
         except Exception as e:
-            return create_STT_result_dict({"success": False, "errorMsg": e}, attempt_ID)
+            return { "success" : False, "errorMsg" : str(e) }
+
 
 
 # handle incoming websocket connections
 async def handle_client(websocket):
+    ws_connection = WebsocketHandler(websocket)
     print("Client connected")
+
     try:
         async for message in websocket:
-            try:
-                # Parse the incoming message as JSON
-                request : dict = json.loads(message)
-                print(f"Received request: {request}")
+            await ws_connection.handle_message(message)
 
-                # Check the type of request based on JSON content
-                if request.get("event") == "start_speech_to_text":
-                    if data := request.get("data"):
-                        if stt_args := data.get("args"):
-                            response = process_speech_to_text(
-                                stt_args["beginSpeechTimeout"],
-                                stt_args["processSpeechTimeout"],
-                                stt_args["autoCalibrateMic"],
-                                stt_args["attemptId"])
-                    await websocket.send(json.dumps(response))
-
-                elif request.get("event") == "test":
-                    response = {"testResponse": {"message": "this is a message from the other side"}}
-                    await websocket.send(json.dumps(response))
-
-                else:
-                    await websocket.send(json.dumps({"status": "error", "message": "Unknown command"}))
-
-            except json.JSONDecodeError:
-                # Handle invalid JSON
-                error_response = {"status": "error", "message": "Invalid JSON format"}
-                await websocket.send(json.dumps(error_response))
-
-    except websockets.ConnectionClosed:
-        print("Client disconnected")
+    except websockets.ConnectionClosed as e:
+        disconnect_msg = f"Client disconnected: {e.code} - {e.reason}"
+        print(disconnect_msg)
+        logging.warning(disconnect_msg)
     except Exception as e:
-        logging.error(f"Error: {e}")
+        logging.error(f"Unexpected error: {e}")
 
 
 async def start_server(port : int):
@@ -120,6 +198,11 @@ def main():
     args = parser.parse_args()
 
     asyncio.run(start_server(args.port_number))
+
+
+# global variables (so a new object isn't created on every client request)
+recognizer = sr.Recognizer()
+mic = sr.Microphone()
 
 
 if __name__ == "__main__":
