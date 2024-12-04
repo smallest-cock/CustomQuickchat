@@ -611,50 +611,6 @@ void CustomQuickchat::ReadDataFromJson()
 	catch (...) {
 		LOG("*** Couldn't read the 'Variations.json' file! Make sure it contains valid JSON... ***");
 	}
-
-
-#ifdef USE_SPEECH_TO_TEXT
-
-	// store saved microphone energy threshold if it exists in SpeechToText.json
-	if (fs::exists(speechToTextJsonPath))
-	{
-		std::string jsonFileRawStr = readContent(speechToTextJsonPath);
-
-		// prevent crash on reading invalid JSON data
-		try
-		{
-			auto jsonData = json::parse(jsonFileRawStr);
-			auto calibrationData = jsonData["microphoneCalibration"];
-
-			if (!calibrationData.empty() && calibrationData.contains("energyThreshold"))
-			{
-				int energyThreshold = calibrationData["energyThreshold"];
-
-				LOG("Found saved microphone energy threshold in JSON: {}", energyThreshold);
-
-				// wait 1s to update cvar (after plugins.cfg is executed)
-				DELAY_CAPTURE(1.0f,
-					
-					auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
-					if (micEnergyThreshold_cvar)
-					{
-						micEnergyThreshold_cvar.setValue(energyThreshold);
-					}
-					LOG("Set micEnergyThreshold cvar to saved value from JSON: {}", energyThreshold);
-
-				, energyThreshold);
-			}
-		}
-		catch (...) {
-			LOG("Couldn't parse '{}'! Make sure it contains valid JSON... ", speechToTextJsonPath.string());
-		}
-	}
-	else
-	{
-		LOG("[ERROR] STT JSON file not found: '{}'", speechToTextJsonPath.string());
-	}
-
-#endif
 }
 
 
@@ -776,18 +732,18 @@ void CustomQuickchat::InitStuffOnLoad()
 
 	// ----------- testing stuff, to manually start ws server and client connection -----------
 
-	//// start websocket sever (spawn python process)
-	//start_websocket_server();
+	// start websocket sever (spawn python process)
+	start_websocket_server();
 
 	// create websocket object
 	std::function<void(json serverResponse)> ws_response_callback = std::bind(&CustomQuickchat::process_ws_response, this, std::placeholders::_1);
 	
 	Websocket = std::make_shared<WebsocketClientManager>(cvarManager, ws_url, ws_response_callback);
 
-	//// wait 10s after python websocket server is started to start client
-	//DELAY(10.0f,
-	//	Websocket->StartClient();
-	//);
+	// wait x seconds after python websocket server is started to start client
+	DELAY(start_ws_client_delay,
+		Websocket->StartClient();
+	);
 
 #endif
 

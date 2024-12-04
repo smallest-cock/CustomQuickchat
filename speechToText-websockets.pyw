@@ -16,6 +16,7 @@ try:
     import argparse
     import json
     import pyaudio		# just to make sure pyaudio module is installed
+    import psutil
     import speech_recognition as sr
 except ImportError as e:
     logging.error(f"Failed to import module: {e}")
@@ -29,6 +30,13 @@ class ArgumentParserWithLogging(argparse.ArgumentParser):
         super().error(message)  # prints the error and raises SystemExit
 
 
+def port_in_use(port: int) -> bool:
+  for connection in psutil.net_connections():
+    if connection.laddr.port == port:
+      return True
+  return False
+
+
 class WebsocketHandler:
     # def __init__(self, websocket: websockets.server.ServerConnection):    # <-- websockets.server.ServerConnection isn't defined when ran?
     def __init__(self, websocket):
@@ -36,16 +44,16 @@ class WebsocketHandler:
 
     # --------------------- sending/formatting responses ---------------------
 
-    async def send_response(self, response : dict):
+    async def send_response(self, response: dict):
         await self.websocket.send(json.dumps(response))
 
-    def format_response(self, event_name : str, data : dict, attempt_id : str = "") -> dict:
+    def format_response(self, event_name: str, data: dict, attempt_id: str = "") -> dict:
         if attempt_id:
             data["attemptId"] = attempt_id
 
         return { "event": event_name, "data": data }
     
-    def error_response(self, errorMsg: str, attempt_id : str = "") -> dict:
+    def error_response(self, errorMsg: str, attempt_id: str = "") -> dict:
         return self.format_response("error_response", { "errorMsg": errorMsg }, attempt_id)
     
     # ------------------------------------------------------------------------
@@ -71,7 +79,7 @@ class WebsocketHandler:
             await self.send_response(response)
 
 
-    async def get_response_from_event(self, event : str, request_data : dict) -> dict:
+    async def get_response_from_event(self, event: str, request_data: dict) -> dict:
         response = self.error_response("Invalid event name in websocket request JSON")
 
         if event == "start_speech_to_text":
@@ -102,7 +110,7 @@ class WebsocketHandler:
 
         return response
 
-    async def process_calibration_request(self, data : dict) -> dict:
+    async def process_calibration_request(self, data: dict) -> dict:
         response = self.error_response("Unable to parse the mic calibration request data")  # default response
 
         if attempt_id := data.get("attemptId"):
@@ -113,10 +121,10 @@ class WebsocketHandler:
     
 
     async def speech_to_text(self,
-        start_speech_timeout :      float,
-        process_request_timeout :   float,
-        auto_calibrate_mic :        bool,
-        mic_energy_threshold :      float,
+        start_speech_timeout:       float,
+        process_request_timeout:    float,
+        auto_calibrate_mic:         bool,
+        mic_energy_threshold:       float,
         attempt_id:                 str
         ) -> dict:
         with mic as source:
@@ -182,8 +190,12 @@ async def handle_client(websocket):
         logging.error(f"Unexpected error: {e}")
 
 
-async def start_server(port : int):
-    print(f"Starting WebSocket server using port {port} ...")
+async def start_server(port: int):
+    if port_in_use(port):
+        print(f"Unable to start WebSocket server on port {port}! It's already in use")
+        return
+    
+    print(f"Starting WebSocket server on port {port} ...")
     server = await websockets.serve(handle_client, "localhost", port)
     await server.wait_closed()
 

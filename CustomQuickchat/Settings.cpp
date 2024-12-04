@@ -237,11 +237,34 @@ void CustomQuickchat::SpeechToTextSettings()
 	if (!micEnergyThreshold_cvar) return;
 
 	GUI::Spacing(2);
+
+	bool ws_is_connected_to_server = Websocket->IsConnectedToServer();
 	
 	// display websocket connection status
-	std::string connection_status =  Websocket->IsConnectedToServer() ? ("Connected (port " stringify(WS_PORT) ")") : "Not connected";
+	std::string connection_status = ws_is_connected_to_server ? ("Connected (port " stringify(WS_PORT) ")") : "Not connected";
 	std::string ws_status_str = "Websocket status:\t" + connection_status;
 	ImGui::Text(ws_status_str.c_str());
+
+	GUI::Spacing();
+
+	if (ws_is_connected_to_server)
+	{
+		if (ImGui::Button("Stop client##websocket"))
+		{
+			GAME_THREAD_EXECUTE(
+				Websocket->StopClient();
+			);
+		}
+	}
+	else
+	{
+		if (ImGui::Button("Start client##websocket"))
+		{
+			GAME_THREAD_EXECUTE(
+				Websocket->StartClient();
+			);
+		}
+	}
 
 	GUI::Spacing(2);
 

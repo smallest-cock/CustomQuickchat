@@ -180,44 +180,35 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// mutable values
 	ActiveSTTAttempt Active_STT_Attempt;
-	std::string ActiveSTTAttemptID;
-
 
 	// websocket stuff
 	#define WS_PORT 8003
 
+	static constexpr float start_ws_client_delay = 7.0f;		// in seconds
 	static constexpr const char* ws_url = "ws://localhost:" stringify(WS_PORT);
 
 	std::shared_ptr<WebsocketClientManager> Websocket;
 	
 	void start_websocket_server();
 	void process_ws_response(const json& response);
+
+	
+	// speech-to-text
+	json generate_data_for_STT_attempt();
 	void process_STT_result(const json& response_data);
+
+	
+	// mic calibration
+	void CalibrateMicrophone();
+	json generate_data_for_mic_calibration_attempt();
 	void process_mic_calibration_result(const json& response_data);
 
 
-	std::string generate_STT_attempt_id();
-	json generate_data_for_STT_attempt();
-	json generate_data_for_mic_calibration_attempt();
-
-
-	// mic calibration
-	void CalibrateMicrophone();
-	//void MicCalibrationWaitAndProbe(int micCalibrationTimeout);
-	//void StartProbingJsonForMicCalibrationResult(int micCalibrationTimeout);
-	//MicCalibrationResult CheckJsonForCalibrationResult();
-
-	// speech-to-text
-	//std::string GenerateSTTCommand(bool calibrateMic);
-	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
-	//void STTWaitAndProbe(const Binding& binding);
-	//void StartProbingJsonForSTTResult(const Binding& binding);
-	//SpeechToTextResult CheckJsonForSTTResult();
-
 	// misc
+	std::string generate_STT_attempt_id();
 	void ClearSttErrorLog();
-	//void ResetSTTJsonFile();
 
+	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void STTLog(const std::string& message);
 
 #endif // USE_SPEECH_TO_TEXT
