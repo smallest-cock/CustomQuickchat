@@ -3,404 +3,372 @@
 
 
 
-// search for pythonw.exe filepath
-fs::path CustomQuickchat::findPythonInterpreter()
+#if !defined(USE_SPEECH_TO_TEXT)
+
+void CustomQuickchat::no_speech_to_text_warning()
 {
-	auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
-	if (!searchForPyInterpreter_cvar || !searchForPyInterpreter_cvar.getBoolValue()) return fs::path();
+	std::string message = "This version doesnt support speech-to-text. You can find that version on the github Releases page";
+	NotifyAndLog("Speech-To-Text", message, 5);
+}
 
-	auto autoDetectInterpreterPath_cvar = GetCvar(Cvars::autoDetectInterpreterPath);
-	if (!autoDetectInterpreterPath_cvar) return fs::path();
+#else
 
-	fs::path searchResult;
+void CustomQuickchat::StartSpeechToText(const Binding& binding)
+{
 
-	// if auto detect py interpreter is enabled
-	if (autoDetectInterpreterPath_cvar.getBoolValue())
+	if (attemptingSTT)
 	{
-		if (!outputOfWherePythonw.empty())
+		STTLog("Speech-to-text is already active!");
+		return;
+	}
+
+	// update Active_STT_Attempt data
+	Active_STT_Attempt.binding = binding;
+	Active_STT_Attempt.attemptID = generate_STT_attempt_id();
+
+	json data = generate_data_for_STT_attempt();
+	if (data.empty())
+	{
+		STTLog("Error generating JSON data for speech-to-text attempt");
+		return;
+	}
+
+	Websocket->SendEvent("start_speech_to_text", data);
+
+	attemptingSTT = true;
+}
+
+
+void CustomQuickchat::start_websocket_server()
+{
+	// start websocket sever (spawn python process)
+	std::string command = CreateCommandString(speechToTextExePath.string(), { stringify(WS_PORT) });	// args: py exe, websocket port
+	
+	CreateProcessUsingCommand(command);
+
+	LOG("Created process using command: {}", command);
+}
+
+
+json CustomQuickchat::generate_data_for_STT_attempt()
+{
+	json data;
+
+	auto beginSpeechTimeout_cvar = GetCvar(Cvars::beginSpeechTimeout);
+	auto speechProcessingTimeout_cvar = GetCvar(Cvars::speechProcessingTimeout);
+	auto autoCalibrateMic_cvar = GetCvar(Cvars::autoCalibrateMic);
+	auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
+
+	if (!beginSpeechTimeout_cvar || !speechProcessingTimeout_cvar) return data;
+
+	float beginSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
+	float processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
+	float micEnergyThreshold = micEnergyThreshold_cvar.getFloatValue();
+	bool autoCalibrateMic = autoCalibrateMic_cvar.getBoolValue();
+
+	data["args"] =
+	{
+		{ "beginSpeechTimeout",		beginSpeechTimeout },
+		{ "processSpeechTimeout",	processSpeechTimeout },
+		{ "autoCalibrateMic",		autoCalibrateMic },
+		{ "micEnergyThreshold",		micEnergyThreshold },
+		{ "attemptId",				Active_STT_Attempt.attemptID }
+	};
+
+	return data;
+}
+
+
+json CustomQuickchat::generate_data_for_mic_calibration_attempt()
+{
+	json data;
+
+	data["attemptId"] = Active_STT_Attempt.attemptID;
+
+	return data;
+}
+
+
+std::string CustomQuickchat::generate_STT_attempt_id()
+{
+	std::string id = Format::GenRandomString(10);
+	LOG("Generated ID for current speech-to-text attempt: {}", id);
+	return id;
+}
+
+
+void CustomQuickchat::process_ws_response(const json& response)
+{
+	if (!response.contains("event"))
+	{
+		STTLog("[ERROR] Missing 'event' field in response JSON from websocket server");
+		return;
+	}
+
+	std::string event = response["event"];
+
+	// TODO: maybe abstract the repeated code below into a function that takes event as an arg (DRY)
+	if (event == "speech_to_text_result")
+	{
+		if (!response.contains("data"))
 		{
-			searchResult = outputOfWherePythonw;								// 1st option (preferred) ... prolly most reliable way of getting interpreter path
-			if (fs::exists(searchResult)) return searchResult;
+			STTLog("[ERROR] Missing 'data' field in speech-to-text response JSON");
+			return;
 		}
 
-		searchResult = findInterpreterUsingSearchPathW(L"pythonw.exe");			// 2nd option
-		if (fs::exists(searchResult)) return searchResult;
+		auto stt_result_data = response["data"];
 
-		// as last resort, try to find interpreter by manually checking each directory in PATH
-		searchResult = manuallySearchPathDirectories("pythonw.exe");			// 3rd option
+		process_STT_result(stt_result_data);
 	}
-	// if manually specify py interpreter is enabled
+	else if (event == "mic_calibration_result")
+	{
+		if (!response.contains("data"))
+		{
+			STTLog("[ERROR] Missing 'data' field in mic calibration response JSON");
+			return;
+		}
+
+		auto mic_calibration_result_data = response["data"];
+
+		process_mic_calibration_result(mic_calibration_result_data);
+	}
+	else if (event == "test_response")
+	{
+		auto responseData = response["data"];
+
+		std::string message = responseData["message"];
+
+		STTLog(message);
+	}
+	else if (event == "notify_mic_listening")
+	{
+		if (!response.contains("data"))
+		{
+			STTLog("[ERROR] Missing 'data' field in error response JSON from websocket server");
+			return;
+		}
+
+		auto responseData = response["data"];
+
+		if (!responseData.contains("attemptId"))
+		{
+			STTLog("[ERROR] Missing 'attemptId' field in notify_mic_listening response JSON");
+			return;
+		}
+
+		if (responseData["attemptId"] != Active_STT_Attempt.attemptID)
+		{
+			LOG("[ERROR] Attempt ID in response JSON doesn't match active STT attempt ID");
+			return;
+		}
+
+		STTLog("listening......");
+	}
+
+	else if (event == "error_response")
+	{
+		if (!response.contains("data"))
+		{
+			STTLog("[ERROR] Missing 'data' field in error response JSON from websocket server");
+			return;
+		}
+
+		auto error_data = response["data"];
+
+		// TODO: check for attempt ID, and do specific things based on if it matches the active attempt ID
+
+		if (error_data.contains("errorMsg"))
+		{
+			STTLog("[ERROR] " + error_data["errorMsg"]);
+		}
+		else
+		{
+			STTLog("[ERROR] Missing 'errorMsg' field in error response JSON");
+		}
+	}
 	else
 	{
-		auto pythonInterpreterPath_cvar = GetCvar(Cvars::pythonInterpreterPath);
-		if (!pythonInterpreterPath_cvar) return fs::path();
-
-		std::string pythonInterpreterPath = pythonInterpreterPath_cvar.getStringValue();
-		searchResult = fs::path(pythonInterpreterPath);
-
-		if (fs::exists(searchResult))
-		{ 
-			STTLog("Updated python interpreter filepath");
-			return searchResult;
-		}
-		else if (searchResult.empty())
-		{
-			STTLog("[ERROR] Filepath is empty!");
-		}
-		else {
-			STTLog("[ERROR] Filepath doesn't exist!");
-			LOG("[ERROR] Filepath doesnt exist: {}", pythonInterpreterPath);
-		}
+		STTLog("[ERROR] Unknown event type in response JSON");
 	}
-
-	return searchResult;
 }
 
 
-void CustomQuickchat::GetOutputOfWherePythonw()
+void CustomQuickchat::process_STT_result(const json& response_data)
 {
-	std::thread([this]() {
-
-		outputOfWherePythonw = Files::GetCommandOutput("where pythonw");
-		LOG("outputOfWherePythonw: {}", outputOfWherePythonw);
-
-	}).detach();
-}
-
-
-fs::path CustomQuickchat::findInterpreterUsingSearchPathW(const wchar_t* fileName)
-{
-	wchar_t buffer[MAX_PATH];
-	DWORD result = SearchPath(NULL, fileName, NULL, MAX_PATH, buffer, NULL);
-
-	if (result > 0 && result < MAX_PATH)
+	if (!response_data.contains("attemptId"))
 	{
-		fs::path foundPath = fs::path(buffer);
-		LOG("found pythonw.exe filepath using SearchPathW: {}", foundPath.string());
-		return foundPath;
+		STTLog("[ERROR] Missing 'attemptId' field in speech-to-text response JSON");
+		return;
 	}
-	else {
-		return fs::path(); // return empty path (same as "")
-	}
-}
 
-
-fs::path CustomQuickchat::manuallySearchPathDirectories(const std::string& fileName)
-{
-	std::vector<std::string> paths = getPathsFromEnvironmentVariable();
-
-	for (const auto& path : paths)
+	if (response_data["attemptId"] != Active_STT_Attempt.attemptID)
 	{
-		std::filesystem::path fullPath = path;
-		fullPath /= fileName;
-
-		if (fs::exists(fullPath))
-		{
-			return fullPath;
-		}
+		LOG("[ERROR] Attempt ID in response JSON doesn't match active STT attempt ID");
+		return;
 	}
 
-	return fs::path();	// return empty path (same as "")
+	if (response_data.contains("success"))
+	{
+		if (response_data["success"])
+		{
+			if (response_data.contains("transcription"))
+			{
+				std::string text = response_data["transcription"];
+				const Binding& binding = Active_STT_Attempt.binding;
+
+				// apply text effect if necessary
+				text = ApplyTextEffect(text, binding.textEffect);
+
+				// send chat
+				GAME_THREAD_EXECUTE_CAPTURE(
+					SendChat(text, binding.chatMode);
+				, text, binding);
+			}
+			else
+			{
+				STTLog("[ERROR] No transcription data found in speech-to-text response JSON");
+			}
+		}
+		else
+		{
+			if (response_data.contains("errorMsg"))
+			{
+				STTLog(response_data["errorMsg"]);
+			}
+			else
+			{
+				STTLog("Unknown error occurred during speech-to-text processing");
+			}
+		}
+	}
+	else
+	{
+		STTLog("[ERROR] Missing 'success' field in speech-to-text response JSON");
+	}
+
+	attemptingSTT = false;
 }
 
 
-std::vector<std::string> CustomQuickchat::getPathsFromEnvironmentVariable()
+void CustomQuickchat::process_mic_calibration_result(const json& response_data)
 {
-	std::vector<std::string> paths;
-	char* pathEnv = nullptr;
-	size_t pathLen = 0;
-	_dupenv_s(&pathEnv, &pathLen, "PATH");
-
-	if (pathEnv) {
-		std::string pathStr(pathEnv);
-		size_t pos = 0;
-		std::string delimiter = ";";
-		while ((pos = pathStr.find(delimiter)) != std::string::npos) {
-			paths.push_back(pathStr.substr(0, pos));
-			pathStr.erase(0, pos + delimiter.length());
-		}
-		paths.push_back(pathStr); // Add the last path segment
-		free(pathEnv);
+	if (!response_data.contains("attemptId"))
+	{
+		STTLog("[ERROR] Missing 'attemptId' field in speech-to-text response JSON");
+		return;
 	}
 
-	return paths;
+	if (response_data["attemptId"] != Active_STT_Attempt.attemptID)
+	{
+		LOG("[ERROR] Attempt ID in response JSON doesn't match active STT attempt ID");
+		return;
+	}
+
+	if (response_data.contains("success"))
+	{
+		if (response_data["success"])
+		{
+			if (response_data.contains("mic_energy_threshold"))
+			{
+				auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
+				if (!micEnergyThreshold_cvar) return;
+
+				int new_energy_threshold = response_data["mic_energy_threshold"];
+
+				micEnergyThreshold_cvar.setValue(new_energy_threshold);
+
+				LOG("Updated mic energy threshold: {}", new_energy_threshold);
+			}
+			else
+			{
+				STTLog("[ERROR] Missing 'mic_energy_threshold' field in mic calibration response JSON");
+			}
+		}
+		else
+		{
+			if (response_data.contains("errorMsg"))
+			{
+				STTLog(response_data["errorMsg"]);
+			}
+			else
+			{
+				STTLog("[ERROR] Unknown error occurred during microphone calibration");
+			}
+		}
+	}
+	else
+	{
+		STTLog("[ERROR] Missing 'success' field in speech-to-text response JSON");
+	}
+
+	calibratingMicLevel = false;
+}
+
+
+// ======================================== MIC CALIBRATION ========================================
+
+void CustomQuickchat::CalibrateMicrophone()
+{
+	if (calibratingMicLevel)
+	{
+		STTLog("Mic calibration is already active!");
+		return;
+	}
+
+	// update Active_STT_Attempt ID
+	Active_STT_Attempt.attemptID = generate_STT_attempt_id();
+
+	json data = generate_data_for_mic_calibration_attempt();
+	if (data.empty())
+	{
+		STTLog("Error generating JSON data for mic calibration attempt");
+		return;
+	}
+
+	Websocket->SendEvent("calibrate_microphone", data);
+
+	calibratingMicLevel = true;
+}
+
+
+// ========================================= SPEECH-TO-TEXT ========================================
+
+
+
+std::string CustomQuickchat::CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args)
+{
+	std::string commandStr = "\"" + executablePath.string() + "\"";
+
+	for (const std::string& arg : args)
+	{
+		commandStr += " \"" + arg + "\"";
+	}
+
+	return commandStr;
+}
+
+
+void CustomQuickchat::ClearSttErrorLog()
+{
+	// Open file in write mode to clear its contents
+	std::ofstream ofs(speechToTextErrorLogPath, std::ofstream::out | std::ofstream::trunc);
+	ofs.close();
+
+	LOG("Cleared '{}'", speechToTextErrorLogPath.string());
 }
 
 
 void CustomQuickchat::STTLog(const std::string& message)
 {
-	if (!onLoadComplete) return;	// to prevent crash on startup (bc threaded spawnnotification crash bs)
+	auto enableSTTNotifications_cvar =	GetCvar(Cvars::enableSTTNotifications);
+	auto notificationDuration_cvar =	GetCvar(Cvars::notificationDuration);
+	if (!enableSTTNotifications_cvar || !notificationDuration_cvar) return;
 
-	auto enableSTTNotificationsCvar = GetCvar(Cvars::enableSTTNotifications);
-	if (!enableSTTNotificationsCvar) return;
-
-	if (enableSTTNotificationsCvar.getBoolValue())
+	if (enableSTTNotifications_cvar.getBoolValue())
 	{
-		auto notificationDurationCvar = GetCvar(Cvars::notificationDuration);
-		if (!notificationDurationCvar) return;
-
-		Instances.SpawnNotification("Speech-To-Text", message, notificationDurationCvar.getFloatValue());
+		NotifyAndLog("Speech-To-Text", message, notificationDuration_cvar.getFloatValue());
 	}
 }
 
+#endif // USE_SPEECH_TO_TEXT
 
-//void CustomQuickchat::STTWaitAndProbe(const std::string& chatMode, const std::string& effect, const std::string& attemptID, bool test)
-void CustomQuickchat::STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect, const std::string& attemptID, bool test)
-{
-	auto speechProcessingTimeoutCvar = GetCvar(Cvars::speechProcessingTimeout);
-	if (!speechProcessingTimeoutCvar) return;
-	int processSpeechTimeout = speechProcessingTimeoutCvar.getIntValue();
-
-
-	// probe JSON file ...
-	for (int i = 0; i < (((processSpeechTimeout - 2) * 5) + 1); i++)
-	{
-		gameWrapper->SetTimeout([this, chatMode, effect, attemptID, test, i](GameWrapper* gw) {
-
-			if (ActiveSTTAttemptID == attemptID)
-			{
-				std::string jsonFileRawStr = readContent(speechToTextFilePath);
-
-				// prevent crash on reading invalid JSON data
-				try
-				{
-					auto transcriptionData = json::parse(jsonFileRawStr);
-					auto transcription = transcriptionData["transcription"];
-
-					if (transcription.empty()) return;		// return if still processing
-
-					// make sure JSON data is from the same attempt
-					std::string jsonAttemptID = transcriptionData["transcription"]["ID"];
-					if (jsonAttemptID != attemptID) return;
-
-					bool error = transcriptionData["transcription"]["error"];
-
-					// clear active attempt ID
-					ActiveSTTAttemptID = "420_blz_it_lmao";
-
-					if (!test)
-					{
-						if (!error)
-						{
-							std::string text = transcription["text"];
-
-							// apply text effect if necessary
-							switch (effect)
-							{
-							case ETextEffect::Uwu:
-								text = toUwu(text);
-								break;
-							case ETextEffect::Sarcasm:
-								text = toSarcasm(text);
-								break;
-							default:
-								break;
-							}
-
-							SendChat(text, chatMode);
-						}
-						else
-						{
-							std::string errorMsg = transcriptionData["transcription"]["errorMessage"];
-							LOG("[SPEECH-TO-TEXT] Error: {}", errorMsg);
-							STTLog("[ERROR] " + errorMsg);
-						}
-					}
-				}
-				catch (...)
-				{
-					// clear active attempt ID
-					ActiveSTTAttemptID = "420_blz_it_lmao";
-
-					STTLog("[ERROR] Couldn't read 'SpeechToText.json'... Make sure it contains valid JSON");
-				}
-			}
-
-		}, ((i + 1) * 0.2) + 2);	// wait 2 seconds before probing (to help avoid unnecessary probing while user still speaking)
-	}
-
-
-	gameWrapper->SetTimeout([this, processSpeechTimeout, attemptID, test](GameWrapper* gw) {
-
-		if (ActiveSTTAttemptID == attemptID && !test)
-		{
-			STTLog("Processing reached timeout of " + std::to_string(processSpeechTimeout) + " seconds... aborting");
-
-			// clear active attempt ID
-			ActiveSTTAttemptID = "420_blz_it_lmao";
-		}
-
-		}, processSpeechTimeout);
-
-}
-
-
-void CustomQuickchat::StartSpeechToText(EChatChannel chatMode, ETextEffect effect, bool test, bool calibrateMic)
-{
-	// reset transcription data
-	if (!ClearTranscriptionJsonSTT())
-	{
-		STTLog("[ERROR] 'SpeechToText.json' cannot be found");
-		return;
-	}
-
-	auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
-	if (!searchForPyInterpreter_cvar) return;
-	bool searchForPyInterpreter = searchForPyInterpreter_cvar.getBoolValue();
-
-	if (searchForPyInterpreter)
-	{
-		// search for pythonw.exe once more if it's not already found & stored
-		if (pyInterpreter.empty() || pyInterpreter.string() == "")
-		{
-			pyInterpreter = findPythonInterpreter();
-		}
-
-		if (pyInterpreter.empty() || pyInterpreter.string() == "")
-		{
-			STTLog("[ERROR] Couldn't find pythonw.exe in PATH directories");
-			return;
-		}
-	}
-
-
-	// get cvar for timeout to start speech
-	auto beginSpeechTimeout_cvar = GetCvar(Cvars::beginSpeechTimeout);
-	if (!beginSpeechTimeout_cvar) return;
-	float beginSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue() - 1.1;	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
-
-	// generate unique attempt ID
-	std::string attemptID = Format::GenRandomString(10);
-	ActiveSTTAttemptID = attemptID;		// store in global variable (so other attempts can see/compare to it)
-	LOG("ID for current speech-to-text attempt: {}", ActiveSTTAttemptID);
-
-	// determine python interpreter argument
-	std::string pyInterpreterArg = searchForPyInterpreter ? ("\"" + pyInterpreter.string() + "\"") : "pythonw";
-
-	std::string pathToPywScript = "\"" + speechToTextPyScriptFilePath.string() + "\"";
-	std::string pathToJsonFile = "\"" + speechToTextFilePath.string() + "\"";
-
-	// command to start speech-to-text python script
-	std::string command = pyInterpreterArg + " " + pathToPywScript + " " + pathToJsonFile + " " + std::to_string(beginSpeechTimeout) + " " + attemptID;
-
-	if (calibrateMic)
-	{
-		command += " --calibrate";
-	}
-
-	LOG("STT command: {}", command);
-
-	// CreateProcess variables
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	// Initialize STARTUPINFO
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-
-	// Create the process to start python script
-	if (CreateProcess(
-		NULL,								// Application name (set NULL to use command)
-		Format::ToWcharString(command),		// Command
-		NULL,								// Process security attributes
-		NULL,								// Thread security attributes
-		FALSE,								// Inherit handles from the calling process
-		CREATE_NEW_CONSOLE,					// Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
-		NULL,								// Use parent's environment block
-		NULL,								// Use parent's starting directory
-		&si,								// Pointer to STARTUPINFO
-		&pi									// Pointer to PROCESS_INFORMATION
-	))
-	{
-		// -------------- after successfully starting the process -----------
-
-		// Close process handle to allow it to run asynchronously
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-
-		if (!test && !calibrateMic)
-		{
-			// prompt user for speech
-			STTLog("listening......");
-
-			// wait for speech, and probe JSON file for response
-			STTWaitAndProbe(chatMode, effect, attemptID, test);
-		}
-		else
-		{
-			// reset active attempt ID
-			ActiveSTTAttemptID = "420_blz_it_lmao";
-		}
-	}
-	else
-	{
-		// Failed to create process
-		DWORD error = GetLastError();
-
-		STTLog("Error starting python script with CreateProcess. Error code: " + std::to_string(error));
-	}
-}
-
-
-void CustomQuickchat::ResetJsonFile(float micCalibration)
-{
-	if (!fs::exists(speechToTextFilePath)) return;
-
-	json jsonData;
-	jsonData["transcription"] = json::object();
-
-	if (micCalibration != 69420)
-	{
-		jsonData["micNoiseCalibration"] = micCalibration;
-	}
-
-	try {
-		writeJsonToFile(speechToTextFilePath, jsonData);
-	}
-	catch (const std::exception& e) {
-		LOG("Error writing JSON file: {}", e.what());
-	}
-
-	DEBUGLOG("cleared STT JSON file...");
-}
-
-
-void CustomQuickchat::UpdateMicCalibration(float timeOut)
-{
-	// get value from JSON after calibration finished
-	gameWrapper->SetTimeout([this](GameWrapper* gw) {
-
-		// read file
-		auto jsonData = getJsonFromFile(speechToTextFilePath);
-
-		if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null())
-		{
-			micEnergyThreshold = jsonData["micNoiseCalibration"];	// update value of micEnergyThreshold
-		}
-
-		}, timeOut);
-}
-
-
-bool CustomQuickchat::ClearTranscriptionJsonSTT()
-{
-	if (!fs::exists(speechToTextFilePath)) return false;
-
-	// read file
-	auto jsonData = getJsonFromFile(speechToTextFilePath);
-
-	if (jsonData.contains("micNoiseCalibration") && !jsonData["micNoiseCalibration"].is_null())
-	{
-		auto micCalibration = jsonData["micNoiseCalibration"];
-
-		if (!micCalibration.empty())
-		{
-			ResetJsonFile(micCalibration);
-			return true;
-		}
-	}
-
-	ResetJsonFile();
-	return true;
-}

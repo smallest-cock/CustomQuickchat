@@ -30,6 +30,7 @@ namespace Cvars
 	const CvarData disableChatTimeout =			{ "disable_chat_timeout",			"disable chat timeout in freeplay" };
 	const CvarData useCustomChatTimeoutMsg =	{ "enable_custom_chat_timeout_msg",	"enable custom chat timeout message" };
 	const CvarData removeTimestamps =			{ "remove_timestamps",				"remove default chat timestamps" };
+	const CvarData autoCalibrateMic =			{ "auto_calibrate_mic",				"automatically calibrate microphone on each speech-to-text attempt" };
 
 	// numbers
 	const CvarData sequenceTimeWindow =			{ "button_sequence_time_window",	"time window given for button sequence macros" };
@@ -37,6 +38,8 @@ namespace Cvars
 	const CvarData beginSpeechTimeout =			{ "begin_speech_timeout",			"timeout for starting speech" };
 	const CvarData notificationDuration =		{ "notification_duration",			"how long a popup notification will stay on the screen" };
 	const CvarData speechProcessingTimeout =	{ "speech_processing_timeout",		"timeout for processing speech" };
+	const CvarData micCalibrationTimeout =		{ "mic_calibration_timeout",		"max time to spend calibrating microphone before aborting" };
+	const CvarData micEnergyThreshold =			{ "mic_energy_threshold",			"minimum audio energy to consider for recording speech" };
 
 	// strings
 	const CvarData pythonInterpreterPath =		{ "python_interpreter_path",		"filepath to python interpreter" };
@@ -51,4 +54,5 @@ namespace Cvars
 	const CvarData exitToMainMenu =				{ "exit_to_main_menu",				"exit to the main menu"};
 	const CvarData forfeit =					{ "forfeit",						"forfeit the current match"};
 	const CvarData test =						{ "test",							"test"};
+	const CvarData test2 =						{ "test2",							"test 2"};
 }

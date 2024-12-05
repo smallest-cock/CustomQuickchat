@@ -13,18 +13,6 @@ void CustomQuickchat::cmd_toggleEnabled(std::vector<std::string> args)
 }
 
 
-void CustomQuickchat::cmd_showPathDirectories(std::vector<std::string> args)
-{
-	auto paths = getPathsFromEnvironmentVariable();
-
-	LOG("==================== PATH directories ====================");
-	for (const auto& path : paths)
-	{
-		LOG(path);
-	}
-}
-
-
 void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
 {
 	// list button bindings
@@ -74,6 +62,16 @@ void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 
 
 void CustomQuickchat::cmd_test(std::vector<std::string> args)
+{
+#ifdef USE_SPEECH_TO_TEXT
+
+	Websocket->SendEvent("test", { { "data", "test" } });
+
+#endif // USE_SPEECH_TO_TEXT
+}
+
+
+void CustomQuickchat::cmd_test2(std::vector<std::string> args)
 {
 	// ...
 }

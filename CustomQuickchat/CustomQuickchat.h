@@ -17,11 +17,43 @@
 #include "Cvars.hpp"
 #include "Components/Includes.hpp"
 
+
+#define USE_SPEECH_TO_TEXT
+
+
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
+
+#if !defined(USE_SPEECH_TO_TEXT)
 constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
+#else
+constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "\t(with speech-to-text)";
+#endif
 
 
-constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;		// maybe turn into a cvar w slider in settings
+#ifdef USE_SPEECH_TO_TEXT
+
+struct ActiveSTTAttempt
+{
+	std::string attemptID;
+	Binding binding;
+};
+
+struct SpeechToTextResult
+{
+	bool success = false;
+	bool error = false;
+	std::string outputStr;
+};
+
+struct MicCalibrationResult
+{
+	bool success = false;
+	bool error = false;
+	int energyThreshold = 420;
+	std::string errorMsg;
+};
+
+#endif
 
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
@@ -35,13 +67,25 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// constants
 	static constexpr const char* keywordRegexPattern = R"(\[\[(.*?)\]\])";
+	static constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;		// maybe turn into a cvar w slider in settings
 
 
-	// bools
-	bool onLoadComplete = false;
-	bool gamePaused = false;
-	bool matchEnded = false;
-	bool inGameEvent = false;
+	// flags
+	bool onLoadComplete =	false;
+	bool gamePaused =		false;
+	bool matchEnded =		false;
+	bool inGameEvent =		false;
+
+	
+	// CustomQuickchat filepaths
+	fs::path customQuickchatFolder;
+	fs::path bindingsFilePath;
+	fs::path variationsFilePath;
+
+	// Lobby Info filepaths
+	fs::path lobbyInfoFolder;
+	fs::path lobbyInfoChatsFilePath;
+	fs::path lobbyInfoRanksFilePath;
 
 
 	// plugin init
@@ -51,35 +95,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void GetFilePaths();
 	void ReadDataFromJson();
 	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
-
-
-	// sending chat stuff
-	void SendChat(const std::string& chat, EChatChannel chatMode);
-	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
-
-
-	// chat timeout stuff
-	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
-	void ResetChatTimeoutMsg();
-
-
-	// speech-to-text stuff
-	void StartSpeechToText(EChatChannel chatMode, ETextEffect effect = ETextEffect::None, bool test = false, bool calibrateMic = false);
-	void STTWaitAndProbe(EChatChannel chatMode, ETextEffect effect, const std::string& attemptID, bool test);
-	void STTLog(const std::string& message);
-	void ResetJsonFile(float micCalibration = 69420);
-	bool ClearTranscriptionJsonSTT();
-	std::string ActiveSTTAttemptID = "420_blz_it_lmao";		// magic string... needs to be refactored
-	double micEnergyThreshold = 420;
-	void UpdateMicCalibration(float timeOut);
-
-	// speech-to-text python interpreter stuff
-	std::string outputOfWherePythonw;
-	void GetOutputOfWherePythonw();
-	fs::path findPythonInterpreter();
-	fs::path findInterpreterUsingSearchPathW(const wchar_t* fileName);
-	fs::path manuallySearchPathDirectories(const std::string& fileName);
-	std::vector<std::string> getPathsFromEnvironmentVariable();
 
 
 	// bindings & variations stuff
@@ -115,7 +130,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void PerformBindingAction(const Binding& binding);
 
 
-
 	// Lobby Info stuff (blast ranks & last chat)
 	std::string LastChat();
 	std::string GetRankStr(EKeyword keyword);
@@ -125,51 +139,96 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	ChatterRanks FindLastChattersRanks();
 
 
-	// JSON stuff
+	// sending chat stuff
+	void SendChat(const std::string& chat, EChatChannel chatMode);
+	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
+
+
+	// chat timeout stuff
+	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
+	void ResetChatTimeoutMsg();
+
+
+	// JSON stuff (can be moved to Utils, like Files::)
 	std::string readContent(const fs::path& FileName);
 	void writeJsonToFile(const fs::path& filePath, const json& jsonData);
 	json getJsonFromFile(const fs::path& filePath);
 
 
-	// CustomQuickchat filepaths
-	fs::path customQuickchatFolder;
-	fs::path bindingsFilePath;
-	fs::path variationsFilePath;
-	fs::path speechToTextFilePath;
-	fs::path speechToTextPyScriptFilePath;
-	fs::path pyInterpreter;
-	fs::path cfgPath;
+	// misc functions
+	void NotifyAndLog(const std::string& title, const std::string& message, int duration = 3);
+	DWORD CreateProcessUsingCommand(const std::string& commandStr);
 
-	// Lobby Info filepaths
-	fs::path lobbyInfoFolder;
-	fs::path lobbyInfoChatsFilePath;
-	fs::path lobbyInfoRanksFilePath;
+	
+	// ------------------------------------ Speech-to-Text ------------------------------------
+
+#if defined(USE_SPEECH_TO_TEXT)
+
+	// constants
+	static constexpr float PROBE_JSON_FREQUENCY = 0.2f;		// in seconds
+	
+	// thread-safe flags
+	std::atomic<bool> attemptingSTT =			false;
+	std::atomic<bool> calibratingMicLevel =		false;
+
+	// filepaths
+	fs::path speechToTextExePath;
+	fs::path speechToTextJsonPath;
+	fs::path speechToTextErrorLogPath;
+
+	// mutable values
+	ActiveSTTAttempt Active_STT_Attempt;
+
+	// websocket stuff
+	#define WS_PORT 8003
+
+	static constexpr float start_ws_client_delay = 7.0f;		// in seconds
+	static constexpr const char* ws_url = "ws://localhost:" stringify(WS_PORT);
+
+	std::shared_ptr<WebsocketClientManager> Websocket;
+	
+	void start_websocket_server();
+	void process_ws_response(const json& response);
+
+	
+	// speech-to-text
+	void StartSpeechToText(const Binding& binding);
+	json generate_data_for_STT_attempt();
+	void process_STT_result(const json& response_data);
+
+	
+	// mic calibration
+	void CalibrateMicrophone();
+	json generate_data_for_mic_calibration_attempt();
+	void process_mic_calibration_result(const json& response_data);
 
 
+	// misc
+	std::string generate_STT_attempt_id();
+	void ClearSttErrorLog();
 
-	// cvar helper stuff
-	CVarWrapper RegisterCvar_Bool(const Cvars::CvarData& cvar, bool startingValue);
-	CVarWrapper RegisterCvar_String(const Cvars::CvarData& cvar, const std::string& startingValue);
-	CVarWrapper RegisterCvar_Number(const Cvars::CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
-	CVarWrapper RegisterCvar_Color(const Cvars::CvarData& cvar, const std::string& startingValue);
-	CVarWrapper GetCvar(const Cvars::CvarData& cvar);
-	void RegisterCommand(const Cvars::CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
-	void RunCommand(const Cvars::CvarData& command, float delaySeconds = 0);
-	void RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
+	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
+	void STTLog(const std::string& message);
+
+#else
+
+	void no_speech_to_text_warning();
+
+#endif
+
+	// ----------------------------------------------------------------------------------------
 
 
 	// commands
 	void cmd_toggleEnabled(std::vector<std::string> args);
-	void cmd_showPathDirectories(std::vector<std::string> args);
 	void cmd_listBindings(std::vector<std::string> args);
 	void cmd_exitToMainMenu(std::vector<std::string> args);
 	void cmd_forfeit(std::vector<std::string> args);
 	void cmd_test(std::vector<std::string> args);
+	void cmd_test2(std::vector<std::string> args);
 
 	// cvar change callbacks
 	void changed_enabled(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_searchForPyInterpreter(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
@@ -186,7 +245,20 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void Event_PopMenu(ActorWrapper caller, void* params, std::string eventName);
 	void Event_LoadingScreenStart(std::string eventName);
 
+	
+	// cvar helper stuff
+	CVarWrapper RegisterCvar_Bool(const Cvars::CvarData& cvar, bool startingValue);
+	CVarWrapper RegisterCvar_String(const Cvars::CvarData& cvar, const std::string& startingValue);
+	CVarWrapper RegisterCvar_Number(const Cvars::CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
+	CVarWrapper RegisterCvar_Color(const Cvars::CvarData& cvar, const std::string& startingValue);
+	CVarWrapper GetCvar(const Cvars::CvarData& cvar);
+	void RegisterCommand(const Cvars::CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
+	void RunCommand(const Cvars::CvarData& command, float delaySeconds = 0);
+	void RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
+
+
 public:
+
 	// GUI
 	void RenderSettings() override;
 	void RenderWindow() override;
@@ -197,6 +269,8 @@ public:
 
 	void RenderAllBindings();
 	void RenderBindingDetails();
+	void RenderChatDetails(Binding& selectedBinding);
+	void RenderBindingTriggerDetails(Binding& selectedBinding);
 	
 	void RenderAllVariationListNames();
 	void RenderVariationListDetails();

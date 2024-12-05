@@ -37,7 +37,6 @@ You can run these commands in the bakkesmod console window (F6), or bind them to
 `cqc_toggle_enabled` | toggle custom quickchats on/off | key bind
 `cqc_forfeit` | forfeit the current match | key bind
 `cqc_exit_to_main_menu` | exit to the main menu | key bind
-`cqc_show_path_directories` | list the directories in your PATH variable (helpful for speech-to-text troubleshooting) | console
 `cqc_list_bindings` | list all your current RL bindings | console
 
 ## 👀 Credits

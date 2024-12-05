@@ -15,59 +15,6 @@ void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedC
 }
 
 
-void CustomQuickchat::changed_searchForPyInterpreter(std::string cvarName, CVarWrapper updatedCvar)
-{
-	// to prevent accidentally triggering callback when config.cfg is loaded when RL/bakkesmod starts
-	// (cvar callbacks get triggered after any value is set... even if the new value is the same/hasn't changed)
-	if (!onLoadComplete) return;
-
-	if (updatedCvar.getBoolValue())
-	{
-		auto autoDetectInterpreterPath_cvar = GetCvar(Cvars::autoDetectInterpreterPath);
-		if (!autoDetectInterpreterPath_cvar) return;
-
-		if (autoDetectInterpreterPath_cvar.getBoolValue())
-		{
-			GetOutputOfWherePythonw();
-
-			DELAY(2.0f,
-				GAME_THREAD_EXECUTE(
-					pyInterpreter = findPythonInterpreter();
-				);
-			);
-		}
-		else
-		{
-			GAME_THREAD_EXECUTE(
-				pyInterpreter = findPythonInterpreter();
-			);
-		}
-	}
-}
-
-
-void CustomQuickchat::changed_autoDetectInterpreterPath(std::string cvarName, CVarWrapper updatedCvar)
-{
-	// to prevent accidentally triggering callback when config.cfg is loaded when RL/bakkesmod starts
-	// (cvar callbacks get triggered after any value is set... even if the new value is the same/hasn't changed)
-	if (!onLoadComplete) return;
-
-	if (updatedCvar.getBoolValue())
-	{
-		auto searchForPyInterpreter_cvar = GetCvar(Cvars::searchForPyInterpreter);
-		if (!searchForPyInterpreter_cvar || !searchForPyInterpreter_cvar.getBoolValue()) return;
-
-		GetOutputOfWherePythonw();
-
-		DELAY(2.0f,
-			GAME_THREAD_EXECUTE(
-				pyInterpreter = findPythonInterpreter();
-			);
-		);
-	}
-}
-
-
 void CustomQuickchat::changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool enableSTTNotifications = updatedCvar.getBoolValue();
