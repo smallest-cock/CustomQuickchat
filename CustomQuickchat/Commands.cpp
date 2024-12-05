@@ -63,11 +63,15 @@ void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_test(std::vector<std::string> args)
 {
+#ifdef USE_SPEECH_TO_TEXT
+
 	Websocket->SendEvent("test", { { "data", "test" } });
+
+#endif // USE_SPEECH_TO_TEXT
 }
 
 
 void CustomQuickchat::cmd_test2(std::vector<std::string> args)
 {
-	Websocket->StartClient();
+	// ...
 }

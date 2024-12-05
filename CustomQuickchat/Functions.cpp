@@ -10,16 +10,24 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	std::string processedChat = binding.chat;
 
 	bool shouldProcessChatStr = false;
+	std::string stt_message;
 
 	switch (binding.keyWord)
 	{
 	case EKeyword::SpeechToText:
 	case EKeyword::SpeechToTextSarcasm:
 	case EKeyword::SpeechToTextUwu:
+
+#if defined(USE_SPEECH_TO_TEXT)
+
 		if (!attemptingSTT)
 			StartSpeechToText(binding);
 		else
 			STTLog("Speech-to-text is already active!");
+#else
+		no_speech_to_text_warning();
+#endif
+
 		return;
 	case EKeyword::BlastAll:
 	case EKeyword::BlastCasual:
@@ -730,8 +738,6 @@ void CustomQuickchat::InitStuffOnLoad()
 	
 	ClearSttErrorLog();
 
-	// ----------- testing stuff, to manually start ws server and client connection -----------
-
 	// start websocket sever (spawn python process)
 	start_websocket_server();
 
@@ -740,7 +746,7 @@ void CustomQuickchat::InitStuffOnLoad()
 	
 	Websocket = std::make_shared<WebsocketClientManager>(cvarManager, ws_url, ws_response_callback);
 
-	// wait x seconds after python websocket server is started to start client
+	// wait x seconds after python websocket server has started to start client
 	DELAY(start_ws_client_delay,
 		Websocket->StartClient();
 	);

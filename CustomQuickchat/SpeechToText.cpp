@@ -3,19 +3,18 @@
 
 
 
-void CustomQuickchat::StartSpeechToText(const Binding& binding)
-{
 #if !defined(USE_SPEECH_TO_TEXT)
 
-	std::string message = "This version of the plugin doesnt support speech-to-text. You can find that version on the github Releases page";
-
-	GAME_THREAD_EXECUTE_CAPTURE(
-		Instances.SpawnNotification("Speech-To-Text", message, 5);
-	, message);
-
-	LOG("[ERROR] " + message);
+void CustomQuickchat::no_speech_to_text_warning()
+{
+	std::string message = "This version doesnt support speech-to-text. You can find that version on the github Releases page";
+	NotifyAndLog("Speech-To-Text", message, 5);
+}
 
 #else
+
+void CustomQuickchat::StartSpeechToText(const Binding& binding)
+{
 
 	if (attemptingSTT)
 	{
@@ -37,12 +36,8 @@ void CustomQuickchat::StartSpeechToText(const Binding& binding)
 	Websocket->SendEvent("start_speech_to_text", data);
 
 	attemptingSTT = true;
-
-#endif // USE_SPEECH_TO_TEXT
 }
 
-
-#ifdef USE_SPEECH_TO_TEXT
 
 void CustomQuickchat::start_websocket_server()
 {
@@ -79,6 +74,8 @@ json CustomQuickchat::generate_data_for_STT_attempt()
 		{ "micEnergyThreshold",		micEnergyThreshold },
 		{ "attemptId",				Active_STT_Attempt.attemptID }
 	};
+
+	return data;
 }
 
 

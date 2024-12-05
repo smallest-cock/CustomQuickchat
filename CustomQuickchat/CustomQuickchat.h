@@ -162,9 +162,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	
 	// ------------------------------------ Speech-to-Text ------------------------------------
 
-	void StartSpeechToText(const Binding& binding);
-
-#ifdef USE_SPEECH_TO_TEXT
+#if defined(USE_SPEECH_TO_TEXT)
 
 	// constants
 	static constexpr float PROBE_JSON_FREQUENCY = 0.2f;		// in seconds
@@ -194,6 +192,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	
 	// speech-to-text
+	void StartSpeechToText(const Binding& binding);
 	json generate_data_for_STT_attempt();
 	void process_STT_result(const json& response_data);
 
@@ -211,7 +210,11 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void STTLog(const std::string& message);
 
-#endif // USE_SPEECH_TO_TEXT
+#else
+
+	void no_speech_to_text_warning();
+
+#endif
 
 	// ----------------------------------------------------------------------------------------
 

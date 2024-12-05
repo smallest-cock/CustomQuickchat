@@ -201,13 +201,6 @@ void CustomQuickchat::ChatTimeoutSettings()
 		}
 	}
 
-	//if (!Instances.alteredHudInstances.empty())
-	//{
-	//	GUI::Spacing(2);
-	//
-	//	ImGui::Text("Number of altered GFxHUD_TA instances: %d", Instances.alteredHudInstances.size());
-	//}
-
 	GUI::Spacing(2);
 }
 
@@ -222,7 +215,7 @@ void CustomQuickchat::SpeechToTextSettings()
 
 	GUI::Spacing(2);
 
-	GUI::ClickableLink("Releases", "https://github.com/smallest-cock/CustomQuickchat/releases/latest");
+	GUI::ClickableLink("Releases", "https://github.com/smallest-cock/CustomQuickchat/releases/latest", ImVec4(1, 1, 0, 1));
 
 #else
 
@@ -292,11 +285,6 @@ void CustomQuickchat::SpeechToTextSettings()
 	if (!autoCalibrateMic)
 	{
 		GUI::Spacing(4);
-
-		//// to keep the precision of the double without truncating digits in the string
-		//std::ostringstream oss;
-		//oss << std::setprecision(16) << micEnergyThreshold;
-		//std::string micThresholdStr = oss.str();
 
 		std::string thresholdStr = "Mic energy threshold: ";
 		thresholdStr += calibratingMicLevel ? "calibrating....." : std::to_string(micEnergyThreshold_cvar.getIntValue());

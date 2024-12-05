@@ -192,7 +192,9 @@ async def handle_client(websocket):
 
 async def start_server(port: int):
     if port_in_use(port):
-        print(f"Unable to start WebSocket server on port {port}! It's already in use")
+        port_taken_msg = f"Unable to start WebSocket server on port {port}! It's already in use"
+        print(port_taken_msg)
+        logging.warning(port_taken_msg)
         return
     
     print(f"Starting WebSocket server on port {port} ...")

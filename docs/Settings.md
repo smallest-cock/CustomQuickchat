@@ -62,24 +62,18 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 
 ## Speech-to-text
 
-`[[speechToText]]` uses whatever mic is set as your default input device in Windows sound settings:
+The `[[speechToText]]` keyword uses whatever mic is set as your default input device in Windows sound settings:
 
 ![](./images/default_device.png)
 
 **To change the default mic:** select it in the list, then click the `Set Default` button
 
-If you have multiple mics connected, make sure the one you're using in RL is the default device. If you continuously get the `No speech detected from 'microphone' ...` error, try disabling all other active mics from the list.
+If you have multiple mics connected, make sure the one you're using in RL is the default device. If you continuously get a `No speech detected` error, try disabling all other active mics from the list.
 
 ### Troubleshooting speech-to-text errors:
 
-Most errors will be logged in the `ErrorLog.txt` file (located in the `bakkesmod\data\CustomQuickchat` folder). The log will usually give a good idea of what's causing your issue. For example, if you see this error:
+The plugin uses a websocket connection to handle speech-to-text tasks. A python script is ran in the background which acts as the server, and the plugin simply sends a request to the server for every speech-to-text task... Then the result is sent back to the plugin (aka the client).
 
-```
-[ERROR] Failed to import module: No module named 'pyaudio'
-```
+If an error occurs on the server side (the python process) it should be logged in the `ErrorLog.txt` file (located at `bakkesmod\data\CustomQuickchat\SpeechToText\ErrorLog.txt`).
 
-that means you dont have the `pyaudio` python package installed. You can fix that by opening a cmd window and running this command:
-
-```
-pip install pyaudio
-```
+If an error occurs on the client side (the plugin), it should be logged in the `F6` console window.
