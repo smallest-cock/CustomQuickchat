@@ -466,19 +466,16 @@ void CustomQuickchat::RenderBindingDetails()
 		if (ImGui::BeginChild("##ChatDetails", chatDetailsSize, true))
 		{
 			RenderChatDetails(selectedBinding);
-
-			ImGui::EndChild();
 		}
+		ImGui::EndChild();
 
 		if (ImGui::BeginChild("##BindingTriggerDetails", triggerDetailsSize, true))
 		{
 			RenderBindingTriggerDetails(selectedBinding);
-
-			ImGui::EndChild();
 		}
-
 		ImGui::EndChild();
 	}
+	ImGui::EndChild();
 }
 
 
