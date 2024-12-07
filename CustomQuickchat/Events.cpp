@@ -113,7 +113,7 @@ void CustomQuickchat::Event_NotifyChatDisabled(ActorWrapper caller, void* params
 	AGFxHUD_TA* hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
 	if (!hud) return;
 
-	Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud, caller.memory_address);
+	Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
 }
 
 
