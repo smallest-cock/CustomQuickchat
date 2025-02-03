@@ -7,7 +7,7 @@ import sys
 # log errors to 'ErrorLog.txt' in same directory as script
 executable_folder = os.path.dirname(sys.argv[0])
 log_file = os.path.join(executable_folder, 'ErrorLog.txt')
-logging.basicConfig(filename=log_file, level=logging.ERROR, 
+logging.basicConfig(filename=log_file, level=logging.INFO, 
                     format='%(asctime)s [%(levelname)s] %(message)s')
 
 try:
@@ -15,7 +15,6 @@ try:
     import websockets
     import argparse
     import json
-    import pyaudio		# just to make sure pyaudio module is installed
     import psutil
     import speech_recognition as sr
 except ImportError as e:
@@ -157,7 +156,8 @@ class WebsocketHandler:
         try:
             print(f'BEFORE: energy_threshold = {recognizer.energy_threshold}')
 
-            await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))    # notify client mic is listening...
+            # notify client that mic is listening
+            await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))
 
             with mic as source:
                 recognizer.adjust_for_ambient_noise(source)
@@ -174,32 +174,43 @@ class WebsocketHandler:
 
 
 # handle incoming websocket connections
-async def handle_client(websocket):
+async def handle_client(websocket, stop_event):
     ws_connection = WebsocketHandler(websocket)
-    print("Client connected")
+    logging.info("Client connected")
 
     try:
         async for message in websocket:
             await ws_connection.handle_message(message)
 
-    except websockets.ConnectionClosed as e:
-        disconnect_msg = f"Client disconnected: {e.code} - {e.reason}"
-        print(disconnect_msg)
-        logging.warning(disconnect_msg)
+    except websockets.ConnectionClosed:
+        logging.info("Client disconnected... shutting down.")
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
+
+    stop_event.set()  # Graceful shutdown even on unexpected errors
 
 
 async def start_server(port: int):
     if port_in_use(port):
-        port_taken_msg = f"Unable to start WebSocket server on port {port}! It's already in use"
-        print(port_taken_msg)
-        logging.warning(port_taken_msg)
+        logging.error(f"Unable to start WebSocket server on port {port}! It's already in use")
         return
-    
-    print(f"Starting WebSocket server on port {port} ...")
-    server = await websockets.serve(handle_client, "localhost", port)
+
+    stop_event = asyncio.Event()
+
+    async def client_wrapper(websocket):
+        await handle_client(websocket, stop_event)
+
+    logging.info(f"Starting WebSocket server on port {port} ...")
+
+    server = await websockets.serve(client_wrapper, "localhost", port)
+
+    await stop_event.wait()     # Wait until stop_event is set by handle_client()
+
+    logging.info("Stopping server...")
+    server.close()
     await server.wait_closed()
+    logging.info("Server shut down successfully.")
+
 
 
 def main():
@@ -212,6 +223,7 @@ def main():
     args = parser.parse_args()
 
     asyncio.run(start_server(args.port_number))
+
 
 
 # global variables (so a new object isn't created on every client request)

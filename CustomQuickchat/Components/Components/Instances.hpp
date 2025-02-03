@@ -308,8 +308,8 @@ public:
 	UOnlinePlayer_X* GetOnlinePlayer();
 public: 
 
-	// have the game itself create an FString (using UE stuff intead of new wchar_t*), or else it'll cause crashes with certain objects/functions
-	FString NewFString(const std::string& str);
+	FString NewFString(const std::string& str);	// have the game create an FString (using UE stuff), or else it'll crash when used with objects/params
+	FName FindFName(const std::string& str);
 
 	
 	// ======================== misc ========================

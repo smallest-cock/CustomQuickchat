@@ -13,6 +13,7 @@ void CustomQuickchat::no_speech_to_text_warning()
 
 #else
 
+
 void CustomQuickchat::StartSpeechToText(const Binding& binding)
 {
 
@@ -39,14 +40,105 @@ void CustomQuickchat::StartSpeechToText(const Binding& binding)
 }
 
 
-void CustomQuickchat::start_websocket_server()
+void CustomQuickchat::start_websocket_stuff(bool onLoad)
 {
-	// start websocket sever (spawn python process)
-	std::string command = CreateCommandString(speechToTextExePath.string(), { stringify(WS_PORT) });	// args: py exe, websocket port
-	
-	CreateProcessUsingCommand(command);
+	if (!onLoad && Websocket && Websocket->IsConnectedToServer())
+	{
+		LOG("[ERROR] Failed to start websocket stuff... we're already connected on port {}!", Websocket->get_port_str());
+		return;
+	}
 
-	LOG("Created process using command: {}", command);
+	auto ws_client_setup = [this, onLoad]()
+	{
+		auto websocket_port_cvar = GetCvar(Cvars::websocket_port);
+		if (!websocket_port_cvar)
+		{
+			LOG("[ERROR] websocket_port cvar invalid");
+			*connecting_to_ws_server = false;
+			return;
+		}
+		int websocket_port = websocket_port_cvar.getIntValue();
+
+		if (onLoad)
+		{
+			// create websocket object
+			std::function<void(json serverResponse)> ws_response_callback = std::bind(&CustomQuickchat::process_ws_response, this, std::placeholders::_1);
+			Websocket = std::make_shared<WebsocketClientManager>(ws_response_callback, connecting_to_ws_server);
+		}
+
+		const float delay_s = onLoad ? START_WS_CLIENT_DELAY + 3.0f : START_WS_CLIENT_DELAY;	// wait 3 more seconds when plugin loads
+
+
+		auto start_the_client = [this, websocket_port]()
+		{
+			bool success = Websocket->StartClient(websocket_port);
+			LOG(success ? "Starting websocket client was successful" : "Starting websocket client was unsuccessful");
+
+			if (!success)
+			{
+				*connecting_to_ws_server = false;
+			}
+		};
+
+		// wait x seconds after python websocket server has started to start client
+		DELAY_CAPTURE(delay_s,
+
+			start_the_client();
+
+		, start_the_client);
+	};
+
+	// start websocket sever (spawn python process)
+	bool success = start_websocket_server();
+	LOG("[onLoad] Ran start_websocket_server()");
+	if (!success) return;
+
+	if (onLoad)
+	{
+		// wait 1 second before starting websocket client stuff (so websocket_port cvar value gets a chance to load)
+		DELAY_CAPTURE(1.0f, ws_client_setup(); , ws_client_setup);
+	}
+	else
+	{
+		// start client (includes delay)
+		ws_client_setup();
+	}
+}
+
+
+bool CustomQuickchat::start_websocket_server()
+{
+	auto websocket_port_cvar = GetCvar(Cvars::websocket_port);
+	if (!websocket_port_cvar) return false;
+	int websocket_port = websocket_port_cvar.getIntValue();
+
+	*connecting_to_ws_server = true;
+
+	// start websocket sever (spawn python process)
+	std::string command = CreateCommandString(speechToTextExePath.string(), { std::to_string(websocket_port) });	// args: py exe, websocket port
+	
+	auto process_info = Process::create_process_from_command(command);
+	LOG("Status code after attempting to create process (0 is good): {}", process_info.status_code);
+
+	if (process_info.status_code == 0)
+	{
+		LOG("Created process using command: {}", command);
+		stt_python_server_process = process_info.handles;	// save handle to created process, so we can close it later
+		return true;
+	}
+	else
+	{
+		LOG("[ERROR] Unable to create process using command: {}", command);
+		*connecting_to_ws_server = false;
+		return false;
+	}
+}
+
+
+void CustomQuickchat::stop_websocket_server()
+{
+	Process::terminate_created_process(stt_python_server_process);
+	LOG("Stopped websocket server using TerminateProcess...");
 }
 
 
@@ -164,7 +256,14 @@ void CustomQuickchat::process_ws_response(const json& response)
 
 		STTLog("listening......");
 	}
+	else if (event == "shutdown_response")
+	{
+		std::string message = response["data"]["message"];
 
+		STTLog(message);
+
+		Websocket->set_connected_status(false);
+	}
 	else if (event == "error_response")
 	{
 		if (!response.contains("data"))
@@ -326,14 +425,20 @@ void CustomQuickchat::CalibrateMicrophone()
 	}
 
 	Websocket->SendEvent("calibrate_microphone", data);
+	LOG("Sent calibrate_microphone event");
 
 	calibratingMicLevel = true;
+
+	auto micCalibrationTimeout_cvar = GetCvar(Cvars::micCalibrationTimeout);
+	if (!micCalibrationTimeout_cvar) return;
+
+	DELAY(micCalibrationTimeout_cvar.getFloatValue(),
+		calibratingMicLevel = false;
+	);
 }
 
 
 // ========================================= SPEECH-TO-TEXT ========================================
-
-
 
 std::string CustomQuickchat::CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args)
 {

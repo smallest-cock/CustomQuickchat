@@ -38,18 +38,22 @@ You can run these commands in the bakkesmod console window (F6), or bind them to
 `cqc_forfeit` | forfeit the current match | key bind
 `cqc_exit_to_main_menu` | exit to the main menu | key bind
 `cqc_list_bindings` | list all your current RL bindings | console
+`cqc_list_custom_chat_labels` | list all custom chat labels that would show up in quickchat UI | console
 
 ## 🛠️ Building
-To build the project you'll need to install the dependencies with vcpkg, and have an SDK for Rocket League (RLSDK)
+To build the project you'll need to do the following:
+- install the project's dependencies with vcpkg
+- have an SDK for Rocket League (RLSDK)
+- compile `speech-to-text-server.pyw` into an executable named `SpeechToText.exe`
 
-Contributions are welcome :)
+Contributions are welcome 🤗
 
 ### vcpkg
 You'll need to install the libraries found in `vcpkg.json`
 
 Brief steps:
 1. Install vcpkg ([follow step 1 here](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg))
-2. `cd` to the project folder (where `vcpkg.json` is) and install the project's dependencies with this command
+2. `cd` to the project folder (where `vcpkg.json` is) and install the project's dependencies with
    ```vcpkg integrate install```
    - [more info here](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
 
@@ -63,17 +67,22 @@ Brief steps:
 3. Build
 4. Inject the .dll into Rocket League, and your SDK should begin generating
 
-The resulting SDK wont be perfect, but it should work for the purposes of this plugin
-
 >[!NOTE]
->To generate a more perfect SDK, you can use [CodeRed-Generator](https://github.com/CodeRedModding/CodeRed-Generator/) and reverse the game classes in `GameDefines.hpp` yourself
+>The resulting SDK wont be perfect but it should work for the purposes of this plugin
+
+
+### python script
+To compile `speech-to-text-server.pyw` into an executable, I use [auto-py-to-exe](https://pypi.org/project/auto-py-to-exe/) (which uses [py2exe](https://pypi.org/project/py2exe/) internally) with the "One Directory" option (`--onedir` in py2exe)
+
+For the plugin to recognize the python program, the executable needs to be named `SpeechToText.exe` and should be located in the `bakkesmod\CustomQuickchat\SpeechToText` folder. (You can create the folder if it doesn't already exist)
+
 
 ## 👀 Credits
 
 Inspired by Blaku's [CustomBindingPlugin](https://github.com/blaku-rl/CustomBindingPlugin)
 
-## ☕ Support
+## ❤️ Support
 
-If you enjoy this plugin, consider supporting:
+<br>
 
-<a href="https://www.buymeacoffee.com/sslowdev" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 200px !important;" ></a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/sslowdev)

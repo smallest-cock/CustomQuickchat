@@ -97,6 +97,14 @@ struct ButtonPress
 };
 
 
+struct BindingKey
+{
+	std::string action;
+	std::string pc_key;
+	std::string gamepad_key;
+};
+
+
 struct Binding
 {
 	std::string chat;
@@ -206,7 +214,7 @@ struct Binding
 	// determine if chat contains any special keyword or text effect (once, at the time of binding creation, rather than every time binding is triggered)
 	void UpdateKeywordAndTextEffect(const std::string& regexPatternStr)
 	{
-		std::vector<std::string> matchedSubstrings = GetMatchedSubstrings(regexPatternStr);
+		std::vector<std::string> matchedSubstrings = GetMatchedSubstrings(chat, regexPatternStr);
 		
 		// handle any words in double brackets, like special keywords or word variations
 		for (const std::string& stringFoundInBrackets : matchedSubstrings)
@@ -242,12 +250,12 @@ struct Binding
 		}
 	}
 
-	std::vector<std::string> GetMatchedSubstrings(const std::string& regexPatternStr) const
+	static std::vector<std::string> GetMatchedSubstrings(const std::string& str, const std::string& regexPatternStr)
 	{
 		std::regex regexPattern(regexPatternStr);
 
 		std::vector<std::string> matchedSubstrings;
-		std::sregex_iterator it(chat.begin(), chat.end(), regexPattern);
+		std::sregex_iterator it(str.begin(), str.end(), regexPattern);
 		std::sregex_iterator end;
 
 		while (it != end)
@@ -272,17 +280,112 @@ struct VariationList
 };
 
 
+
+enum class ERankPlaylists : uint8_t
+{
+	Ones =		0,
+	Twos =		1,
+	Threes =	2,
+	Casual =	3
+};
+
 struct Rank
 {
-	int matches;
+	int matches = 0;
+	int mmr = 0;
 	std::string div;
 	std::string tier;
-	int mmr;
+
+
+	inline std::string get_rank_str() const
+	{
+		if (div == "n/a" || tier == "n/a" || matches == 0)
+		{
+			return "--";
+		}
+		return tier + "..div" + div;
+	}
 };
 
 
 struct ChatterRanks
 {
 	std::string playerName;
-	std::unordered_map <std::string, Rank> ranks;
+	Rank ones;
+	Rank twos;
+	Rank threes;
+	Rank casual;
+	//std::unordered_map <std::string, Rank> ranks;
+
+	inline Rank get_rank(ERankPlaylists playlist)
+	{
+		switch (playlist)
+		{
+		case ERankPlaylists::Ones:
+			return ones;
+		case ERankPlaylists::Twos:
+			return twos;
+		case ERankPlaylists::Threes:
+			return threes;
+		case ERankPlaylists::Casual:
+			return casual;
+		default:
+			return Rank();
+		}
+	}
+
+
+	inline std::string get_all_ranks_str() const
+	{
+		// to make return line readable
+		std::string ones_str =		ones.get_rank_str();
+		std::string twos_str =		twos.get_rank_str();
+		std::string threes_str =	threes.get_rank_str();
+
+		return playerName + ": [1s] " + ones_str + " [2s] " + twos_str + " [3s] " + threes_str;
+	}
+
+
+	inline std::string get_playlist_rank_str(ERankPlaylists playlist)
+	{
+		std::string rank_str;
+
+		Rank specificRank = get_rank(playlist);
+
+		rank_str = playerName + " [" + ChatterRanks::get_playlist_str(playlist) + "] ";
+
+		if (playlist == ERankPlaylists::Casual)
+		{
+			rank_str += "** " + std::to_string(specificRank.matches) + " matches played **";
+		}
+		else if (specificRank.tier != "n/a" || specificRank.div != "n/a")
+		{
+			rank_str += "** " + specificRank.tier + " div" + specificRank.div;
+			rank_str += specificRank.matches == 0 ? " ** (prev season MMR)" : " ** (" + std::to_string(specificRank.matches) + " matches)";
+		}
+		else
+		{
+			rank_str += "** doesnt play ** (" + std::to_string(specificRank.matches) + " matches)";
+		}
+
+		return rank_str;
+	}
+	
+	
+	static inline std::string get_playlist_str(ERankPlaylists playlist)
+	{
+		switch (playlist)
+		{
+		case ERankPlaylists::Ones:
+			return "1v1";
+		case ERankPlaylists::Twos:
+			return "2v2";
+		case ERankPlaylists::Threes:
+			return "3v3";
+		case ERankPlaylists::Casual:
+			return "casual";
+		default:
+			return "";
+		}
+	}
 };

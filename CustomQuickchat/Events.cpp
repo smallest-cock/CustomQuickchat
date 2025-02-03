@@ -7,6 +7,8 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 {
 	if (gamePaused || !inGameEvent) return;
 
+	UGameViewportClient_TA* okok;
+
 	if (matchEnded)
 	{
 		auto disablePostMatchQuickchats_cvar = GetCvar(Cvars::disablePostMatchQuickchats);
@@ -22,6 +24,10 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 	if (keyEventType == EInputEvent::IE_Pressed)
 	{
 		keyStates[keyName] = true;		// update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
+
+		// update state for tracking whether user is using gamepad or pc inputs
+		using_gamepad = keyPressData->bGamepad;
+		//LOG("Using gamepad: {}", using_gamepad);		// can uncomment for testing purposes, otherwise it clutters up the console
 
 		ButtonPress buttonPressEvent{ keyName, std::chrono::steady_clock::now() };
 
@@ -58,7 +64,7 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 }
 
 
-void CustomQuickchat::Event_ChatPresetPressed(ActorWrapper caller, void* params, std::string eventName)
+void CustomQuickchat::Event_GFxHUD_TA_ChatPreset(ActorWrapper caller, void* params, std::string eventName)
 {
 	AGFxHUD_TA_execChatPreset_Params* Params = reinterpret_cast<AGFxHUD_TA_execChatPreset_Params*>(params);
 	if (!Params) return;
@@ -87,6 +93,43 @@ void CustomQuickchat::Event_ChatPresetPressed(ActorWrapper caller, void* params,
 	{
 		Params->Index = 420;	// effectively blocks default quickchat from propagating
 	}
+}
+
+
+// happens after joining a match and after a binding has been changed in RL settings
+void CustomQuickchat::Event_InitUIBindings(ActorWrapper Caller, void* Params, std::string eventName)
+{
+	auto caller = reinterpret_cast<UGFxData_Controls_TA*>(Caller.memory_address);
+	if (!caller) return;
+
+	// wait 0.5s to allow all the UGFxData_Controls_TA::MapUIBinding(...) calls to finish
+	DELAY_CAPTURE(0.5f,
+		if (!caller) return;
+		determine_quickchat_labels(caller);
+	, caller);
+}
+
+
+// NOTE: Running this on every chat preset pressed (aka every time the quickchat ui shows up) ensures the correct group of custom
+// quickchat labels (pc vs gamepad) will be displayed. It may seem more efficient to apply chat labels to ui less often, but that wouldn't
+// account for user switching between pc & gamepad inputs
+void CustomQuickchat::Event_OnPressChatPreset(ActorWrapper Caller, void* Params, std::string eventName)
+{
+	if (gameWrapper->IsInFreeplay()) return;
+
+	auto enabled_cvar = GetCvar(Cvars::enabled);
+	auto overrideDefaultQuickchats_cvar = GetCvar(Cvars::overrideDefaultQuickchats);
+	
+	if (!enabled_cvar || !overrideDefaultQuickchats_cvar) return;
+	if (!enabled_cvar.getBoolValue() || !overrideDefaultQuickchats_cvar.getBoolValue()) return;
+
+	auto caller = reinterpret_cast<UGFxData_Chat_TA*>(Caller.memory_address);
+	if (!caller) return;
+
+	auto params = reinterpret_cast<UGFxData_Chat_TA_execOnPressChatPreset_Params*>(Params);
+	if (!params) return;
+
+	apply_custom_qc_labels_to_ui(caller, params);
 }
 
 
@@ -125,7 +168,10 @@ void CustomQuickchat::Event_OnChatMessage(ActorWrapper caller, void* params, std
 
 	FGFxChatMessage* Params = reinterpret_cast<FGFxChatMessage*>(params);
 	if (!Params) return;
+
 	Params->TimeStamp = "";
+	//Params->TimeStamp = Instances.NewFString("");		// <--- works as well
+	//Params->TimeStamp = L"";							// <--- but... this causes crash upon entering a match for some reason... i think
 }
 
 

@@ -7,10 +7,7 @@
 void CustomQuickchat::PerformBindingAction(const Binding& binding)
 {
 	// processedChat starts out as the original raw chat string, and will get processed if it includes word variations or relevant keywords (i.e. lastChat)
-	std::string processedChat = binding.chat;
-
-	bool shouldProcessChatStr = false;
-	std::string stt_message;
+	std::string processed_chat = binding.chat;
 
 	switch (binding.keyWord)
 	{
@@ -34,7 +31,7 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	case EKeyword::Blast1v1:
 	case EKeyword::Blast2v2:
 	case EKeyword::Blast3v3:
-		SendChat(GetRankStr(binding.keyWord), binding.chatMode);
+		SendChat(get_last_chatter_rank_str(binding.keyWord), binding.chatMode);
 		return;
 	case EKeyword::Forfeit:
 		RunCommand(Cvars::forfeit);
@@ -49,25 +46,39 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	case EKeyword::LastChatSarcasm:
 	case EKeyword::LastChatUwu:
 	case EKeyword::WordVariation:
-		shouldProcessChatStr = true;
+		processed_chat = process_keywords_in_chat_str(binding);
 		break;
 	default:
 		break;
 	}
 
-	// parse the chat string for relevant keywords/variations and replace the text as necessary
-	if (shouldProcessChatStr)
+	// send processed chat
+	if (processed_chat.empty()) return;
+	SendChat(processed_chat, binding.chatMode);
+}
+
+
+std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding)
+{
+	std::string result = binding.chat;
+
+	for (int i = 0; i < MAX_KEYWORD_DEPTH; i++)
 	{
-		auto stringsToReplace = binding.GetMatchedSubstrings(keywordRegexPattern);
+		auto keyword_strings_to_replace = binding.GetMatchedSubstrings(result, keywordRegexPattern);
 
-		for (const auto& strToBeReplaced : stringsToReplace)
+		if (keyword_strings_to_replace.empty() && i > 1)
 		{
-			const std::string regexPatternStr = "\\[\\[" + strToBeReplaced + "\\]\\]";
-			std::regex regexPattern(regexPatternStr);
+			LOG("Resolved nested variation(s) using {} substitution passes", i);
+			break;
+		}
 
-			auto it = keywordsMap.find(strToBeReplaced);
+		for (const auto& keyword_str_to_replace : keyword_strings_to_replace)
+		{
+			const std::string regexPatternStr = "\\[\\[" + keyword_str_to_replace + "\\]\\]";
+			std::regex keyword_regex_pattern(regexPatternStr);
 
 			// if a special keyword was found (not a variation list name) .... which, at this point, would be just one of the lastChat keywords
+			auto it = keywordsMap.find(keyword_str_to_replace);
 			if (it != keywordsMap.end())
 			{
 				std::string lastChat;
@@ -77,10 +88,10 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 				case EKeyword::LastChat:
 				case EKeyword::LastChatUwu:
 				case EKeyword::LastChatSarcasm:
-					lastChat = LastChat();
-					if (lastChat == "") return;
+					lastChat = get_last_chat();
+					if (lastChat.empty()) return "";
 					lastChat = ApplyTextEffect(lastChat, binding.textEffect);
-					processedChat = std::regex_replace(processedChat, regexPattern, lastChat);
+					result = std::regex_replace(result, keyword_regex_pattern, lastChat);
 					break;
 				default:
 					break;	// this should never get executed bc keyword should be a lastChat atp, but who knows
@@ -89,19 +100,18 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 			// if something else was found, like a word variation list name
 			else
 			{
-				processedChat = std::regex_replace(processedChat, regexPattern, Variation(strToBeReplaced));
+				result = std::regex_replace(result, keyword_regex_pattern, Variation(keyword_str_to_replace));
 			}
 		}
 	}
 
-	// send processed chat
-	SendChat(processedChat, binding.chatMode);
+	return result;
 }
 
 
 void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 {
-	if (chat == "") return;
+	if (chat.empty()) return;
 
 	// only send chat if custom quickchats are turned on
 	auto enabledCvar = GetCvar(Cvars::enabled);
@@ -228,6 +238,72 @@ void CustomQuickchat::CheckJsonFiles()
 }
 
 
+void CustomQuickchat::ReadDataFromJson()
+{
+	json bindings_json_data = Files::get_json(bindingsFilePath);
+
+	if (!bindings_json_data.empty() && bindings_json_data.contains("bindings"))
+	{
+		auto bindingsList = bindings_json_data.at("bindings");
+
+		if (bindingsList.size() > 0)
+		{
+			for (int i = 0; i < bindingsList.size(); i++)
+			{
+				// read data from each binding obj and update Bindings vector
+				auto bindingObj = bindingsList[i];
+
+				Binding binding;
+				binding.chat = bindingObj["chat"];
+				binding.chatMode = static_cast<EChatChannel>(bindingObj["chatMode"]);
+				binding.bindingType = static_cast<EBindingType>(bindingObj["bindingType"]);
+
+				for (const std::string& buttonName : bindingObj["buttons"])
+				{
+					binding.buttons.push_back(buttonName);
+				}
+
+				// lastly, update binding's keyWord and textEffect values (which depend on the chat value above)
+				binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
+
+				Bindings.push_back(binding);
+			}
+		}
+	}
+
+
+	// ... same thing for variations
+	json variations_json_data = Files::get_json(variationsFilePath);
+
+	if (!variations_json_data.empty() && variations_json_data.contains("variations"))
+	{
+		auto variations_list = variations_json_data.at("variations");
+
+		if (variations_list.size() > 0)
+		{
+			for (int i = 0; i < variations_list.size(); i++)
+			{
+				// read data from each variation list obj and update Variations vector
+				auto variationListObj = variations_list[i];
+
+				VariationList variationList;
+				variationList.listName = variationListObj["listName"];
+
+				for (const std::string& word : variationListObj["wordList"])
+				{
+					variationList.wordList.push_back(word);
+					variationList.unparsedString += (word + "\n");
+				}
+
+				variationList.shuffledWordList = ShuffleWordList(variationList.wordList);
+
+				Variations.push_back(variationList);
+			}
+		}
+	}
+}
+
+
 std::string CustomQuickchat::Variation(const std::string& listName)
 {
 	for (int i = 0; i < Variations.size(); i++)
@@ -274,199 +350,110 @@ void CustomQuickchat::UpdateDataFromVariationStr()
 }
 
 
-std::string CustomQuickchat::GetRankStr(EKeyword keyword)
+std::string CustomQuickchat::get_last_chat()
 {
+	std::string result;
+
+	json chats_json_data = Files::get_json(lobbyInfoChatsFilePath);
+	if (chats_json_data.empty() || !chats_json_data.contains("chatMessages"))
+	{
+		LOG("[ERROR] \"chatMessages\" key not found in 'Lobby Info/Chats.json' data");
+		return result;
+	}
+
+	const auto& chat_msgs = chats_json_data.at("chatMessages");
+	if (!chat_msgs.empty())
+	{
+		result = chat_msgs[chat_msgs.size() - 1]["chat"];
+	}
+	else
+	{
+		LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
+	}
+
+	return result;
+}
+
+
+ChatterRanks CustomQuickchat::get_last_chatter_ranks()
+{
+	ChatterRanks empty;
+
+	// find last chatter's player name
+	json chats_json_data = Files::get_json(lobbyInfoChatsFilePath);
+	if (chats_json_data.empty() || !chats_json_data.contains("chatMessages"))
+	{
+		LOG("[ERROR] No data found in 'Lobby Info/Chats.json'");
+		return empty;
+	}
+
+	const auto& chat_msgs = chats_json_data.at("chatMessages");
+	if (chat_msgs.empty())
+	{
+		LOG("'Lobby Info/Chats.json' has no chats...");
+		return empty;
+	}
+
+	const auto& last_chat_msg = chat_msgs[chat_msgs.size() - 1];
+	if (last_chat_msg.empty() || !last_chat_msg.contains("playerName"))
+	{
+		LOG("[ERROR] Last chat message JSON object in 'chatMessages' array doesnt contain 'playerName' key");
+		return empty;
+	}
+
+	std::string player_name = last_chat_msg.at("playerName");
+
+
+	// find ranks based on the player name
+	json ranks_json_data = Files::get_json(lobbyInfoRanksFilePath);
+	if (ranks_json_data.empty() || !ranks_json_data.contains("lobbyRanks"))
+	{
+		LOG("[ERROR] No data found in 'Lobby Info/Ranks.json'");
+		return empty;
+	}
+
+	const auto& lobby_ranks = ranks_json_data.at("lobbyRanks");
+	if (lobby_ranks.empty() || !lobby_ranks.contains(player_name))
+	{
+		LOG("[ERROR] No rank info for \"{}\" found in \"lobbyRanks\" array", player_name);
+		return empty;
+	}
+
+	const auto& player_ranks = ranks_json_data.at(player_name);
+	const auto& ones =		player_ranks["1v1"];
+	const auto& twos =		player_ranks["2v2"];
+	const auto& threes =	player_ranks["3v3"];
+	const auto& cas =		player_ranks["casual"];
+
+	Rank ones_rank{		ones["matches"],	0, ones["rank"]["div"],		ones["rank"]["tier"] };
+	Rank twos_rank{		twos["matches"],	0, twos["rank"]["div"],		twos["rank"]["tier"] };
+	Rank threes_rank{	threes["matches"],	0, threes["rank"]["div"],	threes["rank"]["tier"] };
+	Rank cas_rank{		cas["matches"],		cas["mmr"] };
+
+	return { Format::ToASCIIString(player_name), ones_rank, twos_rank, threes_rank, cas_rank };
+}
+
+
+std::string CustomQuickchat::get_last_chatter_rank_str(EKeyword keyword)
+{
+	ChatterRanks chatter_ranks = get_last_chatter_ranks();
+	if (chatter_ranks.playerName.empty()) return std::string();
+
 	switch (keyword)
 	{
 	case EKeyword::BlastAll:
-		return AllRanks();
+		return chatter_ranks.get_all_ranks_str();
 	case EKeyword::BlastCasual:
-		return SpecificRank("casual");
+		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Casual);
 	case EKeyword::Blast1v1:
-		return SpecificRank("1v1");
+		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Ones);
 	case EKeyword::Blast2v2:
-		return SpecificRank("2v2");
+		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Twos);
 	case EKeyword::Blast3v3:
-		return SpecificRank("3v3");
+		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Threes);
 	default:
-		return "";
+		return std::string();
 	}
-}
-
-
-std::string CustomQuickchat::LastChat()
-{
-	// check if file exists 1st ...
-	if (!fs::exists(lobbyInfoChatsFilePath))
-	{
-		LOG("*** 'Lobby Info/Chats.json' doesn't exist... ***");
-		return "";
-	}
-
-	std::string jsonFileRawStr = readContent(lobbyInfoChatsFilePath);
-
-	// prevent crash on reading invalid JSON data
-	try {
-		auto chatsJsonData = json::parse(jsonFileRawStr);
-		auto chatMessages = chatsJsonData["chatMessages"];
-
-		if (!chatMessages.empty())
-		{
-			std::string lastChat = chatMessages[chatMessages.size() - 1]["chat"];
-			return lastChat;
-		}
-		else {
-			LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
-		}
-	}
-	catch (...) {
-		LOG("*** Couldn't read the 'Lobby Info/Chats.json' file! Make sure it contains valid JSON... ***");
-		return "";
-	}
-
-	return "";
-}
-
-
-std::string CustomQuickchat::AllRanks()
-{
-	ChatterRanks lastChatterRanks = FindLastChattersRanks();
-
-	if (lastChatterRanks.ranks.empty()) return "";
-
-	// to make return line readable
-	std::string onesRankStr = GetRankStr(lastChatterRanks.ranks["1v1"]);
-	std::string twosRankStr = GetRankStr(lastChatterRanks.ranks["2v2"]);
-	std::string threesRankStr = GetRankStr(lastChatterRanks.ranks["3v3"]);
-
-	return lastChatterRanks.playerName + ": [1s] " + onesRankStr + " [2s] " + twosRankStr + " [3s] " + threesRankStr;
-}
-
-
-std::string CustomQuickchat::SpecificRank(const std::string& playlist)
-{
-	ChatterRanks lastChatterRanks = FindLastChattersRanks();
-
-	if (lastChatterRanks.ranks.empty()) return "";
-
-	Rank specificRank = lastChatterRanks.ranks[playlist];
-
-	if (playlist != "casual")
-	{
-		if (specificRank.tier != "n/a" || specificRank.div != "n/a")
-		{
-			if (specificRank.matches != 0)
-			{
-				return lastChatterRanks.playerName + " [" + playlist + "] ** " + specificRank.tier + " div" + specificRank.div + " ** (" + std::to_string(specificRank.matches) + " matches)";
-			}
-			else {
-				return lastChatterRanks.playerName + " [" + playlist + "] ** " + specificRank.tier + " div" + specificRank.div + " ** (prev season MMR)";
-			}
-		}
-		else {
-			return lastChatterRanks.playerName + " [" + playlist + "] ** doesnt play ** (" + std::to_string(specificRank.matches) + " matches)";
-		}
-	}
-	else {
-		return lastChatterRanks.playerName + " [casual] ** " + std::to_string(specificRank.matches) + " matches played **";
-	}
-}
-
-
-ChatterRanks CustomQuickchat::FindLastChattersRanks()
-{
-	ChatterRanks lastChattersRanks;
-	lastChattersRanks.playerName = "";
-	lastChattersRanks.ranks = {};
-
-	// check if file exists 1st ...
-	if (!fs::exists(lobbyInfoChatsFilePath))
-	{
-		LOG("*** 'Lobby Info/Chats.json' doesn't exist... ***");
-		return lastChattersRanks;
-	}
-
-	std::string jsonFileRawStr = readContent(lobbyInfoChatsFilePath);
-
-	// prevent crash on reading invalid JSON data
-	try {
-		auto chatsJsonData = json::parse(jsonFileRawStr);
-		auto chatMessages = chatsJsonData["chatMessages"];
-
-		if (!chatMessages.empty())
-		{
-			std::string playerName = chatMessages[chatMessages.size() - 1]["playerName"];
-
-			jsonFileRawStr = readContent(lobbyInfoRanksFilePath);
-			
-			auto ranksJsonData = json::parse(jsonFileRawStr);
-			auto playersRanks = ranksJsonData["lobbyRanks"];
-
-			// check if ranks for given player name exist
-			auto it = playersRanks.find(playerName);
-			if (it != playersRanks.end())
-			{
-				auto playerRanksObj = playersRanks[playerName];
-				auto onesData = playerRanksObj["1v1"];
-				auto twosData = playerRanksObj["2v2"];
-				auto threesData = playerRanksObj["3v3"];
-				auto casData = playerRanksObj["casual"];
-
-				Rank onesRank;
-				onesRank.mmr = 0;
-				onesRank.div = onesData["rank"]["div"];
-				onesRank.tier = onesData["rank"]["tier"];
-				onesRank.matches = onesData["matches"];
-				
-				Rank twosRank;
-				twosRank.mmr = 0;
-				twosRank.div = twosData["rank"]["div"];
-				twosRank.tier = twosData["rank"]["tier"];
-				twosRank.matches = twosData["matches"];
-
-				Rank threesRank;
-				threesRank.mmr = 0;
-				threesRank.div = threesData["rank"]["div"];
-				threesRank.tier = threesData["rank"]["tier"];
-				threesRank.matches = threesData["matches"];
-
-				Rank casRank;
-				casRank.mmr = casData["mmr"];
-				casRank.matches = casData["matches"];
-				casRank.div = "";
-				casRank.tier = "";
-
-
-				lastChattersRanks.playerName = Format::ToASCIIString(playerName);
-
-				lastChattersRanks.ranks["1v1"] = onesRank;
-				lastChattersRanks.ranks["2v2"] = twosRank;
-				lastChattersRanks.ranks["3v3"] = threesRank;
-				lastChattersRanks.ranks["casual"] = casRank;
-			}
-			else {
-				LOG("*** Error: player '{}' wasn't found in 'Lobby Info/Ranks.json' ***", playerName);
-			}
-		}
-		else {
-			LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
-		}
-	}
-	catch (...) {
-		LOG("*** Couldn't read the 'Lobby Info/Chats.json' file! Make sure it contains valid JSON... ***");
-	}
-
-	return lastChattersRanks;
-}
-
-
-std::string CustomQuickchat::GetRankStr(const Rank& rank)
-{
-	if (rank.div == "n/a" || rank.tier == "n/a" || rank.matches == 0)
-	{
-		return "--";
-	}
-	return rank.tier + "..div" + rank.div;
 }
 
 
@@ -549,79 +536,6 @@ std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std:
  }
 
 
-void CustomQuickchat::ReadDataFromJson()
-{
-	std::string jsonFileRawStr = readContent(bindingsFilePath);
-
-	// prevent crash on reading invalid JSON data
-	try {
-		auto bindingsJsonData = json::parse(jsonFileRawStr);
-		auto bindingsList = bindingsJsonData["bindings"];
-
-		if (bindingsList.size() > 0)
-		{
-			for (int i = 0; i < bindingsList.size(); i++)
-			{
-				// read data from each binding obj and update Bindings vector
-				auto bindingObj = bindingsList[i];
-				
-				Binding binding;
-				binding.chat = bindingObj["chat"];
-				binding.chatMode = static_cast<EChatChannel>(bindingObj["chatMode"]);
-				binding.bindingType = static_cast<EBindingType>(bindingObj["bindingType"]);
-
-				for (const std::string& buttonName : bindingObj["buttons"])
-				{
-					binding.buttons.push_back(buttonName);
-				}
-
-				// lastly, update binding's keyWord and textEffect values (which depend on the chat value above)
-				binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
-
-				Bindings.push_back(binding);
-			}
-		}
-	}
-	catch (...) {
-		LOG("*** Couldn't read the 'Bindings.json' file! Make sure it contains valid JSON... ***");
-	}
-
-
-	// ... same thing for variations
-	jsonFileRawStr = readContent(variationsFilePath);
-
-	try {
-		auto variationsJsonData = json::parse(jsonFileRawStr);
-		auto variationsList = variationsJsonData["variations"];
-
-		if (variationsList.size() > 0)
-		{
-			for (int i = 0; i < variationsList.size(); i++)
-			{
-				// read data from each variation list obj and update Variations vector
-				auto variationListObj = variationsList[i];
-
-				VariationList variationList;
-				variationList.listName = variationListObj["listName"];
-
-				for (const std::string& word : variationListObj["wordList"])
-				{
-					variationList.wordList.push_back(word);
-					variationList.unparsedString += (word + "\n");
-				}
-
-				variationList.shuffledWordList = ShuffleWordList(variationList.wordList);
-
-				Variations.push_back(variationList);
-			}
-		}
-	}
-	catch (...) {
-		LOG("*** Couldn't read the 'Variations.json' file! Make sure it contains valid JSON... ***");
-	}
-}
-
-
 std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
 {
 	switch (effect)
@@ -629,9 +543,9 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	case ETextEffect::None:
 		return originalText;
 	case ETextEffect::Uwu:
-		return toUwu(originalText);
+		return to_uwu(originalText);
 	case ETextEffect::Sarcasm:
-		return toSarcasm(originalText);
+		return to_sarcasm(originalText);
 	default:
 		return originalText;
 	}
@@ -678,7 +592,7 @@ void CustomQuickchat::WriteBindingsToJson()
 		bindingsJsonObj["bindings"].push_back(singleBinding);
 	}
 
-	writeJsonToFile(bindingsFilePath, bindingsJsonObj);
+	Files::write_json(bindingsFilePath, bindingsJsonObj);
 	LOG("Updated 'Bindings.json' :)");
 }
 
@@ -702,7 +616,7 @@ void CustomQuickchat::WriteVariationsToJson()
 		variationsJsonObj["variations"].push_back(variationList);
 	}
 
-	writeJsonToFile(variationsFilePath, variationsJsonObj);
+	Files::write_json(variationsFilePath, variationsJsonObj);
 	LOG("Updated 'Variations.json' :)");
 }
 
@@ -733,23 +647,12 @@ void CustomQuickchat::InitStuffOnLoad()
 	GetFilePaths();
 	CheckJsonFiles();
 	ReadDataFromJson();
+	gui_footer_init();
 
 #ifdef USE_SPEECH_TO_TEXT
 	
 	ClearSttErrorLog();
-
-	// start websocket sever (spawn python process)
-	start_websocket_server();
-
-	// create websocket object
-	std::function<void(json serverResponse)> ws_response_callback = std::bind(&CustomQuickchat::process_ws_response, this, std::placeholders::_1);
-	
-	Websocket = std::make_shared<WebsocketClientManager>(cvarManager, ws_url, ws_response_callback);
-
-	// wait x seconds after python websocket server has started to start client
-	DELAY(start_ws_client_delay,
-		Websocket->StartClient();
-	);
+	start_websocket_stuff(true);
 
 #endif
 
@@ -760,81 +663,209 @@ void CustomQuickchat::InitStuffOnLoad()
 }
 
 
-DWORD CustomQuickchat::CreateProcessUsingCommand(const std::string& command)
+void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls, bool log)
 {
-	// CreateProcess variables
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	// Initialize STARTUPINFO
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-
-	// Create the process to start python script
-	if (CreateProcess(
-		NULL,									// Application name (set NULL to use command)
-		Format::ToWcharString(command),			// Command
-		NULL,									// Process security attributes
-		NULL,									// Thread security attributes
-		FALSE,									// Inherit handles from the calling process
-		CREATE_NEW_CONSOLE,						// Creation flags (use CREATE_NEW_CONSOLE for asynchronous execution)
-		NULL,									// Use parent's environment block
-		NULL,									// Use parent's starting directory
-		&si,									// Pointer to STARTUPINFO
-		&pi										// Pointer to PROCESS_INFORMATION
-	))
+	if (!controls)
 	{
-		// After successfully starting process, close handle to allow it to run asynchronously
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
+		controls = Instances.GetInstanceOf<UGFxData_Controls_TA>();
+		if (!controls) {
+			LOG("UGFxData_Controls_TA* is null!");
+			return;
+		}
+	}
 
-		return 0;
+	std::array<BindingKey, 4> preset_group_bindings;
+
+	// find/save key bindings for each preset group
+	for (int i = 0; i < 4; i++)
+	{
+		for (const auto& binding : controls->PCBindings)
+		{
+			std::string action_name = binding.Action.ToString();
+
+			if (action_name != preset_group_names[i]) continue;
+
+			preset_group_bindings[i].action = action_name;
+			preset_group_bindings[i].pc_key = binding.Key.ToString();
+			break;
+		}
+
+		for (const auto& binding : controls->GamepadBindings)
+		{
+			std::string action_name = binding.Action.ToString();
+
+			if (action_name != preset_group_names[i]) continue;
+
+			preset_group_bindings[i].action = action_name;
+			preset_group_bindings[i].gamepad_key = binding.Key.ToString();
+			break;
+		}
+	}
+
+	if (log)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			LOG("========== preset_group_bindings[{}] ==========", i);
+			LOG("action: {}", preset_group_bindings[i].action);
+			LOG("pc_key: {}", preset_group_bindings[i].pc_key);
+			LOG("gamepad_key: {}", preset_group_bindings[i].gamepad_key);
+		}
+		
+		LOG("Bindings.size(): {}", Bindings.size());
+	}
+
+	for (const auto& binding : Bindings)
+	{
+		if (binding.bindingType != EBindingType::Sequence || binding.buttons.size() < 2) continue;
+
+		const std::string& first_button = binding.buttons[0];
+		const std::string& second_button = binding.buttons[1];
+
+		//for (const BindingKey& preset_binding : preset_group_bindings)
+		for (int group_index = 0; group_index < 4; group_index++)
+		{
+			const BindingKey& group_key = preset_group_bindings[group_index];
+
+			// check if matches a pc binding
+			if (first_button == group_key.pc_key)
+			{
+				for (int chat_index = 0; chat_index < 4; chat_index++)
+				{
+					const BindingKey& chat_key = preset_group_bindings[chat_index];
+
+					if (second_button != chat_key.pc_key) continue;
+
+					pc_qc_labels[group_index][chat_index] = Instances.NewFString(binding.chat);
+					break;
+				}
+			}
+			// check if matches a gamepad binding
+			else if (first_button == group_key.gamepad_key)
+			{
+				for (int chat_index = 0; chat_index < 4; chat_index++)
+				{
+					const BindingKey& chat_key = preset_group_bindings[chat_index];
+
+					if (second_button != chat_key.gamepad_key) continue;
+
+					gp_qc_labels[group_index][chat_index] = Instances.NewFString(binding.chat);
+					break;
+				}
+			}
+		}
+	}
+
+	LOG("Quickchat labels updated...");
+}
+
+
+void CustomQuickchat::apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller)
+{
+	if (!caller) return;
+
+	auto shell = caller->Shell;
+	if (!shell) return;
+
+	auto ds = shell->DataStore;
+	if (!ds) return;
+
+	const auto& groups_of_chat_labels = using_gamepad ? gp_qc_labels : pc_qc_labels;
+
+	for (int group_index = 0; group_index < 4; group_index++)
+	{
+		const auto& group_of_labels = groups_of_chat_labels.at(group_index);
+
+		for (int label_index = 0; label_index < 4; label_index++)
+		{
+			const auto& chat_label = group_of_labels[label_index];
+			if (chat_label.empty()) continue;
+
+			int ds_row_index = (group_index * 4) + label_index;
+
+			// idk how this would ever happen, but to be safe...
+			if (ds_row_index < 0 || ds_row_index > 15)
+			{
+				LOG("[ERROR] UGFxDataRow_X index out of range: {}", ds_row_index);
+				continue;
+			}
+
+			ds->SetStringValue(L"ChatPresetMessages", ds_row_index, L"Label", chat_label);
+		}
+	}
+
+	LOG("Updated quickchat labels in UI");
+}
+
+
+void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params)
+{
+	if (!caller || !params) return;
+
+	const int32_t& index = params->Index;
+	if (index == 420) return;
+
+	auto shell = caller->Shell;
+	if (!shell) return;
+
+	auto ds = shell->DataStore;
+	if (!ds) return;
+
+	const auto& chat_labels = using_gamepad ? gp_qc_labels[index] : pc_qc_labels[index];
+
+	for (int i = 0; i < 4; i++)
+	{
+		const auto& chat_label = chat_labels[i];
+		if (chat_label.empty()) continue;
+
+		int ds_row_index = (index * 4) + i;
+
+		// this prevents the chats with index of 420 (aka default RL quickchats that have been overridden) from being included
+		if (ds_row_index < 0 || ds_row_index > 15)
+		{
+			// the ds_row_index of chats that have been suppressed/overridden would be 1680-1683, so not exactly an error but still skip
+			if (ds_row_index >= 1680 && ds_row_index < 1684) continue;
+
+			LOG("[ERROR] UGFxDataRow_X index out of range: {}", ds_row_index);	// anything else would be an error
+			continue;
+		}
+
+		ds->SetStringValue(L"ChatPresetMessages", ds_row_index, L"Label", chat_label);
+	}
+
+
+	LOG("Applied quickchat labels to UI for {} group", preset_group_names[index]);
+}
+
+
+void CustomQuickchat::gui_footer_init()
+{
+	fs::path plugin_assets_folder = gameWrapper->GetDataFolder() / "sslow_plugin_assets";
+	if (!fs::exists(plugin_assets_folder))
+	{
+		LOG("[ERROR] Folder not found: {}", plugin_assets_folder.string());
+		LOG("Will use old ugly settings footer :(");
+		return;
+	}
+
+	GUI::FooterAssets assets = {
+		plugin_assets_folder / "github.png",
+		plugin_assets_folder / "discord.png",
+		plugin_assets_folder / "youtube.png",
+	};
+
+	assets_exist = assets.all_assets_exist();
+
+	if (assets_exist)
+	{
+		footer_links = std::make_shared<GUI::FooterLinks>(
+			GUI::ImageLink(assets.github_img_path, github_link, github_link_tooltip, footer_img_height),
+			GUI::ImageLink(assets.discord_img_path, GUI::discord_link, GUI::discord_desc, footer_img_height),
+			GUI::ImageLink(assets.youtube_img_path, GUI::youtube_link, GUI::youtube_desc, footer_img_height)
+		);
 	}
 	else
 	{
-		// Failed to create process
-		return GetLastError();
-	}
-}
-
-
-std::string CustomQuickchat::readContent(const fs::path& FileName)
-{
-	std::ifstream Temp(FileName);
-	std::stringstream Buffer;
-	Buffer << Temp.rdbuf();
-	return Buffer.str();
-}
-
-
-json CustomQuickchat::getJsonFromFile(const fs::path& filePath)
-{
-	json contents;
-
-	if (!fs::exists(filePath)) return contents;
-	
-	std::string jsonFileRawStr = readContent(filePath);
-	try {
-		contents = json::parse(jsonFileRawStr);
-	}
-	catch (...) {
-		LOG("[ERROR] Couldn't read '{}' Make sure it contains valid JSON!", filePath.string());
-	}
-
-	return contents;
-}
-
-
-void CustomQuickchat::writeJsonToFile(const fs::path& filePath, const json& jsonData)
-{
-	std::ofstream file(filePath);
-	if (file.is_open())
-	{
-		file << jsonData.dump(4); // pretty-print with 4 spaces indentation
-		file.close();
-	}
-	else {
-		LOG("[ERROR] Couldn't open file for writing: {}", filePath.string());
+		LOG("One or more plugin asset is missing... will use old ugly settings footer instead :(");
 	}
 }

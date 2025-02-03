@@ -1,6 +1,11 @@
 #pragma once
 
+#include <string>
+#include <sstream>
+#include <random>
+#include <cctype>
 
-std::string toSarcasm(const std::string& ogText);
 
-std::string toUwu(const std::string& ogText);
+std::string to_sarcasm(const std::string& ogText);
+
+std::string to_uwu(const std::string& ogText);

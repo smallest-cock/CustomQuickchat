@@ -5,7 +5,6 @@
 
 
 using websocketpp::connection_hdl;
-class CVarManagerWrapper;
 
 
 class WebsocketClientManager
@@ -13,21 +12,28 @@ class WebsocketClientManager
 	using PluginClient = websocketpp::client<websocketpp::config::asio_client>;
 
 public:
-	WebsocketClientManager(std::shared_ptr<CVarManagerWrapper> InCvarManager, const std::string& serverUri, std::function<void(json serverResponse)> response_callback);
+	WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::shared_ptr<bool> connecting_to_ws_server);
 
-	bool StartClient();						// Connect to the WebSocket server
+	bool StartClient(int port);				// Connect to the WebSocket server
 	bool StopClient();						// Disconnect from the WebSocket server
 
 	void SendEvent(const std::string& eventName, const json& dataJson);
 	void SetbUseBase64(bool bNewValue) { bUseBase64 = bNewValue; }
 	bool IsConnectedToServer() { return is_connected; }
 
+	std::string get_port_str() const;
+
+	void set_connected_status(bool connected);
+
 private:
-	WebsocketClientManager() = delete;			// No default constructor
+	WebsocketClientManager() = delete;
 	//~WebsocketClientManager() { StopClient(); };
 
-	std::shared_ptr<CVarManagerWrapper> cvarManager;
-	std::string server_uri;					// WebSocket server URI
+	std::shared_ptr<bool> connecting_to_server;
+
+	int port_number = 42069;
+	std::string port_num_str = std::to_string(port_number);
+	std::string server_uri = "ws://localhost:" + port_num_str;		// WebSocket server URI
 	bool bUseBase64 = false;
 
 	PluginClient ws_client;					// The WebSocket client instance

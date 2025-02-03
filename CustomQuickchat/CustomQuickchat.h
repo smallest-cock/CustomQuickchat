@@ -15,6 +15,7 @@
 #include "Macros.hpp"
 #include "Events.hpp"
 #include "Cvars.hpp"
+#include "GuiTools.hpp"
 #include "Components/Includes.hpp"
 
 
@@ -108,6 +109,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
 	std::chrono::steady_clock::time_point lastBindingActivated;
+	static constexpr int MAX_KEYWORD_DEPTH = 10;
 
 	void ResetAllFirstButtonStates();
 	int FindButtonIndex(const std::string& buttonName);
@@ -130,13 +132,10 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void PerformBindingAction(const Binding& binding);
 
 
-	// Lobby Info stuff (blast ranks & last chat)
-	std::string LastChat();
-	std::string GetRankStr(EKeyword keyword);
-	std::string AllRanks();
-	std::string SpecificRank(const std::string& playlist);
-	std::string GetRankStr(const Rank& rank);
-	ChatterRanks FindLastChattersRanks();
+	// Lobby Info stuff (last chat & blast ranks)
+	std::string get_last_chat();
+	std::string get_last_chatter_rank_str(EKeyword keyword);
+	ChatterRanks get_last_chatter_ranks();
 
 
 	// sending chat stuff
@@ -149,18 +148,20 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void ResetChatTimeoutMsg();
 
 
-	// JSON stuff (can be moved to Utils, like Files::)
-	std::string readContent(const fs::path& FileName);
-	void writeJsonToFile(const fs::path& filePath, const json& jsonData);
-	json getJsonFromFile(const fs::path& filePath);
+	// modify quickchat UI stuff
+	static constexpr std::array<const char*, 4> preset_group_names = { "ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4" };
+	std::array<std::array<FString, 4>, 4>	pc_qc_labels;
+	std::array<std::array<FString, 4>, 4>	gp_qc_labels;
+	bool using_gamepad = false;
+
+	void apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params = nullptr);
+	void apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller);
 
 
 	// misc functions
 	void NotifyAndLog(const std::string& title, const std::string& message, int duration = 3);
-	DWORD CreateProcessUsingCommand(const std::string& commandStr);
-
 	
-	// ------------------------------------ Speech-to-Text ------------------------------------
+
 
 #if defined(USE_SPEECH_TO_TEXT)
 
@@ -180,17 +181,18 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	ActiveSTTAttempt Active_STT_Attempt;
 
 	// websocket stuff
-	#define WS_PORT 8003
+	static constexpr float START_WS_CLIENT_DELAY = 5.0f;	// in seconds
 
-	static constexpr float start_ws_client_delay = 7.0f;		// in seconds
-	static constexpr const char* ws_url = "ws://localhost:" stringify(WS_PORT);
-
-	std::shared_ptr<WebsocketClientManager> Websocket;
+	std::shared_ptr<bool> connecting_to_ws_server = std::make_shared<bool>(false);
+	std::shared_ptr<WebsocketClientManager> Websocket = nullptr;
+	Process::ProcessHandles stt_python_server_process;
 	
-	void start_websocket_server();
+	void start_websocket_stuff(bool onLoad = false);
+	bool start_websocket_server();
+	void stop_websocket_server();
 	void process_ws_response(const json& response);
 
-	
+
 	// speech-to-text
 	void StartSpeechToText(const Binding& binding);
 	json generate_data_for_STT_attempt();
@@ -204,11 +206,15 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
 	// misc
+	std::string process_keywords_in_chat_str(const Binding& binding);
+
 	std::string generate_STT_attempt_id();
 	void ClearSttErrorLog();
 
 	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void STTLog(const std::string& message);
+
+	void determine_quickchat_labels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
 
 #else
 
@@ -216,12 +222,12 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 #endif
 
-	// ----------------------------------------------------------------------------------------
 
 
 	// commands
 	void cmd_toggleEnabled(std::vector<std::string> args);
 	void cmd_listBindings(std::vector<std::string> args);
+	void cmd_list_custom_chat_labels(std::vector<std::string> args);
 	void cmd_exitToMainMenu(std::vector<std::string> args);
 	void cmd_forfeit(std::vector<std::string> args);
 	void cmd_test(std::vector<std::string> args);
@@ -237,7 +243,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// hook callbacks
 	void Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName);
-	void Event_ChatPresetPressed(ActorWrapper caller, void* params, std::string eventName);
+	void Event_GFxHUD_TA_ChatPreset(ActorWrapper caller, void* params, std::string eventName);
+	void Event_OnPressChatPreset(ActorWrapper caller, void* params, std::string eventName);
+	void Event_InitUIBindings(ActorWrapper caller, void* params, std::string eventName);
 	void Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName);
 	void Event_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName);
 	void Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName);
@@ -274,4 +282,17 @@ public:
 	
 	void RenderAllVariationListNames();
 	void RenderVariationListDetails();
+
+
+	// header/footer stuff
+	void gui_footer_init();
+	bool assets_exist =	false;
+	std::shared_ptr<GUI::FooterLinks> footer_links;
+
+	static constexpr float header_height =					80.0f;
+	static constexpr float footer_height =					40.0f;
+	static constexpr float footer_img_height =				25.0f;
+
+	static constexpr const wchar_t* github_link =			L"https://github.com/smallest-cock/CustomQuickchat";
+	static constexpr const char* github_link_tooltip =		"See the sauce";
 };

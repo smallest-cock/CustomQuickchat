@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "CustomQuickchat.h"
-#include "GuiTools.hpp"
+
 
 
 void CustomQuickchat::RenderSettings()
@@ -8,23 +8,11 @@ void CustomQuickchat::RenderSettings()
 	auto enabled_cvar = GetCvar(Cvars::enabled);
 	if (!enabled_cvar) return;
 
-	// ---------------- calculate ImGui::BeginChild sizes ------------------
+	const float content_height = ImGui::GetContentRegionAvail().y - footer_height;	// available height after accounting for footer
 
-	ImVec2 availableSpace = ImGui::GetContentRegionAvail();
-	availableSpace.y -= 4;		// act as if availableSpace height is 4px smaller, bc for some reason availableSpace height is cap (prevents scroll bars)
-	float headerHeight = 80.0f;
-	float footerHeight = 35.0f;
-	float contentHeight = availableSpace.y - footerHeight;
-
-	ImVec2 contentSize =	ImVec2(0, contentHeight);
-	ImVec2 footerSize =		ImVec2(0, footerHeight);
-	ImVec2 headerSize =		ImVec2(0, headerHeight);
-
-	// ----------------------------------------------------------------------
-
-	if (ImGui::BeginChild("Content#cqc", contentSize))
+	if (ImGui::BeginChild("ContentSection", ImVec2(0, content_height)))
 	{
-		GUI::SettingsHeader("Header##cqc", pretty_plugin_version, headerSize, false);
+		GUI::SettingsHeader("Header", pretty_plugin_version, ImVec2(0, header_height), false);
 
 		bool enabled = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &enabled))
@@ -76,7 +64,18 @@ void CustomQuickchat::RenderSettings()
 	}
 	ImGui::EndChild();
 
-	GUI::SettingsFooter("Footer##cqc", footerSize, availableSpace.x, false);
+
+	// footer
+	const auto remaining_space = ImGui::GetContentRegionAvail();
+
+	if (assets_exist)
+	{
+		GUI::SettingsFooter("Footer", remaining_space, footer_links);
+	}
+	else
+	{
+		GUI::OldSettingsFooter("Footer", remaining_space);
+	}
 }
 
 
@@ -141,10 +140,6 @@ void CustomQuickchat::GeneralSettings()
 	if (ImGui::SliderFloat("button sequence time window", &sequenceTimeWindow, 0.0f, 10.0f, "%.1f seconds"))
 	{
 		sequenceTimeWindow_cvar.setValue(sequenceTimeWindow);
-	}
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::SetTooltip("max time between sequence button presses");
 	}
 
 	GUI::Spacing(2);
@@ -226,38 +221,89 @@ void CustomQuickchat::SpeechToTextSettings()
 	auto autoCalibrateMic_cvar =			GetCvar(Cvars::autoCalibrateMic);
 	auto micCalibrationTimeout_cvar =		GetCvar(Cvars::micCalibrationTimeout);
 	auto micEnergyThreshold_cvar =			GetCvar(Cvars::micEnergyThreshold);
+	auto websocket_port_cvar =				GetCvar(Cvars::websocket_port);
 
 	if (!micEnergyThreshold_cvar) return;
 
 	GUI::Spacing(2);
 
-	bool ws_is_connected_to_server = Websocket->IsConnectedToServer();
-	
 	// display websocket connection status
-	std::string connection_status = ws_is_connected_to_server ? ("Connected (port " stringify(WS_PORT) ")") : "Not connected";
+	bool ws_is_connected_to_server = Websocket ? Websocket->IsConnectedToServer() : false;
+
+	std::string connection_status;
+	if (!*connecting_to_ws_server)
+	{
+		connection_status = ws_is_connected_to_server ? ("Connected (port " + Websocket->get_port_str() + ")") : "Not connected";
+	}
+	else
+	{
+		connection_status = "Connecting....";
+	}
 	std::string ws_status_str = "Websocket status:\t" + connection_status;
 	ImGui::Text(ws_status_str.c_str());
 
 	GUI::Spacing();
 
-	if (ws_is_connected_to_server)
+	ImGui::SetNextItemWidth(100);
+	int websocket_port = websocket_port_cvar.getIntValue();
+	if (ImGui::InputInt("Port number", &websocket_port))
 	{
-		if (ImGui::Button("Stop client##websocket"))
+		websocket_port_cvar.setValue(websocket_port);
+	}
+
+	GUI::Spacing();
+
+	if (!ws_is_connected_to_server && !*connecting_to_ws_server)
+	{
+		if (ImGui::Button("Start##websocket"))
 		{
-			GAME_THREAD_EXECUTE(
-				Websocket->StopClient();
-			);
+			LOG("'Start' button has been clicked...");
+
+			auto start_ws_connection = [this]()
+			{
+				if (Websocket && Websocket->IsConnectedToServer())
+				{
+					LOG("Failed to start websocket connection... it's already active!");
+					return;
+				}
+
+				start_websocket_stuff();
+			};
+
+			GAME_THREAD_EXECUTE_CAPTURE(
+				start_ws_connection();
+			, start_ws_connection);
 		}
 	}
 	else
 	{
-		if (ImGui::Button("Start client##websocket"))
+		if (ImGui::Button("Stop##websocket"))
 		{
-			GAME_THREAD_EXECUTE(
-				Websocket->StartClient();
-			);
+			LOG("'Stop' button has been clicked...");
+
+			auto stop_ws_connection = [this]()
+			{
+				stop_websocket_server();
+				*connecting_to_ws_server = false;
+
+				if (!Websocket)
+				{
+					LOG("[ERROR] Websocket object is null... cant stop client");
+					return;
+				}
+
+				bool success = Websocket->StopClient();
+				LOG(success ? "Stopping websocket client was successful" : "Stopping websocket client was unsuccessful");
+
+				Websocket->set_connected_status(false);
+			};
+
+			GAME_THREAD_EXECUTE_CAPTURE(
+				stop_ws_connection();
+			, stop_ws_connection);
 		}
 	}
+
 
 	GUI::Spacing(2);
 
@@ -337,7 +383,7 @@ void CustomQuickchat::SpeechToTextSettings()
 			notificationDuration_cvar.setValue(notificationDuration);
 		}
 
-		GUI::SameLineSpacing(10);
+		GUI::SameLineSpacing_relative(10);
 
 		// test popup notifications
 		if (ImGui::Button("Test"))
@@ -613,6 +659,14 @@ void CustomQuickchat::RenderBindingTriggerDetails(Binding& selectedBinding)
 		WriteBindingsToJson();
 
 		GAME_THREAD_EXECUTE(
+			determine_quickchat_labels();
+			
+			auto chat = Instances.GetInstanceOf<UGFxData_Chat_TA>();
+			if (chat)
+			{
+				apply_all_custom_qc_labels_to_ui(chat);
+			}
+
 			Instances.SpawnNotification("custom quickchat", "Bindings saved!", 3);
 		);
 	}

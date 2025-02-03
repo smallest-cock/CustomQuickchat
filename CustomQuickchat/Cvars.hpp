@@ -40,6 +40,7 @@ namespace Cvars
 	const CvarData speechProcessingTimeout =	{ "speech_processing_timeout",		"timeout for processing speech" };
 	const CvarData micCalibrationTimeout =		{ "mic_calibration_timeout",		"max time to spend calibrating microphone before aborting" };
 	const CvarData micEnergyThreshold =			{ "mic_energy_threshold",			"minimum audio energy to consider for recording speech" };
+	const CvarData websocket_port =				{ "websocket_port",					"port number used for speech-to-text websocket connection" };
 
 	// strings
 	const CvarData pythonInterpreterPath =		{ "python_interpreter_path",		"filepath to python interpreter" };
@@ -49,7 +50,7 @@ namespace Cvars
 	// ======================= commands ======================
 
 	const CvarData toggleEnabled =				{ "toggle_enabled",					"toggle turning custom quidchats on/off"};
-	const CvarData showPathDirectories =		{ "show_path_directories",			"show all the directories found in your windows PATH variable" };
+	const CvarData list_custom_chat_labels =	{ "list_custom_chat_labels",		"list all custom chat labels that will show up in quickchat UI" };
 	const CvarData listBindings =				{ "list_bindings",					"show a list of all current bindings"};
 	const CvarData exitToMainMenu =				{ "exit_to_main_menu",				"exit to the main menu"};
 	const CvarData forfeit =					{ "forfeit",						"forfeit the current match"};

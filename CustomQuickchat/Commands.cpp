@@ -39,6 +39,37 @@ void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
 }
 
 
+void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
+{
+	determine_quickchat_labels(nullptr, true);
+
+	LOG("============= pc custom qc lablels ============");
+
+	for (int i = 0; i < 4; i++)
+	{
+		const auto& chat_label_arr = pc_qc_labels[i];
+
+		LOG("{}:", preset_group_names[i]);
+		for (int j = 0; j < 4; j++)
+		{
+			LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
+		}
+	}
+
+	LOG("=========== gamepad custom qc lablels =========");
+	for (int i = 0; i < 4; i++)
+	{
+		const auto& chat_label_arr = gp_qc_labels[i];
+
+		LOG("{}:", preset_group_names[i]);
+		for (int j = 0; j < 4; j++)
+		{
+			LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
+		}
+	}
+}
+
+
 void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 {
 	auto shell = Instances.GetInstanceOf<UGFxShell_X>();
@@ -61,6 +92,9 @@ void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 }
 
 
+
+// ============================ testing ============================
+
 void CustomQuickchat::cmd_test(std::vector<std::string> args)
 {
 #ifdef USE_SPEECH_TO_TEXT
@@ -68,6 +102,8 @@ void CustomQuickchat::cmd_test(std::vector<std::string> args)
 	Websocket->SendEvent("test", { { "data", "test" } });
 
 #endif // USE_SPEECH_TO_TEXT
+	
+	LOG("did the test");
 }
 
 
