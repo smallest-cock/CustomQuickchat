@@ -7,8 +7,6 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 {
 	if (gamePaused || !inGameEvent) return;
 
-	UGameViewportClient_TA* okok;
-
 	if (matchEnded)
 	{
 		auto disablePostMatchQuickchats_cvar = GetCvar(Cvars::disablePostMatchQuickchats);

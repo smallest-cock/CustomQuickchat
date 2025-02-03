@@ -130,6 +130,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void ReshuffleWordList(int idx);
 
 	void PerformBindingAction(const Binding& binding);
+	std::string process_keywords_in_chat_str(const Binding& binding);
 
 
 	// Lobby Info stuff (last chat & blast ranks)
@@ -154,6 +155,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	std::array<std::array<FString, 4>, 4>	gp_qc_labels;
 	bool using_gamepad = false;
 
+	void determine_quickchat_labels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
 	void apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params = nullptr);
 	void apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller);
 
@@ -206,15 +208,12 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
 	// misc
-	std::string process_keywords_in_chat_str(const Binding& binding);
-
 	std::string generate_STT_attempt_id();
 	void ClearSttErrorLog();
 
 	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void STTLog(const std::string& message);
 
-	void determine_quickchat_labels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
 
 #else
 
