@@ -29,7 +29,7 @@ private:
 	WebsocketClientManager() = delete;
 	//~WebsocketClientManager() { StopClient(); };
 
-	std::shared_ptr<bool> connecting_to_server;
+	std::atomic<bool> connecting_to_server{false}
 
 	int port_number = 42069;
 	std::string port_num_str = std::to_string(port_number);
@@ -39,7 +39,8 @@ private:
 	PluginClient ws_client;					// The WebSocket client instance
 	connection_hdl ws_connection_handle;	// Handle for the active connection
 	std::thread ws_client_thread;			// Thread for the WebSocket client
-	bool is_connected = false;				// Whether the client is connected to the server
+	std::atomic<bool> is_connected{false};  // Whether the client is connected to the server
+	std::mutex connection_mutex;
 
 	std::function<void(json serverResponse)> handle_server_response;
 

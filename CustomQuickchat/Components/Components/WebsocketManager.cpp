@@ -20,11 +20,7 @@ WebsocketClientManager::WebsocketClientManager(std::function<void(json serverRes
 
 bool WebsocketClientManager::StartClient(int port)
 {
-	//if (is_connected)
-	//{
-	//	LOG("[WebsocketManager] Client already started.");
-	//	return false;
-	//}
+	std::lock_guard<std::mutex> lock(connection_mutex);
 
 	// update stored port info
 	port_number = port;
@@ -35,8 +31,6 @@ bool WebsocketClientManager::StartClient(int port)
 	ws_client.reset();		// Reset to a clean state
 	LOG("[WebsocketManager] Reset client to a clean state...");
 
-	//ws_client.init_asio();	// Reinitialize ASIO
-
 	// Create a connection to the server
 	websocketpp::lib::error_code ec;
 	auto connection = ws_client.get_connection(server_uri, ec);
@@ -44,8 +38,8 @@ bool WebsocketClientManager::StartClient(int port)
 	{
 		LOG("[WebsocketManager] Connection error: {}", ec.message().c_str());
 
-		is_connected = false;
-		*connecting_to_server = false;
+		is_connected.store(false);
+		connecting_to_server.store(false);
 		return false;
 	}
 
@@ -67,6 +61,8 @@ bool WebsocketClientManager::StartClient(int port)
 		catch (const std::exception& e)
 		{
 			LOG("[WebsocketManager] Exception in ASIO event loop: {}", e.what());
+			is_connected.store(false);
+			connecting_to_server.store(false);
 		}
 	});
 
@@ -79,11 +75,7 @@ bool WebsocketClientManager::StartClient(int port)
 
 bool WebsocketClientManager::StopClient()
 {
-	//if (!is_connected)
-	//{
-	//	LOG("[WebsocketManager] Client already stopped.");
-	//	return false;
-	//}
+	std::lock_guard<std::mutex> lock(connection_mutex);
 
 	// Close the connection gracefully
 	websocketpp::lib::error_code ec;
@@ -97,7 +89,7 @@ bool WebsocketClientManager::StopClient()
 	// Stop the ASIO event loop
 	ws_client.stop();
 	
-	is_connected = false;
+	is_connected.store(false);
 	//if (ws_client_thread.joinable())
 	//{
 	//	ws_client_thread.join();
@@ -112,24 +104,30 @@ void WebsocketClientManager::SendEvent(const std::string& eventName, const json&
 	if (!ws_connection_handle.lock())
 	{
 		LOG("[WebsocketManager] ERROR: No active WebSocket connection!");
-		is_connected = false;
-		*connecting_to_server = false;
+		is_connected.store(false);
+		connecting_to_server.store(false);
 		return;
 	}
 
-	// Serialize JSON payload
-	json payload = { { "event", eventName }, { "data", dataJson } };
-	std::string message = payload.dump();
+	try {
+		// Serialize JSON payload
+		json payload = { { "event", eventName }, { "data", dataJson } };
+		std::string message = payload.dump();
 
-	websocketpp::lib::error_code ec;
-	ws_client.send(ws_connection_handle, message, websocketpp::frame::opcode::text, ec);
-	if (ec)
-	{
-		LOG("[WebsocketManager] Error sending message: {}", ec.message());
+		websocketpp::lib::error_code ec;
+		ws_client.send(ws_connection_handle, message, websocketpp::frame::opcode::text, ec);
+		if (ec)
+		{
+			LOG("[WebsocketManager] Error sending message: {}", ec.message());
+		}
+		else
+		{
+			LOG("[WebsocketManager] Message sent: {}", message);
+		}
 	}
-	else
+	catch (const std::exception& e)
 	{
-		LOG("[WebsocketManager] Message sent: {}", message);
+		LOG("[WebsocketManager] Exception while sending message: {}", e.what());
 	}
 }
 
@@ -137,35 +135,35 @@ void WebsocketClientManager::SendEvent(const std::string& eventName, const json&
 void WebsocketClientManager::OnWsOpen(connection_hdl hdl)
 {
 	LOG("[WebsocketManager] Connected to WebSocket server");
-	is_connected = true;
-	*connecting_to_server = false;
+	is_connected.store(true);
+	connecting_to_server.store(false);
 }
 
 
 void WebsocketClientManager::OnWsClose(connection_hdl hdl)
 {
 	LOG("[WebsocketManager] Disconnected from WebSocket server");
-	is_connected = false;
-	*connecting_to_server = false;	// this can be misleading bc the client often "disconnects" right before it actually connects to the ws server
+	is_connected.store(false);
+	connecting_to_server.store(false);
 }
 
 
 void WebsocketClientManager::OnWsMessage(connection_hdl hdl, PluginClient::message_ptr msg)
 {
-	is_connected = true;
-	*connecting_to_server = false;
+	is_connected.store(true);
+	connecting_to_server.store(false);
 	
-	LOG("[WebsocketManager] Message received: {}", msg->get_payload().c_str());
-
 	// Process the message payload (e.g., parse JSON)
 	try
 	{
-		json response = json::parse(msg->get_payload());
+		std::string payload = msg->get_payload();
+		LOG("[WebsocketManager] Message received: {}", payload);
+
+		json response = json::parse(payload);
 		handle_server_response(response);
 	}
-	catch (const json::parse_error& e)
-	{
-		LOG("[WebsocketManager] JSON parse error: {}", e.what());
+	catch (const std::exception& e) {
+		LOG("[WebsocketManager] Error processing message: {}", e.what());
 	}
 }
 
