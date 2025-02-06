@@ -53,17 +53,32 @@ bool WebsocketClientManager::StartClient(int port)
 
 	// Run the ASIO event loop in a separate thread
 	ws_client_thread = std::thread([this]() {
-		try
-		{
-			LOG("[WebsocketManager] Running websocket client...");
-			ws_client.run();
+
+		const int MAX_RETRY_ATTEMPTS = 5;
+		int retry_count = 0;
+		while (!should_stop.load() && retry_count < MAX_RETRY_ATTEMPTS) {
+			try
+			{
+				LOG("[WebsocketManager] Running websocket client...");
+				ws_client.run_one();  // Run one iteration instead of blocking
+
+				// Small sleep to prevent tight loop
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
+			catch (const std::exception& e)
+			{
+				LOG("[WebsocketManager] Exception in ASIO event loop: {}", e.what());
+				is_connected.store(false);
+				connecting_to_server.store(false);
+
+				retry_count++;
+				if (retry_count >= MAX_RETRY_ATTEMPTS) {
+					LOG("[WebsocketManager] Max retry attempts reached, stopping websocket client");
+				}
+				break;
+			}
 		}
-		catch (const std::exception& e)
-		{
-			LOG("[WebsocketManager] Exception in ASIO event loop: {}", e.what());
-			is_connected.store(false);
-			connecting_to_server.store(false);
-		}
+		LOG("[WebsocketManager] Event loop thread exiting");
 	});
 
 	ws_client_thread.detach();
@@ -77,7 +92,9 @@ bool WebsocketClientManager::StopClient()
 {
 	std::lock_guard<std::mutex> lock(connection_mutex);
 
-	// Close the connection gracefully
+	should_stop.store(true);  // Signal the thread to stop
+
+	// Close the connection gracefully first
 	websocketpp::lib::error_code ec;
 	ws_client.close(ws_connection_handle, websocketpp::close::status::normal, "Client disconnect", ec);
 	if (ec)
@@ -87,13 +104,13 @@ bool WebsocketClientManager::StopClient()
 	}
 
 	// Stop the ASIO event loop
-	ws_client.stop();
+	try {
+		ws_client.stop();
+	} catch (const std::exception& e) {
+		LOG("[WebsocketManager] Error stopping client: {}", e.what());
+	}
 	
 	is_connected.store(false);
-	//if (ws_client_thread.joinable())
-	//{
-	//	ws_client_thread.join();
-	//}
 
 	return true;
 }
