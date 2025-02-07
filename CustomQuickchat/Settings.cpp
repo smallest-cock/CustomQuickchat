@@ -231,7 +231,7 @@ void CustomQuickchat::SpeechToTextSettings()
 	bool ws_is_connected_to_server = Websocket ? Websocket->IsConnectedToServer() : false;
 
 	std::string connection_status;
-	if (!*connecting_to_ws_server)
+	if (!connecting_to_ws_server.load())
 	{
 		connection_status = ws_is_connected_to_server ? ("Connected (port " + Websocket->get_port_str() + ")") : "Not connected";
 	}
@@ -253,7 +253,7 @@ void CustomQuickchat::SpeechToTextSettings()
 
 	GUI::Spacing();
 
-	if (!ws_is_connected_to_server && !*connecting_to_ws_server)
+	if (!ws_is_connected_to_server && !connecting_to_ws_server.load())
 	{
 		if (ImGui::Button("Start##websocket"))
 		{
@@ -284,7 +284,7 @@ void CustomQuickchat::SpeechToTextSettings()
 			auto stop_ws_connection = [this]()
 			{
 				stop_websocket_server();
-				*connecting_to_ws_server = false;
+				connecting_to_ws_server.store(false);
 
 				if (!Websocket)
 				{

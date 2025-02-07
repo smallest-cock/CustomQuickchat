@@ -69,6 +69,11 @@ namespace Process
 	{
 		HANDLE hProcess =	NULL;
 		HANDLE hThread =	NULL;
+
+		inline bool is_active() const
+		{
+			return (hProcess != NULL && hProcess != INVALID_HANDLE_VALUE) || (hThread != NULL && hThread != INVALID_HANDLE_VALUE);
+		}
 	};
 
 	struct CreateProcessResult
