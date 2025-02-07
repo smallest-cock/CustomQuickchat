@@ -54,7 +54,7 @@ void CustomQuickchat::start_websocket_stuff(bool onLoad)
 		if (!websocket_port_cvar)
 		{
 			LOG("[ERROR] websocket_port cvar invalid");
-			*connecting_to_ws_server = false;
+			connecting_to_ws_server.store(false);
 			return;
 		}
 		int websocket_port = websocket_port_cvar.getIntValue();
@@ -66,9 +66,6 @@ void CustomQuickchat::start_websocket_stuff(bool onLoad)
 			Websocket = std::make_shared<WebsocketClientManager>(ws_response_callback, connecting_to_ws_server);
 		}
 
-		const float delay_s = onLoad ? START_WS_CLIENT_DELAY + 3.0f : START_WS_CLIENT_DELAY;	// wait 3 more seconds when plugin loads
-
-
 		auto start_the_client = [this, websocket_port]()
 		{
 			bool success = Websocket->StartClient(websocket_port);
@@ -76,32 +73,37 @@ void CustomQuickchat::start_websocket_stuff(bool onLoad)
 
 			if (!success)
 			{
-				*connecting_to_ws_server = false;
+				connecting_to_ws_server.store(false);
 			}
 		};
 
 		// wait x seconds after python websocket server has started to start client
-		DELAY_CAPTURE(delay_s,
-
+		DELAY_CAPTURE(START_WS_CLIENT_DELAY,
 			start_the_client();
-
 		, start_the_client);
 	};
 
-	// start websocket sever (spawn python process)
-	bool success = start_websocket_server();
-	LOG("[onLoad] Ran start_websocket_server()");
-	if (!success) return;
+	auto start_server_then_client = [this, ws_client_setup]()
+	{
+		// start websocket sever (spawn python process)
+		bool success = start_websocket_server();
+		LOG("[onLoad] Ran start_websocket_server()");
+		if (!success) return;
+	
+		// start websocket client (includes delay)
+		ws_client_setup();
+	};
 
 	if (onLoad)
 	{
-		// wait 1 second before starting websocket client stuff (so websocket_port cvar value gets a chance to load)
-		DELAY_CAPTURE(1.0f, ws_client_setup(); , ws_client_setup);
+		// if called from onload, wait 1 second before starting websocket stuff (so stored websocket_port cvar value gets a chance to load)
+		DELAY_CAPTURE(1.0f,
+			start_server_then_client();
+		, start_server_then_client);
 	}
 	else
 	{
-		// start client (includes delay)
-		ws_client_setup();
+		start_server_then_client();
 	}
 }
 
@@ -112,11 +114,19 @@ bool CustomQuickchat::start_websocket_server()
 	if (!websocket_port_cvar) return false;
 	int websocket_port = websocket_port_cvar.getIntValue();
 
-	*connecting_to_ws_server = true;
 
 	// start websocket sever (spawn python process)
 	std::string command = CreateCommandString(speechToTextExePath.string(), { std::to_string(websocket_port) });	// args: py exe, websocket port
 	
+
+	// terminate existing websocket server process (if necessary)
+	if (stt_python_server_process.is_active())
+	{
+		Process::terminate_created_process(stt_python_server_process);
+	}
+
+	connecting_to_ws_server = true;
+
 	auto process_info = Process::create_process_from_command(command);
 	LOG("Status code after attempting to create process (0 is good): {}", process_info.status_code);
 
@@ -129,7 +139,7 @@ bool CustomQuickchat::start_websocket_server()
 	else
 	{
 		LOG("[ERROR] Unable to create process using command: {}", command);
-		*connecting_to_ws_server = false;
+		connecting_to_ws_server.store(false);
 		return false;
 	}
 }

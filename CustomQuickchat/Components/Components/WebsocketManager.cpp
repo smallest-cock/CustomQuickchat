@@ -2,7 +2,7 @@
 #include "WebsocketManager.hpp"
 
 
-WebsocketClientManager::WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::shared_ptr<bool> connecting_to_ws_server):
+WebsocketClientManager::WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::atomic<bool>& connecting_to_ws_server):
 	handle_server_response(response_callback),
 	connecting_to_server(connecting_to_ws_server)
 {
@@ -28,7 +28,9 @@ bool WebsocketClientManager::StartClient(int port)
 	server_uri = "ws://localhost:" + port_num_str;
 	LOG("[WebsocketManager] Updated port to {}", port_num_str);
 
-	ws_client.reset();		// Reset to a clean state
+	// Reset to a clean state
+	ws_client.reset();		
+	should_stop.store(false);
 	LOG("[WebsocketManager] Reset client to a clean state...");
 
 	// Create a connection to the server
@@ -53,17 +55,18 @@ bool WebsocketClientManager::StartClient(int port)
 
 	// Run the ASIO event loop in a separate thread
 	ws_client_thread = std::thread([this]() {
+		LOG("[WebsocketManager] Running websocket client...");
 
 		const int MAX_RETRY_ATTEMPTS = 5;
 		int retry_count = 0;
 		while (!should_stop.load() && retry_count < MAX_RETRY_ATTEMPTS) {
 			try
 			{
-				LOG("[WebsocketManager] Running websocket client...");
+				DEBUGLOG("[WebsocketManager] Processing a websocket event...");
 				ws_client.run_one();  // Run one iteration instead of blocking
 
 				// Small sleep to prevent tight loop
-				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			}
 			catch (const std::exception& e)
 			{

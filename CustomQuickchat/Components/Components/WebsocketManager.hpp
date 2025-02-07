@@ -12,14 +12,14 @@ class WebsocketClientManager
 	using PluginClient = websocketpp::client<websocketpp::config::asio_client>;
 
 public:
-	WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::shared_ptr<bool> connecting_to_ws_server);
+	WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::atomic<bool>& connecting_to_ws_server);
 
 	bool StartClient(int port);				// Connect to the WebSocket server
 	bool StopClient();						// Disconnect from the WebSocket server
 
 	void SendEvent(const std::string& eventName, const json& dataJson);
 	void SetbUseBase64(bool bNewValue) { bUseBase64 = bNewValue; }
-	bool IsConnectedToServer() { return is_connected; }
+	bool IsConnectedToServer() { return is_connected.load(); }
 
 	std::string get_port_str() const;
 
@@ -39,7 +39,7 @@ private:
 	std::thread ws_client_thread;			// Thread for the WebSocket client
 
 	std::mutex connection_mutex;
-	std::atomic<bool> connecting_to_server{false};
+	std::atomic<bool>& connecting_to_server;
 	std::atomic<bool> is_connected{false};
 	std::atomic<bool> should_stop{false};
 

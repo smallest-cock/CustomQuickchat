@@ -185,7 +185,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	// websocket stuff
 	static constexpr float START_WS_CLIENT_DELAY = 5.0f;	// in seconds
 
-	std::shared_ptr<bool> connecting_to_ws_server = std::make_shared<bool>(false);
+	std::atomic<bool> connecting_to_ws_server{false};
 	std::shared_ptr<WebsocketClientManager> Websocket = nullptr;
 	Process::ProcessHandles stt_python_server_process;
 	
