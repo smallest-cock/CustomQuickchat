@@ -34,10 +34,10 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 		SendChat(get_last_chatter_rank_str(binding.keyWord), binding.chatMode);
 		return;
 	case EKeyword::Forfeit:
-		RunCommand(Cvars::forfeit);
+		RunCommand(Commands::forfeit);
 		return;
 	case EKeyword::ExitToMainMenu:
-		RunCommand(Cvars::exitToMainMenu);
+		RunCommand(Commands::exitToMainMenu);
 		return;
 
 	// lastChat and word variations need to parse the chat string every time binding is triggered (but im prolly wrong, and theres a way to eliminate the need)
@@ -66,9 +66,13 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 	{
 		auto keyword_strings_to_replace = binding.GetMatchedSubstrings(result, keywordRegexPattern);
 
-		if (keyword_strings_to_replace.empty() && i > 1)
+		if (keyword_strings_to_replace.empty())
 		{
-			LOG("Resolved nested variation(s) using {} substitution passes", i);
+			if (i > 1)
+			{
+				LOG("Resolved nested variation(s) using {} substitution passes", i);
+			}
+
 			break;
 		}
 
@@ -89,7 +93,8 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 				case EKeyword::LastChatUwu:
 				case EKeyword::LastChatSarcasm:
 					lastChat = get_last_chat();
-					if (lastChat.empty()) return "";
+					if (lastChat.empty())
+						return "";
 					lastChat = ApplyTextEffect(lastChat, binding.textEffect);
 					result = std::regex_replace(result, keyword_regex_pattern, lastChat);
 					break;
@@ -254,13 +259,21 @@ void CustomQuickchat::ReadDataFromJson()
 				auto bindingObj = bindingsList[i];
 
 				Binding binding;
-				binding.chat = bindingObj["chat"];
-				binding.chatMode = static_cast<EChatChannel>(bindingObj["chatMode"]);
-				binding.bindingType = static_cast<EBindingType>(bindingObj["bindingType"]);
+				binding.chat =			bindingObj.value("chat",			"im gay");
+				binding.chatMode =		bindingObj.value("chatMode",		EChatChannel::EChatChannel_Match);
+				binding.bindingType =	bindingObj.value("bindingType",		EBindingType::Combination);
 
-				for (const std::string& buttonName : bindingObj["buttons"])
+				// use value for "enabled" key if it exists, otherwise default to true
+				// (to make backwards compatible with old json files that don't contain an "enabled" key)
+				binding.enabled = bindingObj.value("enabled", true);
+
+				if (bindingObj.contains("buttons") && bindingObj.at("buttons").is_array())
 				{
-					binding.buttons.push_back(buttonName);
+					binding.buttons = bindingObj.value("buttons", std::vector<std::string>{});
+				}
+				else
+				{
+					LOG("[ERROR] Missing or invalid \"buttons\" array in JSON");
 				}
 
 				// lastly, update binding's keyWord and textEffect values (which depend on the chat value above)
@@ -352,92 +365,26 @@ void CustomQuickchat::UpdateDataFromVariationStr()
 
 std::string CustomQuickchat::get_last_chat()
 {
-	std::string result;
+	ChatData chat = LobbyInfo.get_last_chat_data();
 
-	json chats_json_data = Files::get_json(lobbyInfoChatsFilePath);
-	if (chats_json_data.empty() || !chats_json_data.contains("chatMessages"))
+	if (chat.Message.empty())
 	{
-		LOG("[ERROR] \"chatMessages\" key not found in 'Lobby Info/Chats.json' data");
-		return result;
+		LOG("[ERROR] Message is empty string from last chat data");
+		return std::string();
 	}
 
-	const auto& chat_msgs = chats_json_data.at("chatMessages");
-	if (!chat_msgs.empty())
-	{
-		result = chat_msgs[chat_msgs.size() - 1]["chat"];
-	}
-	else
-	{
-		LOG("*** 'Lobby Info/Chats.json' has no chats... ***");
-	}
-
-	return result;
-}
-
-
-ChatterRanks CustomQuickchat::get_last_chatter_ranks()
-{
-	ChatterRanks empty;
-
-	// find last chatter's player name
-	json chats_json_data = Files::get_json(lobbyInfoChatsFilePath);
-	if (chats_json_data.empty() || !chats_json_data.contains("chatMessages"))
-	{
-		LOG("[ERROR] No data found in 'Lobby Info/Chats.json'");
-		return empty;
-	}
-
-	const auto& chat_msgs = chats_json_data.at("chatMessages");
-	if (chat_msgs.empty())
-	{
-		LOG("'Lobby Info/Chats.json' has no chats...");
-		return empty;
-	}
-
-	const auto& last_chat_msg = chat_msgs[chat_msgs.size() - 1];
-	if (last_chat_msg.empty() || !last_chat_msg.contains("playerName"))
-	{
-		LOG("[ERROR] Last chat message JSON object in 'chatMessages' array doesnt contain 'playerName' key");
-		return empty;
-	}
-
-	std::string player_name = last_chat_msg.at("playerName");
-
-
-	// find ranks based on the player name
-	json ranks_json_data = Files::get_json(lobbyInfoRanksFilePath);
-	if (ranks_json_data.empty() || !ranks_json_data.contains("lobbyRanks"))
-	{
-		LOG("[ERROR] No data found in 'Lobby Info/Ranks.json'");
-		return empty;
-	}
-
-	const auto& lobby_ranks = ranks_json_data.at("lobbyRanks");
-	if (lobby_ranks.empty() || !lobby_ranks.contains(player_name))
-	{
-		LOG("[ERROR] No rank info for \"{}\" found in \"lobbyRanks\" array", player_name);
-		return empty;
-	}
-
-	const auto& player_ranks = ranks_json_data.at(player_name);
-	const auto& ones =		player_ranks["1v1"];
-	const auto& twos =		player_ranks["2v2"];
-	const auto& threes =	player_ranks["3v3"];
-	const auto& cas =		player_ranks["casual"];
-
-	Rank ones_rank{		ones["matches"],	0, ones["rank"]["div"],		ones["rank"]["tier"] };
-	Rank twos_rank{		twos["matches"],	0, twos["rank"]["div"],		twos["rank"]["tier"] };
-	Rank threes_rank{	threes["matches"],	0, threes["rank"]["div"],	threes["rank"]["tier"] };
-	Rank cas_rank{		cas["matches"],		cas["mmr"] };
-
-	return { Format::ToASCIIString(player_name), ones_rank, twos_rank, threes_rank, cas_rank };
+	return chat.Message;
 }
 
 
 std::string CustomQuickchat::get_last_chatter_rank_str(EKeyword keyword)
 {
-	ChatterRanks chatter_ranks = get_last_chatter_ranks();
-	if (chatter_ranks.playerName.empty()) return std::string();
+	ChatterRanks chatter_ranks = LobbyInfo.get_last_chatter_ranks();
+	if (chatter_ranks.playerName.empty())
+	{
+		LOG("[ERROR] ChatterRanks::playerName is empty string");
+		return std::string();
+	}
 
 	switch (keyword)
 	{
@@ -582,6 +529,7 @@ void CustomQuickchat::WriteBindingsToJson()
 		singleBinding["chat"] = binding.chat;
 		singleBinding["chatMode"] = static_cast<int>(binding.chatMode);
 		singleBinding["bindingType"] = static_cast<int>(binding.bindingType);
+		singleBinding["enabled"] = binding.enabled;
 		
 		singleBinding["buttons"] = {};
 		for (const auto& button : binding.buttons)
@@ -643,6 +591,8 @@ void CustomQuickchat::GetFilePaths()
 
 void CustomQuickchat::InitStuffOnLoad()
 {
+	LobbyInfo.Initialize(gameWrapper);
+
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();
 	CheckJsonFiles();

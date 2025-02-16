@@ -100,6 +100,7 @@
   <ItemGroup>
     <ClCompile Include="Commands.cpp" />
     <ClCompile Include="Components\Components\Instances.cpp" />
+    <ClCompile Include="Components\Components\LobbyInfo.cpp" />
     <ClCompile Include="Components\Components\Utils.cpp" />
     <ClCompile Include="Components\Components\WebsocketManager.cpp" />
     <ClCompile Include="CvarChangeCallbacks.cpp" />
@@ -142,6 +143,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Components\Components\Instances.hpp" />
+    <ClInclude Include="Components\Components\LobbyInfo.hpp" />
     <ClInclude Include="Components\Components\Utils.hpp" />
     <ClInclude Include="Components\Components\WebsocketManager.hpp" />
     <ClInclude Include="Components\Includes.hpp" />

@@ -302,33 +302,20 @@ UOnlinePlayer_X* InstancesComponent::GetOnlinePlayer()
 
 FString InstancesComponent::NewFString(const std::string& str)
 {
-	//wchar_t* tempWstr = Format::ToWcharString(str);		// uses new wchar_t*
+	// have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
+	return UObject::RepeatString(Format::ToWideString(str).data(), 1);
+}
 
-	//FString gameCreatedFStr = UObject::Trim(tempWstr);	// have the game create an FString (using UE), rather than using new wchar_t* directly (which causes crashes)
-
-	//delete[] tempWstr;	// Avoid mem leaks
-
-	//return gameCreatedFStr;
-
-
-	// ^^^ above code will also work but this is cleaner
-	return UObject::Trim(StringUtils::ToWideString(str).data());	// have the game create an FString (using UE), rather than using new wchar_t* directly (which causes crashes)
+FString InstancesComponent::NewFString(const FString& old)
+{
+	// have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
+	return UObject::RepeatString(old, 1);
 }
 
 
 FName InstancesComponent::FindFName(const std::string& str)
 {
-	//wchar_t* tempWstr = Format::ToWcharString(str);
-
-	//FName fName(tempWstr);
-
-	//delete[] tempWstr;		// avoid mem leaks
-
-	//return fName;
-
-
-	// ^^^ above code will also work but this is cleaner
-	return FName(StringUtils::ToWideString(str).data());
+	return FName(Format::ToWideString(str).data());
 }
 
 

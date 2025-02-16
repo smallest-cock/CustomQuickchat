@@ -29,6 +29,11 @@ void CustomQuickchat::onLoad()
 	auto removeTimestamps_cvar =				RegisterCvar_Bool(Cvars::removeTimestamps,				true);
 	auto enableSTTNotifications_cvar =			RegisterCvar_Bool(Cvars::enableSTTNotifications,		true);
 	auto autoCalibrateMic_cvar =				RegisterCvar_Bool(Cvars::autoCalibrateMic,				true);
+	auto user_chats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::user_chats_in_last_chat,		true);
+	auto teammate_chats_in_last_chat_cvar =		RegisterCvar_Bool(Cvars::teammate_chats_in_last_chat,	true);
+	auto quickchats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::quickchats_in_last_chat,		true);
+	auto party_chats_in_last_chat_cvar =		RegisterCvar_Bool(Cvars::party_chats_in_last_chat,		true);
+	auto team_chats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::team_chats_in_last_chat,		true);
 
 	// numbers
 	auto micEnergyThreshold_cvar =				RegisterCvar_Number(Cvars::micEnergyThreshold,			420);
@@ -66,13 +71,14 @@ void CustomQuickchat::onLoad()
 
 	// ===================================== commands =========================================
 
-	RegisterCommand(Cvars::toggleEnabled,			std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1));
-	RegisterCommand(Cvars::listBindings,			std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1));
-	RegisterCommand(Cvars::list_custom_chat_labels, std::bind(&CustomQuickchat::cmd_list_custom_chat_labels, this, std::placeholders::_1));
-	RegisterCommand(Cvars::exitToMainMenu,			std::bind(&CustomQuickchat::cmd_exitToMainMenu, this, std::placeholders::_1));
-	RegisterCommand(Cvars::forfeit,					std::bind(&CustomQuickchat::cmd_forfeit, this, std::placeholders::_1));
-	RegisterCommand(Cvars::test,					std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1));
-	RegisterCommand(Cvars::test2,					std::bind(&CustomQuickchat::cmd_test2, this, std::placeholders::_1));
+	RegisterCommand(Commands::toggleEnabled,			std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1));
+	RegisterCommand(Commands::listBindings,				std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1));
+	RegisterCommand(Commands::list_custom_chat_labels,	std::bind(&CustomQuickchat::cmd_list_custom_chat_labels, this, std::placeholders::_1));
+	RegisterCommand(Commands::list_playlist_info,		std::bind(&CustomQuickchat::cmd_list_playlist_info, this, std::placeholders::_1));
+	RegisterCommand(Commands::exitToMainMenu,			std::bind(&CustomQuickchat::cmd_exitToMainMenu, this, std::placeholders::_1));
+	RegisterCommand(Commands::forfeit,					std::bind(&CustomQuickchat::cmd_forfeit, this, std::placeholders::_1));
+	RegisterCommand(Commands::test,						std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1));
+	RegisterCommand(Commands::test2,					std::bind(&CustomQuickchat::cmd_test2, this, std::placeholders::_1));
 
 
 	// ======================================= hooks ==========================================

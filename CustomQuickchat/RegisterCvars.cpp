@@ -3,7 +3,7 @@
 
 
 
-CVarWrapper CustomQuickchat::RegisterCvar_Bool(const Cvars::CvarData& cvar, bool startingValue)
+CVarWrapper CustomQuickchat::RegisterCvar_Bool(const CvarData& cvar, bool startingValue)
 {
 	std::string value = startingValue ? "1" : "0";
 
@@ -11,13 +11,13 @@ CVarWrapper CustomQuickchat::RegisterCvar_Bool(const Cvars::CvarData& cvar, bool
 }
 
 
-CVarWrapper CustomQuickchat::RegisterCvar_String(const Cvars::CvarData& cvar, const std::string& startingValue)
+CVarWrapper CustomQuickchat::RegisterCvar_String(const CvarData& cvar, const std::string& startingValue)
 {
 	return cvarManager->registerCvar(cvar.name, startingValue, cvar.description);
 }
 
 
-CVarWrapper CustomQuickchat::RegisterCvar_Number(const Cvars::CvarData& cvar, float startingValue, bool hasMinMax, float min, float max)
+CVarWrapper CustomQuickchat::RegisterCvar_Number(const CvarData& cvar, float startingValue, bool hasMinMax, float min, float max)
 {
 	std::string numberStr = std::to_string(startingValue);
 
@@ -32,25 +32,25 @@ CVarWrapper CustomQuickchat::RegisterCvar_Number(const Cvars::CvarData& cvar, fl
 }
 
 
-CVarWrapper CustomQuickchat::RegisterCvar_Color(const Cvars::CvarData& cvar, const std::string& startingValue)
+CVarWrapper CustomQuickchat::RegisterCvar_Color(const CvarData& cvar, const std::string& startingValue)
 {
 	return cvarManager->registerCvar(cvar.name, startingValue, cvar.description);
 }
 
 
-CVarWrapper CustomQuickchat::GetCvar(const Cvars::CvarData& cvar)
+CVarWrapper CustomQuickchat::GetCvar(const CvarData& cvar)
 {
 	return cvarManager->getCvar(cvar.name);
 }
 
 
-void CustomQuickchat::RegisterCommand(const Cvars::CvarData& cvar, std::function<void(std::vector<std::string>)> callback)
+void CustomQuickchat::RegisterCommand(const CvarData& cvar, std::function<void(std::vector<std::string>)> callback)
 {
 	cvarManager->registerNotifier(cvar.name, callback, cvar.description, PERMISSION_ALL);
 }
 
 
-void CustomQuickchat::RunCommand(const Cvars::CvarData& command, float delaySeconds)
+void CustomQuickchat::RunCommand(const CvarData& command, float delaySeconds)
 {
 	if (delaySeconds == 0)
 	{
@@ -65,7 +65,7 @@ void CustomQuickchat::RunCommand(const Cvars::CvarData& command, float delaySeco
 }
 
 
-void CustomQuickchat::RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand)
+void CustomQuickchat::RunCommandInterval(const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand)
 {
 	if (!delayFirstCommand)
 	{

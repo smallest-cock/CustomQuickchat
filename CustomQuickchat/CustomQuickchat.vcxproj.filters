@@ -162,6 +162,9 @@
     <ClCompile Include="GuiTools.cpp">
       <Filter>Plugin\src</Filter>
     </ClCompile>
+    <ClCompile Include="Components\Components\LobbyInfo.cpp">
+      <Filter>Components\Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imgui_rangeslider.h">
@@ -351,6 +354,9 @@
       <Filter>Plugin\header</Filter>
     </ClInclude>
     <ClInclude Include="Components\Components\WebsocketManager.hpp">
+      <Filter>Components\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Components\Components\LobbyInfo.hpp">
       <Filter>Components\Components</Filter>
     </ClInclude>
   </ItemGroup>

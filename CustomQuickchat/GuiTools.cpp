@@ -27,11 +27,7 @@ namespace GUI
 
 	void open_link(const char* url)
 	{
-		const wchar_t* w_url = Format::ToWcharString(url);
-
-		ShellExecute(NULL, L"open", w_url, NULL, NULL, SW_SHOWNORMAL);
-
-		delete[] w_url;
+		ShellExecute(NULL, L"open", Format::ToWideString(url).c_str(), NULL, NULL, SW_SHOWNORMAL);
 	}
 
 	void open_link(const wchar_t* url)
@@ -55,13 +51,14 @@ namespace GUI
 		{
 			open_link(url);
 		}
+		
+		ImGui::PopStyleColor();
+
 		if (ImGui::IsItemHovered())
 		{
 			ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 			ImGui::SetTooltip(url);
 		}
-
-		ImGui::PopStyleColor();
 	}
 
 

@@ -70,6 +70,25 @@ void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
 }
 
 
+void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
+{
+	UOnlineGamePlaylists_X* playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
+	if (!playlists) return;
+
+	LOG("DownloadedPlaylists size: {}", playlists->DownloadedPlaylists.size());
+
+	LOG("--------------------------------------");
+	LOG("ID --> Internal name --> Display name");
+	LOG("--------------------------------------");
+	for (const auto& p : playlists->DownloadedPlaylists)
+	{
+		if (!p) continue;
+
+		LOG("{} --> {} --> {}", p->PlaylistId, playlists->IdToName(p->PlaylistId).ToString(), p->GetLocalizedName().ToString());
+	}
+}
+
+
 void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 {
 	auto shell = Instances.GetInstanceOf<UGFxShell_X>();
@@ -109,5 +128,34 @@ void CustomQuickchat::cmd_test(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_test2(std::vector<std::string> args)
 {
-	// ...
+	auto tam = gameWrapper->GetPlayerController().GetTeamNum2();
+
+	LOG("gameWrapper->GetPlayerController().GetTeamNum2(): {}", tam);
+
+	LOG("LobbyInfo::match_chats size: {}", LobbyInfo.get_match_chats_size());
+
+	return;
+
+/*
+	
+	if (args.size() < 2) return;
+
+	int32_t playlist_id = std::stoi(args[1]);
+
+	UOnlineGameSkill_X* game_skill = Instances.GetInstanceOf<UOnlineGameSkill_X>();
+	if (!game_skill)
+	{
+		LOG("Error: UOnlineGameSkill_X* is null");
+		return;
+	}
+
+	LobbyInfo.log_last_chatter_rank_data(playlist_id, game_skill);
+
+*/
+
+	//MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
+	//float bakkes_mmr = mmrWrapper.GetPlayerMMR(pri_id, playlist_id);
+
+
+	LOG("Did the test 2");
 }

@@ -32,10 +32,10 @@ Then use `[[variation list name]]` syntax in your chats to include your word var
 
 ## Special Effects
 
-Similar to variations, you can include these keywords in your chat to trigger special functionality. 
+Similar to variations, you can include these keywords in your chat to trigger special functionality:
 
-- The `blast` and `lastChat` keywords require the [Lobby Info plugin](https://github.com/smallest-cock/LobbyInfo) to be installed
-
+>[!IMPORTANT]
+>Make sure to have `Show player MMR on scoreboard` and `Show MMR in casual playlists` enabled in the bakkesmod `Ranked` tab for blast ranks functionality to work
 
 >[!TIP]
 >Don't name your word variation lists the same as these
@@ -58,7 +58,7 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 
 <br>
 
-**For example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes, and be displayed as if it were said by a toxic nerd
+**Example:** `"[[lastChat]]" - toxic nerd` will wrap the last chatter's chat in quotes and look like it came from a toxic nerd
 
 ## Speech-to-text
 

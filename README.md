@@ -27,7 +27,7 @@ Find the latest version in [Releases](https://github.com/smallest-cock/CustomQui
 
 ## 📖 Usage
 
-Check out the [Settings guide](./docs/Settings.md) for info about troubleshooting & special features
+Check out the [Settings](./docs/Settings.md) page for info about special keywords, troubleshooting, and more
    
 ## 💻 Commands
 You can run these commands in the bakkesmod console window (F6), or bind them to a key

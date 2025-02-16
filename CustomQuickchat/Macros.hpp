@@ -7,9 +7,9 @@
 
 
 #define DELAY(delaySeconds, code) \
-    gameWrapper->SetTimeout([this](GameWrapper* gw) { \
-        code \
-    }, delaySeconds)
+	gameWrapper->SetTimeout([this](GameWrapper* gw) { \
+		code \
+	}, delaySeconds)
 
 
 #define DELAY_CAPTURE(delaySeconds, code, ...) \
@@ -19,11 +19,11 @@
 
 
 #define GAME_THREAD_EXECUTE(code) \
-    do { \
-        gameWrapper->Execute([this](GameWrapper* gw) { \
-            code \
-        }); \
-    } while (0)
+	do { \
+		gameWrapper->Execute([this](GameWrapper* gw) { \
+			code \
+		}); \
+	} while (0)
 
 
 #define GAME_THREAD_EXECUTE_CAPTURE(code, ...) \

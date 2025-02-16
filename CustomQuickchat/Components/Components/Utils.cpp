@@ -5,46 +5,6 @@
 // Various helper functions...
 namespace Format
 {
-	// ------------------------------------ custom --------------------------------------
-
-	FString ToFString(const std::string& str)
-	{
-		wchar_t* p = new wchar_t[str.size() + 1];
-		for (std::string::size_type i = 0; i < str.size(); ++i)
-			p[i] = str[i];
-		p[str.size()] = '\0';
-		return FString(p);
-	}
-
-	wchar_t* ToWcharStringOld(const std::string& str)
-	{
-		// Determine the length of the resulting wide string
-		size_t wcharCount = mbstowcs(nullptr, str.c_str(), 0) + 1;
-
-		// Allocate memory for the wchar_t string
-		wchar_t* wStr = new wchar_t[wcharCount];
-
-		// Convert the multibyte string to a wide string
-		mbstowcs(wStr, str.c_str(), wcharCount);
-
-		return wStr;
-	}
-
-	wchar_t* ToWcharString(const std::string& str)
-	{
-		// Determine the required buffer size for the wide string
-		int wcharCount = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
-
-		// Allocate memory for the wchar_t string
-		wchar_t* wStr = new wchar_t[wcharCount];
-
-		// Convert the multibyte string (UTF-8) to a wide string
-		MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wStr, wcharCount);
-
-		return wStr;
-	}
-
-
 	std::string ToHexString(uintptr_t address)
 	{
 		// Adjust width based on the platform's pointer size
@@ -55,21 +15,6 @@ namespace Format
 	std::string ToHexString(int32_t decimal_val, int32_t min_hex_digits)
 	{
 		return std::format("0x{:0{}X}", decimal_val, min_hex_digits);
-	}
-
-
-	FName ToFName(const std::string& str)
-	{
-		wchar_t* wStr = ToWcharString(str);
-
-		FName fName(wStr);
-
-		delete[] wStr;		// avoid mem leaks
-
-		return fName;
-
-		//FName fName(wStr.c_str());
-		//return fName;
 	}
 
 	std::string ToASCIIString(std::string str)
@@ -504,23 +449,23 @@ namespace Process
 		si.cb = sizeof(si);
 		ZeroMemory(&pi, sizeof(pi));
 
-		wchar_t* wide_command = Format::ToWcharString(command);
+		std::wstring wide_command = Format::ToWideString(command);
 
 		// initialize result
 		CreateProcessResult result;
 
 		// Create the process to start python script
-		if (CreateProcess(
-			NULL,                                 // Application name (set NULL to use command)
-			wide_command,                         // Command
-			NULL,                                 // Process security attributes
-			NULL,                                 // Thread security attributes
-			FALSE,                                // Inherit handles from the calling process
-			CREATE_NEW_CONSOLE,                   // Creation flags (use CREATE_NEW_CONSOLE for async execution)
-			NULL,                                 // Use parent's environment block
-			NULL,                                 // Use parent's starting directory
-			&si,                                  // Pointer to STARTUPINFO
-			&pi                                   // Pointer to PROCESS_INFORMATION
+		if (CreateProcessW(
+			NULL,								// Application name (set NULL to use command)
+			wide_command.data(),				// Command
+			NULL,								// Process security attributes
+			NULL,								// Thread security attributes
+			FALSE,								// Inherit handles from the calling process
+			CREATE_NEW_CONSOLE,					// Creation flags (use CREATE_NEW_CONSOLE for async execution)
+			NULL,								// Use parent's environment block
+			NULL,								// Use parent's starting directory
+			&si,								// Pointer to STARTUPINFO
+			&pi									// Pointer to PROCESS_INFORMATION
 		))
 		{
 			// Duplicate process handle so it remains valid even after original PROCESS_INFORMATION goes out of scope
@@ -546,8 +491,6 @@ namespace Process
 			// If CreateProcess failed, return the error code
 			result.status_code = GetLastError();
 		}
-
-		delete[] wide_command;	// avoid mem leaks
 
 		return result;
 	}

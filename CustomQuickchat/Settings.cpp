@@ -17,7 +17,7 @@ void CustomQuickchat::RenderSettings()
 		bool enabled = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &enabled))
 		{
-			RunCommand(Cvars::toggleEnabled);
+			RunCommand(Commands::toggleEnabled);
 		}
 
 		if (enabled)
@@ -42,7 +42,13 @@ void CustomQuickchat::RenderSettings()
 				SpeechToTextSettings();
 			}
 
-			GUI::Spacing(4);
+			// last chat
+			if (ImGui::CollapsingHeader("Last chat settings", ImGuiTreeNodeFlags_None))
+			{
+				LastChatSettings();
+			}
+
+			GUI::Spacing(10);
 
 			if (ImGui::Button("Send a test chat"))
 			{
@@ -51,7 +57,7 @@ void CustomQuickchat::RenderSettings()
 				);
 			}
 
-			GUI::Spacing(8);
+			GUI::Spacing(4);
 
 			// open bindings window button
 			if (ImGui::Button("Open Bindings Menu"))
@@ -141,8 +147,6 @@ void CustomQuickchat::GeneralSettings()
 	{
 		sequenceTimeWindow_cvar.setValue(sequenceTimeWindow);
 	}
-
-	GUI::Spacing(2);
 
 	// min delay between bindings
 	float minBindingDelay = minBindingDelay_cvar.getFloatValue();
@@ -394,8 +398,6 @@ void CustomQuickchat::SpeechToTextSettings()
 		}
 	}
 
-	GUI::Spacing(2);
-
 	// start speech timeout
 	float waitForSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue();
 	if (ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds"))
@@ -406,8 +408,6 @@ void CustomQuickchat::SpeechToTextSettings()
 	{
 		ImGui::SetTooltip("max time to wait for start of speech");
 	}
-
-	GUI::Spacing(2);
 
 	// processing timeout
 	int processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
@@ -423,6 +423,89 @@ void CustomQuickchat::SpeechToTextSettings()
 	GUI::Spacing(2);
 
 #endif // defined(USE_SPEECH_TO_TEXT)
+}
+
+
+void CustomQuickchat::LastChatSettings()
+{
+	auto user_chats_in_last_chat_cvar =			GetCvar(Cvars::user_chats_in_last_chat);
+	auto teammate_chats_in_last_chat_cvar =		GetCvar(Cvars::teammate_chats_in_last_chat);
+	auto quickchats_in_last_chat_cvar =			GetCvar(Cvars::quickchats_in_last_chat);
+	auto party_chats_in_last_chat_cvar =		GetCvar(Cvars::party_chats_in_last_chat);
+	auto team_chats_in_last_chat_cvar =			GetCvar(Cvars::team_chats_in_last_chat);
+
+	if (!user_chats_in_last_chat_cvar) return;
+
+	bool user_chats_in_last_chat =		user_chats_in_last_chat_cvar.getBoolValue();
+	bool quickchats_in_last_chat =		quickchats_in_last_chat_cvar.getBoolValue();
+	bool teammate_chats_in_last_chat =	teammate_chats_in_last_chat_cvar.getBoolValue();
+	bool party_chats_in_last_chat =		party_chats_in_last_chat_cvar.getBoolValue();
+	bool team_chats_in_last_chat =		team_chats_in_last_chat_cvar.getBoolValue();
+
+	GUI::Spacing(2);
+
+	GUI::ClickableLink("Keywords guide", "https://github.com/smallest-cock/CustomQuickchat/blob/main/docs/Settings.md#special-effects", GUI::Colors::BlueGreen);
+
+	GUI::Spacing(2);
+
+	ImGui::TextColored(GUI::Colors::Yellow, "Chats to be included when searching for the last chat:");
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::SetTooltip("Searching for last chat happens for [[lastChat]] and [[blast ...]]\n\nMore info can be found in the keywords guide above");
+	}
+
+	GUI::Spacing(2);
+
+	if (ImGui::Checkbox("User chats", &user_chats_in_last_chat))
+	{
+		user_chats_in_last_chat_cvar.setValue(user_chats_in_last_chat);
+	}
+
+	if (ImGui::Checkbox("Quickchats", &quickchats_in_last_chat))
+	{
+		quickchats_in_last_chat_cvar.setValue(quickchats_in_last_chat);
+	}
+
+	if (ImGui::Checkbox("Teammate chats", &teammate_chats_in_last_chat))
+	{
+		teammate_chats_in_last_chat_cvar.setValue(teammate_chats_in_last_chat);
+	}
+
+	if (ImGui::Checkbox("Party chats", &party_chats_in_last_chat))
+	{
+		party_chats_in_last_chat_cvar.setValue(party_chats_in_last_chat);
+	}
+
+	if (ImGui::Checkbox("Team chats", &team_chats_in_last_chat))
+	{
+		team_chats_in_last_chat_cvar.setValue(team_chats_in_last_chat);
+	}
+
+	GUI::Spacing(4);
+
+	ImGui::Text("Stored match chats: %u", LobbyInfo.get_match_chats_size());
+
+	GUI::SameLineSpacing_relative(50);
+
+	if (ImGui::Button("Clear##chatLog"))
+	{
+		GAME_THREAD_EXECUTE(
+			LobbyInfo.clear_stored_chats();
+		);
+	}
+
+	GUI::Spacing(2);
+
+	ImGui::Text("Stored player ranks: %u", LobbyInfo.get_match_ranks_size());
+
+	GUI::SameLineSpacing_relative(50);
+
+	if (ImGui::Button("Clear##playerRanks"))
+	{
+		GAME_THREAD_EXECUTE(
+			LobbyInfo.clear_stored_ranks();
+		);
+	}
 }
 
 
@@ -500,22 +583,19 @@ void CustomQuickchat::RenderBindingDetails()
 		ImGui::TextUnformatted(selectedBinding.chat.c_str());
 		ImGui::Separator();
 
-		// --------------------- ImGui::BeginChild sizes ------------------------
+		// chat details
+		const float chat_details_height = ImGui::GetContentRegionAvail().y * 0.3f;	// 30% of parent height
 
-		ImVec2 parentSize = ImGui::GetContentRegionAvail();
-
-		ImVec2 chatDetailsSize =		ImVec2(0, parentSize.y * 0.25f - 2);	// 25% of parent height
-		ImVec2 triggerDetailsSize =		ImVec2(0, parentSize.y * 0.75f - 2);	// 75% of parent height	
-
-		// ----------------------------------------------------------------------
-
-		if (ImGui::BeginChild("##ChatDetails", chatDetailsSize, true))
+		if (ImGui::BeginChild("ChatDetails", ImVec2(0, chat_details_height), true))
 		{
 			RenderChatDetails(selectedBinding);
 		}
 		ImGui::EndChild();
 
-		if (ImGui::BeginChild("##BindingTriggerDetails", triggerDetailsSize, true))
+		// binding details
+		const auto remaining_space = ImGui::GetContentRegionAvail();
+
+		if (ImGui::BeginChild("BindingTriggerDetails", remaining_space, true))
 		{
 			RenderBindingTriggerDetails(selectedBinding);
 		}
@@ -527,7 +607,11 @@ void CustomQuickchat::RenderBindingDetails()
 
 void CustomQuickchat::RenderChatDetails(Binding& selectedBinding)
 {
-	ImGui::TextColored(ImVec4(1, 1, 0, 1), "Chat:");
+	ImGui::Checkbox("Enabled", &selectedBinding.enabled);
+
+	GUI::Spacing(2);
+	
+	ImGui::TextColored(GUI::Colors::Yellow, "Chat:");
 
 	GUI::Spacing(4);
 
@@ -559,7 +643,7 @@ void CustomQuickchat::RenderChatDetails(Binding& selectedBinding)
 
 void CustomQuickchat::RenderBindingTriggerDetails(Binding& selectedBinding)
 {
-	ImGui::TextColored(ImVec4(1, 1, 0, 1), "How it's triggered:");
+	ImGui::TextColored(GUI::Colors::Yellow, "How it's triggered:");
 
 	GUI::Spacing(4);
 

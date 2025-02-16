@@ -136,7 +136,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	// Lobby Info stuff (last chat & blast ranks)
 	std::string get_last_chat();
 	std::string get_last_chatter_rank_str(EKeyword keyword);
-	ChatterRanks get_last_chatter_ranks();
 
 
 	// sending chat stuff
@@ -227,6 +226,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void cmd_toggleEnabled(std::vector<std::string> args);
 	void cmd_listBindings(std::vector<std::string> args);
 	void cmd_list_custom_chat_labels(std::vector<std::string> args);
+	void cmd_list_playlist_info(std::vector<std::string> args);
 	void cmd_exitToMainMenu(std::vector<std::string> args);
 	void cmd_forfeit(std::vector<std::string> args);
 	void cmd_test(std::vector<std::string> args);
@@ -254,14 +254,14 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	
 	// cvar helper stuff
-	CVarWrapper RegisterCvar_Bool(const Cvars::CvarData& cvar, bool startingValue);
-	CVarWrapper RegisterCvar_String(const Cvars::CvarData& cvar, const std::string& startingValue);
-	CVarWrapper RegisterCvar_Number(const Cvars::CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
-	CVarWrapper RegisterCvar_Color(const Cvars::CvarData& cvar, const std::string& startingValue);
-	CVarWrapper GetCvar(const Cvars::CvarData& cvar);
-	void RegisterCommand(const Cvars::CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
-	void RunCommand(const Cvars::CvarData& command, float delaySeconds = 0);
-	void RunCommandInterval(const Cvars::CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
+	CVarWrapper RegisterCvar_Bool(const CvarData& cvar, bool startingValue);
+	CVarWrapper RegisterCvar_String(const CvarData& cvar, const std::string& startingValue);
+	CVarWrapper RegisterCvar_Number(const CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
+	CVarWrapper RegisterCvar_Color(const CvarData& cvar, const std::string& startingValue);
+	CVarWrapper GetCvar(const CvarData& cvar);
+	void RegisterCommand(const CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
+	void RunCommand(const CvarData& command, float delaySeconds = 0);
+	void RunCommandInterval(const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
 
 
 public:
@@ -273,6 +273,7 @@ public:
 	void GeneralSettings();
 	void ChatTimeoutSettings();
 	void SpeechToTextSettings();
+	void LastChatSettings();
 
 	void RenderAllBindings();
 	void RenderBindingDetails();

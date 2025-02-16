@@ -5,18 +5,29 @@
 
 namespace Format
 {
-	// ----------------------- custom -------------------------
+	inline std::string ToString(const std::wstring& str)
+	{
+		if (str.empty()) return "";
+		int32_t size = WideCharToMultiByte(CP_UTF8, 0, str.data(), -1, nullptr, 0, nullptr, nullptr);
+		if (size <= 0) return "";
+		std::string return_str(size - 1, 0);
+		WideCharToMultiByte(CP_UTF8, 0, str.data(), -1, return_str.data(), size, nullptr, nullptr);
+		return return_str;
+	}
 
-	FString ToFString(const std::string& str);
+	inline std::wstring ToWideString(const std::string& str)
+	{
+		if (str.empty()) return L"";
+		int32_t size = MultiByteToWideChar(CP_UTF8, 0, str.data(), -1, nullptr, 0);
+		if (size <= 0) return L"";
+		std::wstring return_str(size - 1, 0);
+		MultiByteToWideChar(CP_UTF8, 0, str.data(), -1, return_str.data(), size);
+		return return_str;
+	}
 
-	wchar_t* ToWcharStringOld(const std::string& str);	// can handle strings with braces just fine
-
-	wchar_t* ToWcharString(const std::string& str);	// can handle special characters
 
 	std::string ToHexString(uintptr_t address);
 	std::string ToHexString(int32_t decimal_val, int32_t min_hex_digits);
-
-	FName ToFName(const std::string& str);
 
 	std::string ToASCIIString(std::string str);
 

@@ -5,35 +5,35 @@
 
 bool isVowel(char ch)
 {
-    ch = std::tolower(ch);
-    return (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u');
+	ch = std::tolower(ch);
+	return (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u');
 }
 
 
 // Function to split a string into words based on spaces
 std::vector<std::string> splitIntoWords(const std::string& input)
 {
-    std::vector<std::string> words;
-    std::string word;
+	std::vector<std::string> words;
+	std::string word;
 
-    for (char ch : input)
-    {
-        if (std::isspace(ch) && !word.empty())
-        {
+	for (char ch : input)
+	{
+		if (std::isspace(ch) && !word.empty())
+		{
 			words.push_back(word);
 			word.clear();
-        }
-        else {
-            word += ch;
-        }
-    }
+		}
+		else {
+			word += ch;
+		}
+	}
 
-    if (!word.empty())
-    {
-        words.push_back(word);
-    }
+	if (!word.empty())
+	{
+		words.push_back(word);
+	}
 
-    return words;
+	return words;
 }
 
 
@@ -104,150 +104,150 @@ std::vector<std::string> splitIntoWords(const std::string& input)
 // chat gpt "more randomized" version
 std::string to_sarcasm(const std::string& ogText)
 {
-    std::istringstream iss(ogText);
-    std::ostringstream oss;
-    std::string word;
+	std::istringstream iss(ogText);
+	std::ostringstream oss;
+	std::string word;
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(0, 1);  // 50% chance
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(0, 1);  // 50% chance
 
-    while (iss >> word)
-    {
-        std::string sarcasticWord;
-        bool capitalizeNext = dist(gen);  // Start randomly with upper or lower case
+	while (iss >> word)
+	{
+		std::string sarcasticWord;
+		bool capitalizeNext = dist(gen);  // Start randomly with upper or lower case
 
-        for (size_t i = 0; i < word.size(); ++i)
-        {
-            char currentChar = word[i];
+		for (size_t i = 0; i < word.size(); ++i)
+		{
+			char currentChar = word[i];
 
-            if (std::tolower(currentChar) == 'i')
-            {
-                sarcasticWord += 'i';  // Keep 'i' lowercase
-            }
-            else if (std::tolower(currentChar) == 'l')
-            {
-                sarcasticWord += 'L';  // Keep 'l' uppercase
-            }
-            else if (std::isalpha(currentChar))
-            {
-                sarcasticWord += dist(gen) ? std::toupper(currentChar) : std::tolower(currentChar);     // Randomly decide case
-            }
-            else
-            {
-                sarcasticWord += currentChar;  // Preserve non-alphabetic characters
-            }
-        }
+			if (std::tolower(currentChar) == 'i')
+			{
+				sarcasticWord += 'i';  // Keep 'i' lowercase
+			}
+			else if (std::tolower(currentChar) == 'l')
+			{
+				sarcasticWord += 'L';  // Keep 'l' uppercase
+			}
+			else if (std::isalpha(currentChar))
+			{
+				sarcasticWord += dist(gen) ? std::toupper(currentChar) : std::tolower(currentChar);     // Randomly decide case
+			}
+			else
+			{
+				sarcasticWord += currentChar;  // Preserve non-alphabetic characters
+			}
+		}
 
-        oss << sarcasticWord << " ";
-    }
+		oss << sarcasticWord << " ";
+	}
 
-    std::string sarcasticText = oss.str();
-    if (!sarcasticText.empty() && sarcasticText.back() == ' ')
-    {
-        sarcasticText.pop_back();
-    }
+	std::string sarcasticText = oss.str();
+	if (!sarcasticText.empty() && sarcasticText.back() == ' ')
+	{
+		sarcasticText.pop_back();
+	}
 
-    return sarcasticText;
+	return sarcasticText;
 }
 
 
 // uwu effect
 std::string translateChar(char currentChar, char previousChar, char nextChar)
 {
-    static const std::unordered_map<char, std::string> translations = {
-        {'L', "W"},
-        {'R', "W"},
-        {'l', "w"},
-        {'r', "w"}
-    };
+	static const std::unordered_map<char, std::string> translations = {
+		{'L', "W"},
+		{'R', "W"},
+		{'l', "w"},
+		{'r', "w"}
+	};
 
-    //// Handle special case for 'o'
-    //if ((currentChar == 'o' || currentChar == 'O') &&
-    //    (previousChar == 'n' || previousChar == 'N' || previousChar == 'm' || previousChar == 'M')) {
-    //    return "yo";
-    //}
+	//// Handle special case for 'o'
+	//if ((currentChar == 'o' || currentChar == 'O') &&
+	//    (previousChar == 'n' || previousChar == 'N' || previousChar == 'm' || previousChar == 'M')) {
+	//    return "yo";
+	//}
 
-    // Check if the current character has a translation in the map
-    if (translations.count(currentChar))
-    {
-        return translations.at(currentChar);
-    }
+	// Check if the current character has a translation in the map
+	if (translations.count(currentChar))
+	{
+		return translations.at(currentChar);
+	}
 
-    // Default: return the original character
-    return std::string(1, currentChar);
+	// Default: return the original character
+	return std::string(1, currentChar);
 }
 
 std::string translateWord(const std::string& input)
 {
-    std::string result;
-    char previousChar = '\0'; // Initialize to null character
+	std::string result;
+	char previousChar = '\0'; // Initialize to null character
 
-    for (size_t i = 0; i < input.length(); ++i)
-    {
-        char currentChar = input[i];
-        char nextChar = '\0';
-        char previousChar = '\0';
+	for (size_t i = 0; i < input.length(); ++i)
+	{
+		char currentChar = input[i];
+		char nextChar = '\0';
+		char previousChar = '\0';
 
-        if (i > 0)
-        {
-            previousChar = input[i - 1];
-        }
+		if (i > 0)
+		{
+			previousChar = input[i - 1];
+		}
 
-        if (i < input.length() - 1)
-        {
-            nextChar = input[i + 1];
+		if (i < input.length() - 1)
+		{
+			nextChar = input[i + 1];
 
-            if (currentChar == 'r' || currentChar == 'R')
-            {
+			if (currentChar == 'r' || currentChar == 'R')
+			{
 				if (nextChar == 'l' || nextChar == 'L' || previousChar == 'l' || previousChar == 'L')
-                {
+				{
 					result += currentChar;
 					continue;
 				}
 			}
 			else if (currentChar == 'l' || currentChar == 'L')
-            {
+			{
 				if (nextChar == 'r' || nextChar == 'R' || previousChar == 'r' || previousChar == 'R')
-                {
+				{
 					result += currentChar;
 					continue;
 				}
 			}
-        }
-        else {  // if it's the last character in the word ...
-            result += currentChar;
-            continue;
-        }
+		}
+		else {  // if it's the last character in the word ...
+			result += currentChar;
+			continue;
+		}
 
-        result += translateChar(currentChar, previousChar, nextChar);
-    }
+		result += translateChar(currentChar, previousChar, nextChar);
+	}
 
-    return result;
+	return result;
 }
 
 
 std::string to_uwu(const std::string& ogText)
 {
-    std::vector<std::string> words = splitIntoWords(ogText);
-    std::string modifiedString;
+	std::vector<std::string> words = splitIntoWords(ogText);
+	std::string modifiedString;
 
-    // Iterate through each word
-    for (size_t i = 0; i < words.size(); ++i)
-    {
-        const std::string& word = words[i];
-        std::string translatedWord = translateWord(word);
+	// Iterate through each word
+	for (size_t i = 0; i < words.size(); ++i)
+	{
+		const std::string& word = words[i];
+		std::string translatedWord = translateWord(word);
 
-        // Append translated word to modifiedString
-        modifiedString += translatedWord;
+		// Append translated word to modifiedString
+		modifiedString += translatedWord;
 
-        // Append space only if it's not the last word
-        if (i < words.size() - 1)
-        {
-            modifiedString += " ";
-        }
-    }
+		// Append space only if it's not the last word
+		if (i < words.size() - 1)
+		{
+			modifiedString += " ";
+		}
+	}
 
-    return modifiedString;
+	return modifiedString;
 }
 
