@@ -1,0 +1,4 @@
+*.cpp filter=tabify
+*.hpp filter=tabify
+*.h filter=tabify
+*.c filter=tabify

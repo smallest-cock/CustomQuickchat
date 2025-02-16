@@ -128,34 +128,5 @@ void CustomQuickchat::cmd_test(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_test2(std::vector<std::string> args)
 {
-	auto tam = gameWrapper->GetPlayerController().GetTeamNum2();
-
-	LOG("gameWrapper->GetPlayerController().GetTeamNum2(): {}", tam);
-
-	LOG("LobbyInfo::match_chats size: {}", LobbyInfo.get_match_chats_size());
-
-	return;
-
-/*
-	
-	if (args.size() < 2) return;
-
-	int32_t playlist_id = std::stoi(args[1]);
-
-	UOnlineGameSkill_X* game_skill = Instances.GetInstanceOf<UOnlineGameSkill_X>();
-	if (!game_skill)
-	{
-		LOG("Error: UOnlineGameSkill_X* is null");
-		return;
-	}
-
-	LobbyInfo.log_last_chatter_rank_data(playlist_id, game_skill);
-
-*/
-
-	//MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
-	//float bakkes_mmr = mmrWrapper.GetPlayerMMR(pri_id, playlist_id);
-
-
-	LOG("Did the test 2");
+	// ...
 }
