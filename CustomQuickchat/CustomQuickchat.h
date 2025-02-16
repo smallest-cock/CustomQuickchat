@@ -19,7 +19,7 @@
 #include "Components/Includes.hpp"
 
 
-#define USE_SPEECH_TO_TEXT
+//#define USE_SPEECH_TO_TEXT
 
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -68,14 +68,14 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// constants
 	static constexpr const char* keywordRegexPattern = R"(\[\[(.*?)\]\])";
-	static constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;		// maybe turn into a cvar w slider in settings
+	static constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;       // maybe turn into a cvar w slider in settings
 
 
 	// flags
-	bool onLoadComplete =	false;
-	bool gamePaused =		false;
-	bool matchEnded =		false;
-	bool inGameEvent =		false;
+	bool onLoadComplete =   false;
+	bool gamePaused =       false;
+	bool matchEnded =       false;
+	bool inGameEvent =      false;
 
 	
 	// CustomQuickchat filepaths
@@ -95,7 +95,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	void CheckJsonFiles();
 	void GetFilePaths();
 	void ReadDataFromJson();
-	void PreventGameFreeze();	// hacky solution to prevent game freezing for few seconds on 1st chat sent
+	void PreventGameFreeze();   // hacky solution to prevent game freezing for few seconds on 1st chat sent
 
 
 	// bindings & variations stuff
@@ -150,8 +150,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 	// modify quickchat UI stuff
 	static constexpr std::array<const char*, 4> preset_group_names = { "ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4" };
-	std::array<std::array<FString, 4>, 4>	pc_qc_labels;
-	std::array<std::array<FString, 4>, 4>	gp_qc_labels;
+	std::array<std::array<FString, 4>, 4>   pc_qc_labels;
+	std::array<std::array<FString, 4>, 4>   gp_qc_labels;
 	bool using_gamepad = false;
 
 	void determine_quickchat_labels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
@@ -167,11 +167,11 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 #if defined(USE_SPEECH_TO_TEXT)
 
 	// constants
-	static constexpr float PROBE_JSON_FREQUENCY = 0.2f;		// in seconds
+	static constexpr float PROBE_JSON_FREQUENCY = 0.2f;     // in seconds
 	
 	// thread-safe flags
-	std::atomic<bool> attemptingSTT =			false;
-	std::atomic<bool> calibratingMicLevel =		false;
+	std::atomic<bool> attemptingSTT =           false;
+	std::atomic<bool> calibratingMicLevel =     false;
 
 	// filepaths
 	fs::path speechToTextExePath;
@@ -182,7 +182,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	ActiveSTTAttempt Active_STT_Attempt;
 
 	// websocket stuff
-	static constexpr float START_WS_CLIENT_DELAY = 5.0f;	// in seconds
+	static constexpr float START_WS_CLIENT_DELAY = 5.0f;    // in seconds
 
 	std::atomic<bool> connecting_to_ws_server{false};
 	std::shared_ptr<WebsocketClientManager> Websocket = nullptr;
@@ -286,13 +286,13 @@ public:
 
 	// header/footer stuff
 	void gui_footer_init();
-	bool assets_exist =	false;
+	bool assets_exist = false;
 	std::shared_ptr<GUI::FooterLinks> footer_links;
 
-	static constexpr float header_height =					80.0f;
-	static constexpr float footer_height =					40.0f;
-	static constexpr float footer_img_height =				25.0f;
+	static constexpr float header_height =                  80.0f;
+	static constexpr float footer_height =                  40.0f;
+	static constexpr float footer_img_height =              25.0f;
 
-	static constexpr const wchar_t* github_link =			L"https://github.com/smallest-cock/CustomQuickchat";
-	static constexpr const char* github_link_tooltip =		"See the sauce";
+	static constexpr const wchar_t* github_link =           L"https://github.com/smallest-cock/CustomQuickchat";
+	static constexpr const char* github_link_tooltip =      "See the sauce";
 };

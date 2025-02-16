@@ -8,7 +8,7 @@ void CustomQuickchat::RenderSettings()
 	auto enabled_cvar = GetCvar(Cvars::enabled);
 	if (!enabled_cvar) return;
 
-	const float content_height = ImGui::GetContentRegionAvail().y - footer_height;	// available height after accounting for footer
+	const float content_height = ImGui::GetContentRegionAvail().y - footer_height;  // available height after accounting for footer
 
 	if (ImGui::BeginChild("ContentSection", ImVec2(0, content_height)))
 	{
@@ -87,12 +87,12 @@ void CustomQuickchat::RenderSettings()
 
 void CustomQuickchat::GeneralSettings()
 {
-	auto sequenceTimeWindow_cvar =			GetCvar(Cvars::sequenceTimeWindow);
-	auto minBindingDelay_cvar =				GetCvar(Cvars::minBindingDelay);
-	auto overrideDefaultQuickchats_cvar =	GetCvar(Cvars::overrideDefaultQuickchats);
-	auto blockDefaultQuickchats_cvar =		GetCvar(Cvars::blockDefaultQuickchats);
-	auto disablePostMatchQuickchats_cvar =	GetCvar(Cvars::disablePostMatchQuickchats);
-	auto removeTimestamps_cvar =			GetCvar(Cvars::removeTimestamps);
+	auto sequenceTimeWindow_cvar =          GetCvar(Cvars::sequenceTimeWindow);
+	auto minBindingDelay_cvar =             GetCvar(Cvars::minBindingDelay);
+	auto overrideDefaultQuickchats_cvar =   GetCvar(Cvars::overrideDefaultQuickchats);
+	auto blockDefaultQuickchats_cvar =      GetCvar(Cvars::blockDefaultQuickchats);
+	auto disablePostMatchQuickchats_cvar =  GetCvar(Cvars::disablePostMatchQuickchats);
+	auto removeTimestamps_cvar =            GetCvar(Cvars::removeTimestamps);
 
 	GUI::Spacing(2);
 
@@ -165,9 +165,9 @@ void CustomQuickchat::GeneralSettings()
 
 void CustomQuickchat::ChatTimeoutSettings()
 {
-	auto disableChatTimeout_cvar =			GetCvar(Cvars::disableChatTimeout);
-	auto useCustomChatTimeoutMsg_cvar =		GetCvar(Cvars::useCustomChatTimeoutMsg);
-	auto customChatTimeoutMsg_cvar =		GetCvar(Cvars::customChatTimeoutMsg);
+	auto disableChatTimeout_cvar =          GetCvar(Cvars::disableChatTimeout);
+	auto useCustomChatTimeoutMsg_cvar =     GetCvar(Cvars::useCustomChatTimeoutMsg);
+	auto customChatTimeoutMsg_cvar =        GetCvar(Cvars::customChatTimeoutMsg);
 
 	GUI::Spacing(2);
 
@@ -218,14 +218,14 @@ void CustomQuickchat::SpeechToTextSettings()
 
 #else
 
-	auto enableSTTNotifications_cvar =		GetCvar(Cvars::enableSTTNotifications);
-	auto speechProcessingTimeout_cvar =		GetCvar(Cvars::speechProcessingTimeout);
-	auto beginSpeechTimeout_cvar =			GetCvar(Cvars::beginSpeechTimeout);
-	auto notificationDuration_cvar =		GetCvar(Cvars::notificationDuration);
-	auto autoCalibrateMic_cvar =			GetCvar(Cvars::autoCalibrateMic);
-	auto micCalibrationTimeout_cvar =		GetCvar(Cvars::micCalibrationTimeout);
-	auto micEnergyThreshold_cvar =			GetCvar(Cvars::micEnergyThreshold);
-	auto websocket_port_cvar =				GetCvar(Cvars::websocket_port);
+	auto enableSTTNotifications_cvar =      GetCvar(Cvars::enableSTTNotifications);
+	auto speechProcessingTimeout_cvar =     GetCvar(Cvars::speechProcessingTimeout);
+	auto beginSpeechTimeout_cvar =          GetCvar(Cvars::beginSpeechTimeout);
+	auto notificationDuration_cvar =        GetCvar(Cvars::notificationDuration);
+	auto autoCalibrateMic_cvar =            GetCvar(Cvars::autoCalibrateMic);
+	auto micCalibrationTimeout_cvar =       GetCvar(Cvars::micCalibrationTimeout);
+	auto micEnergyThreshold_cvar =          GetCvar(Cvars::micEnergyThreshold);
+	auto websocket_port_cvar =              GetCvar(Cvars::websocket_port);
 
 	if (!micEnergyThreshold_cvar) return;
 
@@ -428,19 +428,19 @@ void CustomQuickchat::SpeechToTextSettings()
 
 void CustomQuickchat::LastChatSettings()
 {
-	auto user_chats_in_last_chat_cvar =			GetCvar(Cvars::user_chats_in_last_chat);
-	auto teammate_chats_in_last_chat_cvar =		GetCvar(Cvars::teammate_chats_in_last_chat);
-	auto quickchats_in_last_chat_cvar =			GetCvar(Cvars::quickchats_in_last_chat);
-	auto party_chats_in_last_chat_cvar =		GetCvar(Cvars::party_chats_in_last_chat);
-	auto team_chats_in_last_chat_cvar =			GetCvar(Cvars::team_chats_in_last_chat);
+	auto user_chats_in_last_chat_cvar =         GetCvar(Cvars::user_chats_in_last_chat);
+	auto teammate_chats_in_last_chat_cvar =     GetCvar(Cvars::teammate_chats_in_last_chat);
+	auto quickchats_in_last_chat_cvar =         GetCvar(Cvars::quickchats_in_last_chat);
+	auto party_chats_in_last_chat_cvar =        GetCvar(Cvars::party_chats_in_last_chat);
+	auto team_chats_in_last_chat_cvar =         GetCvar(Cvars::team_chats_in_last_chat);
 
 	if (!user_chats_in_last_chat_cvar) return;
 
-	bool user_chats_in_last_chat =		user_chats_in_last_chat_cvar.getBoolValue();
-	bool quickchats_in_last_chat =		quickchats_in_last_chat_cvar.getBoolValue();
-	bool teammate_chats_in_last_chat =	teammate_chats_in_last_chat_cvar.getBoolValue();
-	bool party_chats_in_last_chat =		party_chats_in_last_chat_cvar.getBoolValue();
-	bool team_chats_in_last_chat =		team_chats_in_last_chat_cvar.getBoolValue();
+	bool user_chats_in_last_chat =      user_chats_in_last_chat_cvar.getBoolValue();
+	bool quickchats_in_last_chat =      quickchats_in_last_chat_cvar.getBoolValue();
+	bool teammate_chats_in_last_chat =  teammate_chats_in_last_chat_cvar.getBoolValue();
+	bool party_chats_in_last_chat =     party_chats_in_last_chat_cvar.getBoolValue();
+	bool team_chats_in_last_chat =      team_chats_in_last_chat_cvar.getBoolValue();
 
 	GUI::Spacing(2);
 
@@ -451,7 +451,7 @@ void CustomQuickchat::LastChatSettings()
 	ImGui::TextColored(GUI::Colors::Yellow, "Chats to be included when searching for the last chat:");
 	if (ImGui::IsItemHovered())
 	{
-		ImGui::SetTooltip("Searching for last chat happens for [[lastChat]] and [[blast ...]]\n\nMore info can be found in the keywords guide above");
+		ImGui::SetTooltip("Searching for last chat sent happens for [[lastChat]] and [[blast ...]]\n\nMore info can be found in the keywords guide above");
 	}
 
 	GUI::Spacing(2);
@@ -483,9 +483,9 @@ void CustomQuickchat::LastChatSettings()
 
 	GUI::Spacing(4);
 
-	ImGui::Text("Stored match chats: %u", LobbyInfo.get_match_chats_size());
+	ImGui::Text("Cached chats: %u", LobbyInfo.get_match_chats_size());
 
-	GUI::SameLineSpacing_relative(50);
+	GUI::SameLineSpacing_absolute(150);
 
 	if (ImGui::Button("Clear##chatLog"))
 	{
@@ -494,11 +494,9 @@ void CustomQuickchat::LastChatSettings()
 		);
 	}
 
-	GUI::Spacing(2);
+	ImGui::Text("Cached player ranks: %u", LobbyInfo.get_match_ranks_size());
 
-	ImGui::Text("Stored player ranks: %u", LobbyInfo.get_match_ranks_size());
-
-	GUI::SameLineSpacing_relative(50);
+	GUI::SameLineSpacing_absolute(150);
 
 	if (ImGui::Button("Clear##playerRanks"))
 	{
@@ -584,7 +582,7 @@ void CustomQuickchat::RenderBindingDetails()
 		ImGui::Separator();
 
 		// chat details
-		const float chat_details_height = ImGui::GetContentRegionAvail().y * 0.3f;	// 30% of parent height
+		const float chat_details_height = ImGui::GetContentRegionAvail().y * 0.3f;  // 30% of parent height
 
 		if (ImGui::BeginChild("ChatDetails", ImVec2(0, chat_details_height), true))
 		{
