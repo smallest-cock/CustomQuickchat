@@ -337,7 +337,7 @@ inline static bool ColorChooserInternal(ImVec4 *pColorOut,bool supportsAlpha,boo
 		}
 
 	}
-	ImGui::EndChild();	// ValueSaturationQuad
+	ImGui::EndChild();  // ValueSaturationQuad
 	//ImGui::EndGroup();
 
 	ImGui::SameLine();
@@ -730,9 +730,9 @@ bool InputTextMultilineWithHorizontalScrollingAndCopyCutPasteMenu(const char *la
 	// Popup Menu ------------------------------------------
 
 	const bool readOnly = flags&ImGuiInputTextFlags_ReadOnly;       // "Cut","","Paste" not available
-	const bool hasSelectedText = selectionStart != selectionEnd;	// "Copy","Cut" available
+	const bool hasSelectedText = selectionStart != selectionEnd;    // "Copy","Cut" available
 
-	if (hasSelectedText || !readOnly)	{
+	if (hasSelectedText || !readOnly)   {
 		const bool onlyPaste = !readOnly && !hasSelectedText;
 		const char* clipboardText = ImGui::GetIO().GetClipboardTextFn(NULL);
 		const bool canPaste = clipboardText && strlen(clipboardText)>0;
@@ -748,7 +748,7 @@ bool InputTextMultilineWithHorizontalScrollingAndCopyCutPasteMenu(const char *la
 			const bool mustPaste = !mustCopy && !mustCut && (sel==2 || (sel==0 && onlyPaste));
 			if (mustCopy || mustCut || (mustPaste && (selectionStart<selectionEnd))) {
 				// Copy to clipboard
-				if (!mustPaste)	{
+				if (!mustPaste) {
 					const char tmp = buf[selectionEnd];buf[selectionEnd]='\0';
 					ImGui::GetIO().SetClipboardTextFn(NULL,&buf[selectionStart]);
 					buf[selectionEnd]=tmp;
@@ -757,10 +757,10 @@ bool InputTextMultilineWithHorizontalScrollingAndCopyCutPasteMenu(const char *la
 				if (!mustCopy) {
 					//if (mustPaste) {fprintf(stderr,"Deleting before pasting: %d  %d.\n",selectionStart,selectionEnd);}
 
-			//strncpy(&buf[selectionStart],&buf[selectionEnd],buf_size-selectionEnd);				// Valgrind complains here, but I KNOW that source and destination overlap: I just want to shift chars to the left!
+			//strncpy(&buf[selectionStart],&buf[selectionEnd],buf_size-selectionEnd);               // Valgrind complains here, but I KNOW that source and destination overlap: I just want to shift chars to the left!
 			for (int i=0,isz=buf_size-selectionEnd;i<isz;i++) buf[i+selectionStart]=buf[i+selectionEnd];// I do it manually, so Valgrind is happy
 
-			for (int i=selectionStart+buf_size-selectionEnd;i<buf_size;i++) buf[i]='\0';		// This is mandatory at the end
+			for (int i=selectionStart+buf_size-selectionEnd;i<buf_size;i++) buf[i]='\0';        // This is mandatory at the end
 				}
 				popup_open = false;
 			}
@@ -785,7 +785,7 @@ bool InputTextMultilineWithHorizontalScrollingAndCopyCutPasteMenu(const char *la
 
 				popup_open = false;
 			}
-		}	 
+		}    
 	}
 	else popup_open = false;
 	//------------------------------------------------------------------
@@ -864,7 +864,7 @@ struct AnimatedImageInternal {
 
 	inline void updateTexture() const   {
 		// fix updateTexture() to use persistentTexID when necessary
-		IM_ASSERT(AnimatedImage::GenerateOrUpdateTextureCb!=NULL);	// Please use ImGui::AnimatedImage::SetGenerateOrUpdateTextureCallback(...) before calling this method
+		IM_ASSERT(AnimatedImage::GenerateOrUpdateTextureCb!=NULL);  // Please use ImGui::AnimatedImage::SetGenerateOrUpdateTextureCallback(...) before calling this method
 		if (frames<=0) return;
 		else if (frames==1) {
 			if (!texId) AnimatedImage::GenerateOrUpdateTextureCb(texId,w,h,4,buffer,false,false,false);
@@ -941,12 +941,12 @@ struct AnimatedImageInternal {
 	public:
 	AnimatedImageInternal()  {buffer=NULL;persistentTexIdIsNotOwned=false;texId=persistentTexId=NULL;clear();}
 	~AnimatedImageInternal()  {clear();persistentTexIdIsNotOwned=false;}
-#	ifndef STBI_NO_GIF
+#   ifndef STBI_NO_GIF
 #   ifndef IMGUIVARIOUSCONTROLS_NO_STDIO
 	AnimatedImageInternal(char const *filename,bool useHoverModeIfSupported=false)  {buffer=NULL;persistentTexIdIsNotOwned = false;texId=persistentTexId=NULL;load(filename,useHoverModeIfSupported);}
 #   endif //IMGUIVARIOUSCONTROLS_NO_STDIO
 	AnimatedImageInternal(const unsigned char* memory_gif,int memory_gif_size,bool useHoverModeIfSupported=false)  {buffer=NULL;persistentTexIdIsNotOwned = false;texId=persistentTexId=NULL;load_from_memory(memory_gif,memory_gif_size,useHoverModeIfSupported);}
-#	endif //STBI_NO_GIF
+#   endif //STBI_NO_GIF
 	AnimatedImageInternal(ImTextureID myTexId,int animationImageWidth,int animationImageHeight,int numFrames,int numFramesPerRowInTexture,int numFramesPerColumnInTexture,float delayDetweenFramesInCs,bool useHoverMode=false) {
 		buffer=NULL;persistentTexIdIsNotOwned = false;texId=persistentTexId=NULL;
 		create(myTexId,animationImageWidth,animationImageHeight,numFrames,numFramesPerRowInTexture,numFramesPerColumnInTexture,delayDetweenFramesInCs,useHoverMode);
@@ -961,7 +961,7 @@ struct AnimatedImageInternal {
 		if (texId) {if (texId!=persistentTexId) AnimatedImage::FreeTextureCb(texId);texId=NULL;}
 		if (persistentTexId)  {if (!persistentTexIdIsNotOwned) AnimatedImage::FreeTextureCb(persistentTexId);persistentTexId=NULL;}
 	}
-#	ifndef STBI_NO_GIF
+#   ifndef STBI_NO_GIF
 #   ifndef IMGUIVARIOUSCONTROLS_NO_STDIO
 	bool load(char const *filename,bool useHoverModeIfSupported=false)  {
 		ScopedFileContent fc(filename);
@@ -984,7 +984,7 @@ struct AnimatedImageInternal {
 		}
 		STBI_FREE(int_delays);int_delays=NULL;
 
-		if (AnimatedImage::MaxPersistentTextureSize.x>0 && AnimatedImage::MaxPersistentTextureSize.y>0)	{
+		if (AnimatedImage::MaxPersistentTextureSize.x>0 && AnimatedImage::MaxPersistentTextureSize.y>0) {
 			// code path that checks 'MaxPersistentTextureSize' and puts all into a single texture (rearranging the buffer)
 			ImVec2 textureSize = AnimatedImage::MaxPersistentTextureSize;
 			int maxNumFramesPerRow = (int)textureSize.x/(int) w;
@@ -992,7 +992,7 @@ struct AnimatedImageInternal {
 			int maxNumFramesInATexture = maxNumFramesPerRow * maxNumFramesPerCol;
 			int cnt = 0;
 			ImVec2 lastValidTextureSize(0,0);
-			while (maxNumFramesInATexture>=frames)	{
+			while (maxNumFramesInATexture>=frames)  {
 				// Here we just halve the 'textureSize', so that, if it fits, we save further texture space
 				lastValidTextureSize = textureSize;
 				if (cnt%2==0) textureSize.y = textureSize.y/2;
@@ -1009,14 +1009,14 @@ struct AnimatedImageInternal {
 				maxNumFramesInATexture = maxNumFramesPerRow * maxNumFramesPerCol;
 			}
 
-			if (maxNumFramesInATexture>=frames)	{
+			if (maxNumFramesInATexture>=frames) {
 				numFramesPerRowInPersistentTexture = maxNumFramesPerRow;
 				numFramesPerColInPersistentTexture = maxNumFramesPerCol;
 
 				rearrangeBufferForPersistentTexture();
 
 				// generate persistentTexture,delete buffer
-				IM_ASSERT(AnimatedImage::GenerateOrUpdateTextureCb!=NULL);	// Please use ImGui::AnimatedImage::SetGenerateOrUpdateTextureCallback(...) before calling this method
+				IM_ASSERT(AnimatedImage::GenerateOrUpdateTextureCb!=NULL);  // Please use ImGui::AnimatedImage::SetGenerateOrUpdateTextureCallback(...) before calling this method
 				AnimatedImage::GenerateOrUpdateTextureCb(persistentTexId,w*maxNumFramesPerRow,h*maxNumFramesPerCol,4,buffer,false,false,false);
 				STBI_FREE(buffer);buffer=NULL;
 
@@ -1029,7 +1029,7 @@ struct AnimatedImageInternal {
 
 		return true;
 	}
-#	endif //STBI_NO_GIF
+#   endif //STBI_NO_GIF
 	bool create(ImTextureID myTexId,int animationImageWidth,int animationImageHeight,int numFrames,int numFramesPerRowInTexture,int numFramesPerColumnInTexture,float delayDetweenFramesInCs,bool useHoverMode=false)   {
 		clear();
 		persistentTexIdIsNotOwned = false;
@@ -1077,12 +1077,12 @@ struct AnimatedImageInternal {
 		ImVec2 uv_0 = uv0;
 		ImVec2 uv_1 = uv1;
 		if (persistentTexId) {
-			bool hovered = true;	// to fall back when useHoverModeIfSupported == false;
+			bool hovered = true;    // to fall back when useHoverModeIfSupported == false;
 			if (hoverModeIfSupported) {
 				hovered = ImGui::IsItemHovered();
 				if (hovered) isAtLeastOneWidgetInHoverMode = true;
 			}
-			if (hovered)	{
+			if (hovered)    {
 				const ImVec2 uvFrameDelta = uvFrame1 - uvFrame0;
 				uv_0 = uvFrame0 + uv0*uvFrameDelta;
 				uv_1 = uvFrame0 + uv1*uvFrameDelta;
@@ -1200,7 +1200,7 @@ struct AnimatedImageInternal {
 		const unsigned char*    pr = buffer;
 
 		int frm=0,colSz=0;
-		while (frm<frames)	{
+		while (frm<frames)  {
 			for (int y = 0; y<h;y++)    {
 				pr=&buffer[frm*frameSz + y*strideSz];
 				colSz = numFramesPerRowInPersistentTexture>(frames-frm)?(frames-frm):numFramesPerRowInPersistentTexture;
@@ -1497,7 +1497,7 @@ static int AppendTreeNodeHeaderButtonsV(const void* ptr_id,float startWindowCurs
 		pPressed = va_arg(args, bool*);tooltip = va_arg(args, const char*);
 		glyph = va_arg(args, const char*);isToggleButton = va_arg(args, int);
 
-		if (pPressed)	{
+		if (pPressed)   {
 			//fprintf(stderr,"btn:%d pos.x=%1.0f startWindowCursorXForClipping=%1.0f\n",i,pos.x,startWindowCursorXForClipping);
 			if (pos.x>startWindowCursorXForClipping+(4.0f*buttonSz))   {
 				id = window->GetID((void*)(intptr_t)(id+1));
@@ -1566,7 +1566,7 @@ struct ImGuiPlotMultiArrayGetterData    {
 		if (negative) tc = ColorConvertFloat4ToU32(tmp); else bc = ColorConvertFloat4ToU32(tmp);*/
 	}
 	// Same as default ImSaturate, but overflowOut can be -1,0 or 1 in case of clamping:
-	inline static float ImSaturate(float f,short& overflowOut)	{
+	inline static float ImSaturate(float f,short& overflowOut)  {
 		if (f < 0.0f) {overflowOut=-1;return 0.0f;}
 		if (f > 1.0f) {overflowOut=1;return 1.0f;}
 		overflowOut=0;return f;
@@ -1700,7 +1700,7 @@ int PlotHistogram(const char* label, float (*values_getter)(void* data, int idx,
 						ImVec4 base = style.Colors[ImGuiCol_PlotHistogram];
 						diff.x-=base.x;diff.y-=base.y;diff.z-=base.z;diff.w-=base.w;
 						base = ImGui::ColorConvertU32ToFloat4(rectCol);
-						if (style.Alpha!=0.f) base.w /= style.Alpha;	// See GetColorU32(...) for this
+						if (style.Alpha!=0.f) base.w /= style.Alpha;    // See GetColorU32(...) for this
 						base.x+=diff.x;base.y+=diff.y;base.z+=diff.z;base.w+=diff.w;
 						base = ImVec4(ImSaturate(base.x),ImSaturate(base.y),ImSaturate(base.z),ImSaturate(base.w));
 						rectCol = GetColorU32(base);
@@ -1735,7 +1735,7 @@ int PlotHistogram(const char* label, float (*values_getter)(void* data, int idx,
 				}
 				else {
 					posY = ImGuiPlotMultiArrayGetterData::ImSaturate(v1/scale_min,overflow);
-					overflow = -overflow;	// Probably redundant
+					overflow = -overflow;   // Probably redundant
 					pos0.y = posXAxis;
 					pos1.y = posXAxis+inner_bb_extension.y*xAxisSat*posY;
 					gradient = -fillColorGradientDeltaIn0_05;
@@ -1750,7 +1750,7 @@ int PlotHistogram(const char* label, float (*values_getter)(void* data, int idx,
 					const float spacing = lineThick+1;
 					const float height = inner_bb_extension.y*0.075f;
 					// Using CW order here... but I'm not sure this is correct in Dear ImGui (we should enable GL_CULL_FACE and see if it's the same output)
-					if (overflow>0)	    window->DrawList->AddTriangleFilled(ImVec2((pos0.x+pos1.x)*0.5f,inner_bb.Min.y+spacing),ImVec2(pos1.x-spacing,inner_bb.Min.y+spacing+height), ImVec2(pos0.x+spacing,inner_bb.Min.y+spacing+height),overflowCol);
+					if (overflow>0)     window->DrawList->AddTriangleFilled(ImVec2((pos0.x+pos1.x)*0.5f,inner_bb.Min.y+spacing),ImVec2(pos1.x-spacing,inner_bb.Min.y+spacing+height), ImVec2(pos0.x+spacing,inner_bb.Min.y+spacing+height),overflowCol);
 					else if (overflow<0)    window->DrawList->AddTriangleFilled(ImVec2((pos0.x+pos1.x)*0.5f,inner_bb.Max.y-spacing),ImVec2(pos0.x+spacing,inner_bb.Max.y-spacing-height), ImVec2(pos1.x-spacing,inner_bb.Max.y-spacing-height),overflowCol);
 				}
 
@@ -1842,7 +1842,7 @@ int PlotCurve(const char* label, float (*values_getter)(void* data, float x,int 
 		// Draw additinal horizontal and vertical lines: TODO: Fix this it's wrong
 		if (numGridLinesHint>=1.f)   {
 			ImU32 lineCol = GetColorU32(ImGuiCol_WindowBg);
-			lineCol = (((lineCol>>24)/2)<<24)|(lineCol&0x00FFFFFF);	// Halve alpha
+			lineCol = (((lineCol>>24)/2)<<24)|(lineCol&0x00FFFFFF); // Halve alpha
 			const float lineThick = 1.f;
 			float lineSpacing = (rangeExtension.x < rangeExtension.y) ? rangeExtension.x : rangeExtension.y;
 			lineSpacing/=numGridLinesHint;      // We draw 'numGridLinesHint' lines (or so) on the shortest axis
@@ -1935,8 +1935,8 @@ int PlotCurve(const char* label, float (*values_getter)(void* data, float x,int 
 			if (pOptionalHoveredValueOut) *pOptionalHoveredValueOut=hoveredValue;
 
 		// Tooltip on hover
-		if (num_curves==1)	SetTooltip("P (%1.4f , %1.4f)", hoveredValue.x, hoveredValue.y);
-		else		SetTooltip("P%d (%1.4f , %1.4f)",h_hovered, hoveredValue.x, hoveredValue.y);
+		if (num_curves==1)  SetTooltip("P (%1.4f , %1.4f)", hoveredValue.x, hoveredValue.y);
+		else        SetTooltip("P%d (%1.4f , %1.4f)",h_hovered, hoveredValue.x, hoveredValue.y);
 
 			const float circleRadius = curveThick*3.f;
 			const float hoveredValueYInBBCoords = inner_bb.Min.y+(yRange.y-hoveredValue.y)*inner_bb_extension.y/rangeExtension.y;
@@ -2210,7 +2210,7 @@ bool InputTextWithAutoCompletion(const char* label, char* buf, size_t buf_size, 
 					}
 				}
 			}
-			if (alreadyPresentIndex>=0)	{ad.itemIndexOfReturnedText=alreadyPresentIndex;}
+			if (alreadyPresentIndex>=0) {ad.itemIndexOfReturnedText=alreadyPresentIndex;}
 			else {ad.itemPositionOfReturnedText=itemPlacement;}
 		}
 		return rv;
@@ -2499,7 +2499,7 @@ bool InputComboWithAutoCompletion(const char* label, int *current_item, size_t a
 			}
 
 		}
-		if ((ImGui::IsItemActiveLastFrame() && !inputTextActive) || (inputTextHovered && ImGui::IsMouseClicked(1)))	{
+		if ((ImGui::IsItemActiveLastFrame() && !inputTextActive) || (inputTextHovered && ImGui::IsMouseClicked(1))) {
 			pad->inputTextShown = mustAllowFurtherEditing ? 1 : 0;
 			pad->buf[0]='\0';
 			pad->isRenaming = false;
@@ -2918,7 +2918,7 @@ void TreeViewNode::removeEmptyChildNodeVector() {
 		childNodes=NULL;
 	}
 }
-int TreeViewNode::getNumSiblings(bool includeMe) const	{
+int TreeViewNode::getNumSiblings(bool includeMe) const  {
 	if (!parentNode) return (includeMe ? 1 : 0);
 	const int num = parentNode->getNumChildNodes();
 	return (includeMe ? num : (num-1));
@@ -2928,7 +2928,7 @@ TreeViewNode *TreeViewNode::getSiblingNode(int nodeIndexInParentHierarchy)  {
 	if (!parentNode || !parentNode->childNodes || nodeIndexInParentHierarchy<0 || nodeIndexInParentHierarchy>=parentNode->childNodes->size()) return NULL;
 	return (*parentNode->childNodes)[nodeIndexInParentHierarchy];
 }
-const TreeViewNode *TreeViewNode::getSiblingNode(int nodeIndexInParentHierarchy) const	{
+const TreeViewNode *TreeViewNode::getSiblingNode(int nodeIndexInParentHierarchy) const  {
 	if (!parentNode || !parentNode->childNodes || nodeIndexInParentHierarchy<0 || nodeIndexInParentHierarchy>=parentNode->childNodes->size()) return NULL;
 	return (*parentNode->childNodes)[nodeIndexInParentHierarchy];
 }
@@ -3195,7 +3195,7 @@ void TreeViewNode::render(void* ptr,int numIndents)   {
 				const ImVec4 textColor = (!customColorState || mustdrawdisabled) ? GImGui->Style.Colors[ImGuiCol_Text] : tv.stateColors[(customColorState-1)*2];
 				ImVec2 shadowOffset(0,allowCheckBox ? (GImGui->Style.FramePadding.y*2) : 0);
 				float textSizeY = 0.f;
-				if (allowSelection && stateselected)	{
+				if (allowSelection && stateselected)    {
 					const ImVec2 textSize = ImGui::CalcTextSize(data.displayName);textSizeY=textSize.y;
 					const ImU32 fillColor = ImGui::ColorConvertFloat4ToU32(ImVec4(textColor.x,textColor.y,textColor.z,textColor.w*0.1f));
 					tvhs.window->DrawList->AddRectFilled(tvhs.window->DC.CursorPos+shadowOffset,tvhs.window->DC.CursorPos+textSize,fillColor);
@@ -3250,19 +3250,19 @@ void TreeViewNode::render(void* ptr,int numIndents)   {
 			}
 		}
 		else if (itemHovered) {
-			if (ImGui::GetIO().MouseDoubleClicked[0])		{
+			if (ImGui::GetIO().MouseDoubleClicked[0])       {
 				if (allowSelection) mustTriggerSelection = true;
 				tvhs.event.node = this;
 				tvhs.event.type = EVENT_DOUBLE_CLICKED;
 			}
-			else if (ImGui::GetIO().MouseClicked[0])		{
+			else if (ImGui::GetIO().MouseClicked[0])        {
 				if (allowSelection) mustTriggerSelection = true;
 				else if (childNodes) {
 					toggleState(STATE_OPEN);
 					tvhs.fillEvent(this,STATE_OPEN,!(state&STATE_OPEN));
 				}
 			}
-			else if (ImGui::GetIO().MouseClicked[1])	{
+			else if (ImGui::GetIO().MouseClicked[1])    {
 				mustShowMenu = true;
 				if (allowSelection) mustTriggerSelection = true;
 			}
@@ -3292,7 +3292,7 @@ void TreeViewNode::render(void* ptr,int numIndents)   {
 
 
 	if (mustShowMenu) {
-		if (tv.treeViewNodePopupMenuDrawerCb)	{
+		if (tv.treeViewNodePopupMenuDrawerCb)   {
 			tvhs.ContextMenuData.activeNode = this;
 			tvhs.ContextMenuData.parentTreeView = &tv;
 			tvhs.ContextMenuData.activeNodeChanged = true;
@@ -3532,7 +3532,7 @@ bool TimelineEvent(const char* str_id, float* values,bool keep_range_constant)
 		if (active || IsItemHovered())
 		{
 			ImGui::SetTooltip("%f", values[i]);
-			if (!keep_range_constant)	{
+			if (!keep_range_constant)   {
 				// @meshula:The item hovered line needs to be compensated for vertical scrolling. Thx!
 				ImVec2 a(pos.x, GetWindowContentRegionMin().y + win->Pos.y + win->Scroll.y);
 				ImVec2 b(pos.x, GetWindowContentRegionMax().y + win->Pos.y + win->Scroll.y);
@@ -3624,7 +3624,7 @@ void EndTimeline(int num_vertical_grid_lines,float current_time,ImU32 timeline_r
 	}
 
 	// Draw moving vertical line
-	if (current_time>0.f && current_time<s_max_timeline_value)	{
+	if (current_time>0.f && current_time<s_max_timeline_value)  {
 		ImVec2 a = GetWindowContentRegionMin() + win->Pos;
 		a.x += columnWidthScaled*(current_time/s_max_timeline_value)+columnOffset-columnWidthOffsetScaled;
 		win->DrawList->AddLine(a, ImVec2(a.x,startY), moving_line_color,3);
@@ -3644,7 +3644,7 @@ void EndTimeline(int num_vertical_grid_lines,float current_time,ImU32 timeline_r
 	ImVec2 end(startx+columnWidth,endy);//start.y+row_height);
 	float maxx = start.x+columnWidthScaled-columnWidthOffsetScaled;
 	if (maxx<end.x) end.x = maxx;
-	if (current_time<=0)			win->DrawList->AddRectFilled(start, end, color, rounding);
+	if (current_time<=0)            win->DrawList->AddRectFilled(start, end, color, rounding);
 	else if (current_time>s_max_timeline_value) win->DrawList->AddRectFilled(start, end, timeline_running_color, rounding);
 	else {
 		ImVec2 median(start.x+columnWidthScaled*(current_time/s_max_timeline_value)-columnWidthOffsetScaled,end.y);
@@ -4090,9 +4090,9 @@ bool CheckboxStyled(const char* label, bool* v,const ImU32* pOptionalEightColors
 	else if (widthFraction>check_bb_width-radius) widthFraction=check_bb_width-radius;
 	ImVec2 center(check_bb.Min.x+widthFraction,check_bb.Min.y+check_bb_height*0.5f);
 	// All the 4 circle colors will be forced to have A = 255
-	const ImGuiCol defaultCircleColorOn =	    ImGuiCol_Text;
+	const ImGuiCol defaultCircleColorOn =       ImGuiCol_Text;
 	const ImGuiCol defaultCircleColorOnHovered =    ImGuiCol_Text;
-	const ImGuiCol defaultCircleColorOff =	    ImGuiCol_TextDisabled;
+	const ImGuiCol defaultCircleColorOff =      ImGuiCol_TextDisabled;
 	const ImGuiCol defaultCircleColorOffHovered =   ImGuiCol_TextDisabled;
 	if (!animationActive) {
 	if (*v) {

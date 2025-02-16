@@ -266,12 +266,12 @@ struct AnimatedImage {
 	void SetFreeTextureCallback(FreeTextureDelegate freeTextureCb) {FreeTextureCb=freeTextureCb;}
 	void SetGenerateOrUpdateTextureCallback(GenerateOrUpdateTextureDelegate generateOrUpdateTextureCb) {GenerateOrUpdateTextureCb=generateOrUpdateTextureCb;}
 
-#	ifndef STBI_NO_GIF
+#   ifndef STBI_NO_GIF
 #   ifndef IMGUIVARIOUSCONTROLS_NO_STDIO
 	IMGUI_API AnimatedImage(char const *gif_filepath,bool useHoverModeIfSupported=false); // 'hoverMode' is supported only if all frames fit 'MaxPersistentTextureSize'
 #   endif //IMGUIVARIOUSCONTROLS_NO_STDIO
 	IMGUI_API AnimatedImage(const unsigned char* gif_buffer,int gif_buffer_size,bool useHoverModeIfSupported=false); // 'hoverMode' is supported only if all frames fit 'MaxPersistentTextureSize'
-#	endif //STBI_NO_GIF
+#   endif //STBI_NO_GIF
 	IMGUI_API AnimatedImage(ImTextureID myTexId,int animationImageWidth,int animationImageHeight,int numFrames,int numFramesPerRowInTexture,int numFramesPerColumnInTexture,float delayBetweenFramesInCs,bool useHoverMode=false); // 'hoverMode' always available. 'myTexId' is yours.
 	IMGUI_API AnimatedImage();    // You'll need to manually call 'load' o 'create'
 	IMGUI_API ~AnimatedImage();   // calls 'clear'
@@ -282,12 +282,12 @@ struct AnimatedImage {
 	IMGUI_API bool renderAsButton(const char* label,ImVec2 size=ImVec2(0,0), const ImVec2& uv0 = ImVec2(0,0),  const ImVec2& uv1 = ImVec2(1,1), int frame_padding = -1, const ImVec4& bg_col = ImVec4(0,0,0,0), const ImVec4& tint_col = ImVec4(1,1,1,1));    // <0 frame_padding uses default frame padding settings. 0 for no padding
 
 	// Less useful methods
-#	ifndef STBI_NO_GIF
+#   ifndef STBI_NO_GIF
 #   ifndef IMGUIVARIOUSCONTROLS_NO_STDIO
 	IMGUI_API bool load(char const *gif_filepath,bool useHoverModeIfSupported=false); // 'hoverMode' is supported only if all frames fit 'MaxPersistentTextureSize'
 #   endif //IMGUIVARIOUSCONTROLS_NO_STDIO
 	IMGUI_API bool load_from_memory(const unsigned char* gif_buffer,int gif_buffer_size,bool useHoverModeIfSupported=false);  // 'hoverMode' is supported only if all frames fit 'MaxPersistentTextureSize'
-#	endif //STBI_NO_GIF
+#   endif //STBI_NO_GIF
 	IMGUI_API bool create(ImTextureID myTexId,int animationImageWidth,int animationImageHeight,int numFrames,int numFramesPerRowInTexture,int numFramesPerColumnInTexture,float delayBetweenFramesInCs,bool useHoverMode=false); // 'hoverMode' always available. 'myTexId' is yours.
 	IMGUI_API int getWidth() const;
 	IMGUI_API int getHeight() const;

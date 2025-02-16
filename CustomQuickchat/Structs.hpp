@@ -24,45 +24,45 @@ const std::vector<std::string> possibleChatModes =
 
 enum class EKeyword : uint8_t
 {
-	None =					0,
-	WordVariation =			1,
-	SpeechToText =			2,
-	SpeechToTextUwu =		3,
-	SpeechToTextSarcasm =	4,
-	LastChat =				5,
-	LastChatUwu =			6,
-	LastChatSarcasm =		7,
-	BlastAll =				8,
-	BlastCasual =			9,
-	Blast1v1 =				10,
-	Blast2v2 =				11,
-	Blast3v3 =				12,
-	Forfeit =				13,
-	ExitToMainMenu =		14
+	None =                  0,
+	WordVariation =         1,
+	SpeechToText =          2,
+	SpeechToTextUwu =       3,
+	SpeechToTextSarcasm =   4,
+	LastChat =              5,
+	LastChatUwu =           6,
+	LastChatSarcasm =       7,
+	BlastAll =              8,
+	BlastCasual =           9,
+	Blast1v1 =              10,
+	Blast2v2 =              11,
+	Blast3v3 =              12,
+	Forfeit =               13,
+	ExitToMainMenu =        14
 };
 
 enum class ETextEffect : uint8_t
 {
-	None =			0,
-	Uwu =			1,
-	Sarcasm =		2,
+	None =          0,
+	Uwu =           1,
+	Sarcasm =       2,
 };
 
 const std::unordered_map<std::string, EKeyword> keywordsMap =
 {
-	{ "speechToText",				EKeyword::SpeechToText			},
-	{ "speechToText sarcasm",		EKeyword::SpeechToTextSarcasm	},
-	{ "speechToText uwu",			EKeyword::SpeechToTextUwu		},
-	{ "lastChat",					EKeyword::LastChat				},
-	{ "lastChat uwu",				EKeyword::LastChatUwu			},
-	{ "lastChat sarcasm",			EKeyword::LastChatSarcasm		},
-	{ "blast all",					EKeyword::BlastAll				},
-	{ "blast casual",				EKeyword::BlastCasual			},
-	{ "blast 1v1",					EKeyword::Blast1v1				},
-	{ "blast 2v2",					EKeyword::Blast2v2				},
-	{ "blast 3v3",					EKeyword::Blast3v3				},
-	{ "forfeit",					EKeyword::Forfeit				},
-	{ "menu",						EKeyword::ExitToMainMenu		},
+	{ "speechToText",               EKeyword::SpeechToText          },
+	{ "speechToText sarcasm",       EKeyword::SpeechToTextSarcasm   },
+	{ "speechToText uwu",           EKeyword::SpeechToTextUwu       },
+	{ "lastChat",                   EKeyword::LastChat              },
+	{ "lastChat uwu",               EKeyword::LastChatUwu           },
+	{ "lastChat sarcasm",           EKeyword::LastChatSarcasm       },
+	{ "blast all",                  EKeyword::BlastAll              },
+	{ "blast casual",               EKeyword::BlastCasual           },
+	{ "blast 1v1",                  EKeyword::Blast1v1              },
+	{ "blast 2v2",                  EKeyword::Blast2v2              },
+	{ "blast 3v3",                  EKeyword::Blast3v3              },
+	{ "forfeit",                    EKeyword::Forfeit               },
+	{ "menu",                       EKeyword::ExitToMainMenu        },
 };
 
 // ----------------------------------------------------------------------------
@@ -70,8 +70,8 @@ const std::unordered_map<std::string, EKeyword> keywordsMap =
 
 enum class EBindingType : uint8_t
 {
-	Combination =	0,
-	Sequence =		1
+	Combination =   0,
+	Sequence =      1
 };
 
 
@@ -108,10 +108,10 @@ struct BindingKey
 struct Binding
 {
 	std::string chat;
-	EChatChannel chatMode =				EChatChannel::EChatChannel_Match;
-	EBindingType bindingType =			EBindingType::Combination;
-	EKeyword keyWord =					EKeyword::None;
-	ETextEffect textEffect =			ETextEffect::None;
+	EChatChannel chatMode =             EChatChannel::EChatChannel_Match;
+	EBindingType bindingType =          EBindingType::Combination;
+	EKeyword keyWord =                  EKeyword::None;
+	ETextEffect textEffect =            ETextEffect::None;
 	bool enabled =                      true;
 	std::vector<std::string> buttons;
 	ButtonPress firstButtonState;
@@ -132,7 +132,7 @@ struct Binding
 		case EBindingType::Sequence:
 			return CheckSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
 		default:
-			return false;	// if there's no valid binding type for some reason
+			return false;   // if there's no valid binding type for some reason
 		}
 	}
 	
@@ -163,18 +163,18 @@ struct Binding
 		const std::chrono::duration<double>& minDelayBetweenBindings,
 		const std::chrono::duration<double>& maxTimeWindow)
 	{
-		if (buttons.size() < 2) return false;	// exit if there's not at least 2 buttons in binding
+		if (buttons.size() < 2) return false;   // exit if there's not at least 2 buttons in binding
 
 		bool button1Pressed = buttonEvent.buttonName == buttons[0];
 		bool button2Pressed = buttonEvent.buttonName == buttons[1];
 
-		if (!button1Pressed && !button2Pressed) return false;	// early exit if no buttons from binding have been pressed
+		if (!button1Pressed && !button2Pressed) return false;   // early exit if no buttons from binding have been pressed
 
 		// if first button press data is empty...
 		if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
 		{
 			if (button1Pressed)
-				firstButtonState = buttonEvent;		// update first button press data then exit
+				firstButtonState = buttonEvent;     // update first button press data then exit
 			return false;
 		}
 
@@ -184,9 +184,9 @@ struct Binding
 		if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
 		{
 			if (button1Pressed)
-				firstButtonState = buttonEvent;		// update first button press data
+				firstButtonState = buttonEvent;     // update first button press data
 			else
-				firstButtonState.Reset(epochTime);	// reset info bc 1st button doesn't match
+				firstButtonState.Reset(epochTime);  // reset info bc 1st button doesn't match
 			return false;
 		}
 
@@ -206,7 +206,7 @@ struct Binding
 				return true;
 			} 
 
-			firstButtonState.Reset(epochTime);	// binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
+			firstButtonState.Reset(epochTime);  // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
 		}
 
 		return false;
@@ -225,8 +225,8 @@ struct Binding
 			// if a special keyword was found
 			if (it != keywordsMap.end())
 			{
-				keyWord = it->second;					// update binding's keyword
-				textEffect = GetTextEffect(keyWord);	// update binding's text effect (if any)
+				keyWord = it->second;                   // update binding's keyword
+				textEffect = GetTextEffect(keyWord);    // update binding's text effect (if any)
 			}
 			// if something else was found in double brackets (aka a word variation)
 			else if (keyWord == EKeyword::None)
@@ -287,73 +287,73 @@ struct VariationList
 
 enum class ERankPlaylists : uint8_t
 {
-	Ones =		0,
-	Twos =		1,
-	Threes =	2,
-	Casual =	3
+	Ones =      0,
+	Twos =      1,
+	Threes =    2,
+	Casual =    3
 };
 
 
 const std::unordered_map<int, std::string> skill_tier_to_label =
 {
-	{ 0,	"Casual" },
-	{ 1,	"B1" },
-	{ 2,	"B2" },
-	{ 3,	"B3" },
-	{ 4,	"S1" },
-	{ 5,	"S2" },
-	{ 6,	"S3" },
-	{ 7,	"G1" },
-	{ 8,	"G2" },
-	{ 9,	"G3" },
-	{ 10,	"P1" },
-	{ 11,	"P2" },
-	{ 12,	"P3" },
-	{ 13,	"D1" },
-	{ 14,	"D2" },
-	{ 15,	"D3" },
-	{ 16,	"C1" },
-	{ 17,	"C2" },
-	{ 18,	"C3" },
-	{ 19,	"GC1" },
-	{ 20,	"GC2" },
-	{ 21,	"GC3" },
-	{ 22,	"SSL" }
+	{ 0,    "Casual" },
+	{ 1,    "B1" },
+	{ 2,    "B2" },
+	{ 3,    "B3" },
+	{ 4,    "S1" },
+	{ 5,    "S2" },
+	{ 6,    "S3" },
+	{ 7,    "G1" },
+	{ 8,    "G2" },
+	{ 9,    "G3" },
+	{ 10,   "P1" },
+	{ 11,   "P2" },
+	{ 12,   "P3" },
+	{ 13,   "D1" },
+	{ 14,   "D2" },
+	{ 15,   "D3" },
+	{ 16,   "C1" },
+	{ 17,   "C2" },
+	{ 18,   "C3" },
+	{ 19,   "GC1" },
+	{ 20,   "GC2" },
+	{ 21,   "GC3" },
+	{ 22,   "SSL" }
 };
 
 
 enum class SkillTier
 {
-	Unranked =			0,
-	Bronze1 =			1,
-	Bronze2 =			2,
-	Bronze3 =			3,
-	Silver1 =			4,
-	Silver2 =			5,
-	Silver3 =			6,
-	Gold1 =				7,
-	Gold2 =				8,
-	Gold3 =				9,
-	Platinum1 =			10,
-	Platinum2 =			11,
-	Platinum3 =			12,
-	Diamond1 =			13,
-	Diamond2 =			14,
-	Diamond3 =			15,
-	Champ1 =			16,
-	Champ2 =			17,
-	Champ3 =			18,
-	GrandChamp1 =		19,
-	GrandChamp2 =		20,
-	GrandChamp3 =		21,
-	SupersonicLegend =	22
+	Unranked =          0,
+	Bronze1 =           1,
+	Bronze2 =           2,
+	Bronze3 =           3,
+	Silver1 =           4,
+	Silver2 =           5,
+	Silver3 =           6,
+	Gold1 =             7,
+	Gold2 =             8,
+	Gold3 =             9,
+	Platinum1 =         10,
+	Platinum2 =         11,
+	Platinum3 =         12,
+	Diamond1 =          13,
+	Diamond2 =          14,
+	Diamond3 =          15,
+	Champ1 =            16,
+	Champ2 =            17,
+	Champ3 =            18,
+	GrandChamp1 =       19,
+	GrandChamp2 =       20,
+	GrandChamp3 =       21,
+	SupersonicLegend =  22
 };
 
 
 // credit to https://github.com/JulienML/BetterChat/ thx fam
 const std::map<std::string, std::string> quickchat_ids_to_text =
 {
-		{"Group1Message1",  "I got it!"},			    // Je l'ai !
+		{"Group1Message1",  "I got it!"},               // Je l'ai !
 		{"Group1Message2",  "Need boost!"},             // Besoin de turbo !
 		{"Group1Message3",  "Take the shot!"},          // Prends-le !
 		{"Group1Message4",  "Defending."},              // Je défends.
@@ -380,8 +380,8 @@ const std::map<std::string, std::string> quickchat_ids_to_text =
 		{"Group2Message7",  "Great clear!"},            // Beau dégagement !
 		{"Group2Message8",  "Nice block!"},             // Super blocage !
 		{"Group2Message9",  "Nice bump!"},              // Bel impact !
-		{"Group2Message10", "Nice demo!"},				// Jolie démo !
-		{"Group2Message11", "We got this."},	        // On assure !
+		{"Group2Message10", "Nice demo!"},              // Jolie démo !
+		{"Group2Message11", "We got this."},            // On assure !
 
 		{"Group3Message1",  "OMG!"},                    // Oh mon dieu !
 		{"Group3Message2",  "Noooo!"},                  // Noooon !
@@ -412,7 +412,7 @@ const std::map<std::string, std::string> quickchat_ids_to_text =
 		{"Group5Message6",  "What a game!"},            // Quelle partie !
 		{"Group5Message7",  "Nice moves!"},             // Super déplacements !
 		{"Group5Message8",  "Everybody dance!"},        // Que tout le monde dance !
-		{"Group5Message9",  "Party Up?"},				// On groupe ?
+		{"Group5Message9",  "Party Up?"},               // On groupe ?
 
 		{"Group6Message4",  "This is Rocket League!"}   // Ça c'est Rocket League !
 };
@@ -431,11 +431,11 @@ struct UidWrapper
 
 struct NetId
 {
-	uint64_t			Uid;
-	FSceNpId			NpId;
-	std::string			EpicAccountId;
-	uint8_t				Platform;
-	uint8_t				SplitscreenID;
+	uint64_t            Uid;
+	FSceNpId            NpId;
+	std::string         EpicAccountId;
+	uint8_t             Platform;
+	uint8_t             SplitscreenID;
 
 	NetId() {}
 	NetId(const FUniqueNetId& unreal_id) :
@@ -448,11 +448,11 @@ struct NetId
 	FUniqueNetId to_unreal_id() const
 	{
 		FUniqueNetId id;
-		id.Uid =				Uid;
-		id.NpId =				NpId;
-		id.EpicAccountId =		Instances.NewFString(EpicAccountId);
-		id.Platform =			Platform;
-		id.SplitscreenID =		SplitscreenID;
+		id.Uid =                Uid;
+		id.NpId =               NpId;
+		id.EpicAccountId =      Instances.NewFString(EpicAccountId);
+		id.Platform =           Platform;
+		id.SplitscreenID =      SplitscreenID;
 		
 		return id;
 	}
@@ -471,15 +471,15 @@ struct LastChatPreferences
 
 struct ChatData
 {
-	std::string			PlayerName;
-	std::string			Message;
-	std::string			TimeStamp;
+	std::string         PlayerName;
+	std::string         Message;
+	std::string         TimeStamp;
 	std::string         IdString;
-	int					Team;
-	EChatChannel		ChatChannel;
-	NetId				SenderId;
-	bool				IsUser;
-	bool				IsQuickchat;
+	int                 Team;
+	EChatChannel        ChatChannel;
+	NetId               SenderId;
+	bool                IsUser;
+	bool                IsQuickchat;
 
 	ChatData(const FGFxChatMessage& msg)
 	{
@@ -492,14 +492,14 @@ struct ChatData
 				chat_text = it->second;
 		}
 
-		PlayerName =		msg.PlayerName.ToString();
-		Message =		    chat_text;
-		TimeStamp =			msg.TimeStamp.ToString();
-		Team =				msg.Team;
-		ChatChannel =		static_cast<EChatChannel>(msg.ChatChannel);
-		SenderId =			msg.SenderId;
-		IsUser =			msg.bLocalPlayer;
-		IsQuickchat =		msg.bPreset;
+		PlayerName =        msg.PlayerName.ToString();
+		Message =           chat_text;
+		TimeStamp =         msg.TimeStamp.ToString();
+		Team =              msg.Team;
+		ChatChannel =       static_cast<EChatChannel>(msg.ChatChannel);
+		SenderId =          msg.SenderId;
+		IsUser =            msg.bLocalPlayer;
+		IsQuickchat =       msg.bPreset;
 
 		IdString = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
 	}
@@ -571,10 +571,10 @@ struct ChatterRanks
 
 		playerName = chat.PlayerName;
 
-		ones =		get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedSoloDuel),		game_skill);
-		twos =		get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedTeamDoubles),	game_skill);
-		threes =	get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedStandard),		game_skill);
-		casual =	get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::Casual),				game_skill);
+		ones =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedSoloDuel),       game_skill);
+		twos =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedTeamDoubles),    game_skill);
+		threes =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedStandard),       game_skill);
+		casual =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::Casual),               game_skill);
 	}
 
 
@@ -599,9 +599,9 @@ struct ChatterRanks
 	inline std::string get_all_ranks_str() const
 	{
 		// to make return line readable
-		std::string ones_str =		ones.get_rank_str();
-		std::string twos_str =		twos.get_rank_str();
-		std::string threes_str =	threes.get_rank_str();
+		std::string ones_str =      ones.get_rank_str();
+		std::string twos_str =      twos.get_rank_str();
+		std::string threes_str =    threes.get_rank_str();
 
 		return playerName + ": [1s] " + ones_str + " [2s] " + twos_str + " [3s] " + threes_str;
 	}
@@ -651,7 +651,7 @@ struct ChatterRanks
 			return FPlayerSkillRating{};
 
 		FPlayerSkillRating rank_data = game_skill->GetPlayerRating(id, playlist_id);
-		rank_data.MMR = calculate_skill_rating(rank_data.Mu);		// <--- change to be the value that everyone refers to as "MMR"
+		rank_data.MMR = calculate_skill_rating(rank_data.Mu);       // <--- change to be the value that everyone refers to as "MMR"
 
 		return rank_data;
 	}
