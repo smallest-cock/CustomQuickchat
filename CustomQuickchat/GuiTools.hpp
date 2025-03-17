@@ -17,7 +17,7 @@ namespace GUI
 
 	static constexpr float footer_icon_height =		25.0f;
 
-	static constexpr const wchar_t* discord_link =	L"https://discord.gg/tHZFsMsvDU";
+	static constexpr const wchar_t* discord_link = L"https://discord.gg/d5ahhQmJbJ";
 	static constexpr const char* discord_desc =		"Need help? Join the discord";
 
 	static constexpr const wchar_t* youtube_link =	L"https://www.youtube.com/@SSLowRL";
@@ -342,4 +342,7 @@ namespace GUI
 	void SettingsHeader(const char* id, const char* pluginVersion, const ImVec2& size, bool showBorder = false);
 	void SettingsFooter(const char* id, const ImVec2& size, std::shared_ptr<FooterLinks> footer_links, bool showBorder = false);
 	void OldSettingsFooter(const char* id, const ImVec2& size, bool showBorder = false);
+
+	void alt_settings_header(const char* text, const char* plugin_version, const ImVec4& text_color = Colors::Pinkish);
+	void alt_settings_footer(const char* text, const char* url, const ImVec4& text_color = Colors::Yellow);
 }

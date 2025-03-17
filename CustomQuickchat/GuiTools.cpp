@@ -126,4 +126,32 @@ namespace GUI
 		}
 		ImGui::EndChild();
 	}
+
+
+	void alt_settings_header(const char* text, const char* plugin_version, const ImVec4& text_color)
+	{
+		Spacing(4);
+
+		ImGui::TextColored(text_color, text);
+
+		Spacing(3);
+
+		ImGui::Text(plugin_version);
+		ImGui::Separator();
+	}
+
+	void alt_settings_footer(const char* text, const char* url, const ImVec4& text_color)
+	{
+		ImGui::SetWindowFontScale(1.3);	// make link a lil more visible
+
+		// center the the cursor position horizontally
+		ImVec2 text_size = ImGui::CalcTextSize(text);
+		float horizontal_offset = (ImGui::GetContentRegionAvail().x - text_size.x) / 2;
+		horizontal_offset -= 50;	// seems slightly shifted to the right, so subtract 50 to compensate
+		ImGui::SetCursorPosX(horizontal_offset);
+
+		ClickableLink(text, url, text_color, text_size);
+
+		ImGui::SetWindowFontScale(1);	// undo font scale modification, so it doesnt affect the rest of the UI
+	}
 }

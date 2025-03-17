@@ -10,9 +10,9 @@ void CustomQuickchat::RenderSettings()
 
 	const float content_height = ImGui::GetContentRegionAvail().y - footer_height;  // available height after accounting for footer
 
-	if (ImGui::BeginChild("ContentSection", ImVec2(0, content_height)))
+	if (ImGui::BeginChild("PluginSettingsSection", ImVec2(0, content_height)))
 	{
-		GUI::SettingsHeader("Header", pretty_plugin_version, ImVec2(0, header_height), false);
+		GUI::alt_settings_header("Plugin made by S S L o w", pretty_plugin_version);
 
 		bool enabled = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &enabled))
@@ -70,18 +70,7 @@ void CustomQuickchat::RenderSettings()
 	}
 	ImGui::EndChild();
 
-
-	// footer
-	const auto remaining_space = ImGui::GetContentRegionAvail();
-
-	if (assets_exist)
-	{
-		GUI::SettingsFooter("Footer", remaining_space, footer_links);
-	}
-	else
-	{
-		GUI::OldSettingsFooter("Footer", remaining_space);
-	}
+	GUI::alt_settings_footer("Need help? Join the Discord", "https://discord.gg/d5ahhQmJbJ");
 }
 
 
