@@ -76,6 +76,7 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	bool gamePaused =       false;
 	bool matchEnded =       false;
 	bool inGameEvent =      false;
+	bool chatbox_open =    false;
 
 	
 	// CustomQuickchat filepaths

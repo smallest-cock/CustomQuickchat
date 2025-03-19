@@ -28,7 +28,7 @@ namespace Cvars
 	constexpr CvarData quickchats_in_last_chat =		CVAR("quickchats_in_last_chat",			"include quickchats in search for last chat");
 	constexpr CvarData party_chats_in_last_chat =		CVAR("party_chats_in_last_chat",		"include party chats in search for last chat");
 	constexpr CvarData team_chats_in_last_chat =		CVAR("team_chats_in_last_chat",			"include team chats in search for last chat");
-	constexpr CvarData randomize_sarcasm =				CVAR("randomize_sarcasm",				"include team chats in search for last chat");
+	constexpr CvarData randomize_sarcasm =				CVAR("randomize_sarcasm",				"randomize the sarcasm text effect");
 
 	// numbers
 	constexpr CvarData sequenceTimeWindow =				CVAR("button_sequence_time_window",		"time window given for button sequence macros");

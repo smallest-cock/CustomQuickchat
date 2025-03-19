@@ -110,6 +110,14 @@ void CustomQuickchat::onLoad()
 	gameWrapper->HookEventPost(Events::MatchEnded, [this](std::string eventName) { matchEnded = true; });
 	gameWrapper->HookEventPost(Events::EnterStartState, [this](std::string eventName) { inGameEvent = true; });
 
+	// track the state of the chatbox UI
+	auto set_chatbox_open = [this](std::string eventName) { chatbox_open = true; };
+	gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenChat,		set_chatbox_open);
+	gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenTeamChat,	set_chatbox_open);
+	gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenPartyChat,	set_chatbox_open);
+	gameWrapper->HookEventPost(Events::GFxData_Chat_TA_ClearDistracted, [this](std::string eventName) { chatbox_open = false; });
+
+
 	gameWrapper->HookEvent(Events::SendChatPresetMessage, [this](std::string eventName)
 	{
 		// reset/update data for all bindings

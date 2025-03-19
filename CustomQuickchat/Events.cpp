@@ -5,7 +5,7 @@
 
 void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName)
 {
-	if (gamePaused || !inGameEvent)
+	if (gamePaused || !inGameEvent || chatbox_open)
 		return;
 
 	if (matchEnded)
@@ -204,6 +204,7 @@ void CustomQuickchat::Event_LoadingScreenStart(std::string eventName)
 	gamePaused = false;
 	matchEnded = false;
 	inGameEvent = false;
+	chatbox_open = false;
 
 	// reset all "pressed" buttons (to fix bug of bindings mistakenly firing bc a key's state is stuck in "pressed" mode upon joining a game/freeplay)
 	for (auto& [key, state] : keyStates)

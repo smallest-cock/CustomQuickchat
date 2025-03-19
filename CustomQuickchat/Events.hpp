@@ -14,6 +14,10 @@ namespace Events
 	constexpr const char* GFxData_Chat_TA_OnRemoved =			"Function TAGame.GFxData_Chat_TA.OnRemoved";
 	constexpr const char* GFxData_Chat_TA_AddChatMessage =		"Function TAGame.GFxData_Chat_TA.AddChatMessage";
 	constexpr const char* GFxData_Chat_TA_AddPresetMessage =	"Function TAGame.GFxData_Chat_TA.AddPresetMessage";
+	constexpr const char* GFxData_Chat_TA_OpenChat =			"Function TAGame.GFxData_Chat_TA.OpenChat";
+	constexpr const char* GFxData_Chat_TA_OpenTeamChat =		"Function TAGame.GFxData_Chat_TA.OpenTeamChat";
+	constexpr const char* GFxData_Chat_TA_OpenPartyChat =		"Function TAGame.GFxData_Chat_TA.OpenPartyChat";
+	constexpr const char* GFxData_Chat_TA_ClearDistracted =		"Function TAGame.GFxData_Chat_TA.ClearDistracted";
 
 	constexpr const char* PopulateSettingsMenu =				"Function TAGame.GFxData_Controls_TA.PopulateSettingsMenu";
 	constexpr const char* InitUIBindings =						"Function TAGame.GFxData_Controls_TA.InitUIBindings";
