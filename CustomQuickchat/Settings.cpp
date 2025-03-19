@@ -82,6 +82,7 @@ void CustomQuickchat::GeneralSettings()
 	auto blockDefaultQuickchats_cvar =      GetCvar(Cvars::blockDefaultQuickchats);
 	auto disablePostMatchQuickchats_cvar =  GetCvar(Cvars::disablePostMatchQuickchats);
 	auto removeTimestamps_cvar =            GetCvar(Cvars::removeTimestamps);
+	auto randomize_sarcasm_cvar =           GetCvar(Cvars::randomize_sarcasm);
 
 	GUI::Spacing(2);
 
@@ -95,8 +96,6 @@ void CustomQuickchat::GeneralSettings()
 		ImGui::SetTooltip("Block default quickchat if it conflicts with a custom chat (prevents both chats from being sent)");
 	}
 
-	GUI::Spacing(2);
-
 	bool blockDefaultQuickchats = blockDefaultQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Block all default quickchats", &blockDefaultQuickchats))
 	{
@@ -106,8 +105,6 @@ void CustomQuickchat::GeneralSettings()
 	{
 		ImGui::SetTooltip("Block all default quickchats from being sent... without having to unbind them :)");
 	}
-
-	GUI::Spacing(2);
 
 	bool disablePostMatchQuickchats = disablePostMatchQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Disable custom quickchats in post-match screen", &disablePostMatchQuickchats))
@@ -119,13 +116,16 @@ void CustomQuickchat::GeneralSettings()
 		ImGui::SetTooltip("Prevents your custom chats from overriding default post-match chats like 'gg'");
 	}
 
-	GUI::Spacing(2);
-
-	// remove chat timestamps
 	bool removeTimestamps = removeTimestamps_cvar.getBoolValue();
 	if (ImGui::Checkbox("Remove chat timestamps", &removeTimestamps))
 	{
 		removeTimestamps_cvar.setValue(removeTimestamps);
+	}
+
+	bool randomize_sarcasm = randomize_sarcasm_cvar.getBoolValue();
+	if (ImGui::Checkbox("Randomize sarcasm effect", &randomize_sarcasm))
+	{
+		randomize_sarcasm_cvar.setValue(randomize_sarcasm);
 	}
 
 	GUI::Spacing(2);
@@ -165,8 +165,6 @@ void CustomQuickchat::ChatTimeoutSettings()
 	{
 		disableChatTimeout_cvar.setValue(disableChatTimeout);
 	}
-
-	GUI::Spacing(2);
 
 	bool useCustomChatTimeoutMsg = useCustomChatTimeoutMsg_cvar.getBoolValue();
 	if (ImGui::Checkbox("Custom chat timeout message", &useCustomChatTimeoutMsg))

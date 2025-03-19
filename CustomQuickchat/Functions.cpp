@@ -485,6 +485,15 @@ std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std:
 
 std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
 {
+	auto apply_sarcasm_effect = [this](const std::string& text)
+		{
+			auto randomize_sarcasm_cvar = GetCvar(Cvars::randomize_sarcasm);
+			if (randomize_sarcasm_cvar.getBoolValue())
+				return to_sarcasm_randomized(text);
+			else
+				return to_sarcasm(text);
+		};
+
 	switch (effect)
 	{
 	case ETextEffect::None:
@@ -492,7 +501,7 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	case ETextEffect::Uwu:
 		return to_uwu(originalText);
 	case ETextEffect::Sarcasm:
-		return to_sarcasm(originalText);
+		return apply_sarcasm_effect(originalText);
 	default:
 		return originalText;
 	}

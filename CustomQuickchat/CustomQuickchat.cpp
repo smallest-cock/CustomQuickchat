@@ -25,15 +25,16 @@ void CustomQuickchat::onLoad()
 	auto blockDefaultQuickchats_cvar =			RegisterCvar_Bool(Cvars::blockDefaultQuickchats,		false);
 	auto disablePostMatchQuickchats_cvar =		RegisterCvar_Bool(Cvars::disablePostMatchQuickchats,	false);
 	auto disableChatTimeout_cvar =				RegisterCvar_Bool(Cvars::disableChatTimeout,			true);
-	auto useCustomChatTimeoutMsg_cvar =			RegisterCvar_Bool(Cvars::useCustomChatTimeoutMsg,		false);
+	auto useCustomChatTimeoutMsg_cvar =			RegisterCvar_Bool(Cvars::useCustomChatTimeoutMsg,		true);
 	auto removeTimestamps_cvar =				RegisterCvar_Bool(Cvars::removeTimestamps,				true);
 	auto enableSTTNotifications_cvar =			RegisterCvar_Bool(Cvars::enableSTTNotifications,		true);
 	auto autoCalibrateMic_cvar =				RegisterCvar_Bool(Cvars::autoCalibrateMic,				true);
-	auto user_chats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::user_chats_in_last_chat,		true);
+	auto user_chats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::user_chats_in_last_chat,		false);
 	auto teammate_chats_in_last_chat_cvar =		RegisterCvar_Bool(Cvars::teammate_chats_in_last_chat,	true);
 	auto quickchats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::quickchats_in_last_chat,		true);
 	auto party_chats_in_last_chat_cvar =		RegisterCvar_Bool(Cvars::party_chats_in_last_chat,		true);
 	auto team_chats_in_last_chat_cvar =			RegisterCvar_Bool(Cvars::team_chats_in_last_chat,		true);
+	auto randomize_sarcasm_cvar =				RegisterCvar_Bool(Cvars::randomize_sarcasm,				true);
 
 	// numbers
 	auto micEnergyThreshold_cvar =				RegisterCvar_Number(Cvars::micEnergyThreshold,			420);

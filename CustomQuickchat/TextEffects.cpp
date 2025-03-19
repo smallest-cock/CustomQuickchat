@@ -41,68 +41,67 @@ std::vector<std::string> splitIntoWords(const std::string& input)
 // ==================================================== text effects ====================================================
 
 
-//// sarcasm effect
-//std::string to_sarcasm(const std::string& ogText)
-//{
-//    std::istringstream iss(ogText);
-//    std::ostringstream oss;
-//    std::string word;
-//
-//    // Tokenize the input string into words based on spaces
-//    while (iss >> word)
-//    {
-//        bool capitalizeNext = false;  // Start with lowercase for the first letter
-//        std::string sarcasticWord;
-//
-//        // Transform each word according to the specified rules
-//        for (size_t i = 0; i < word.size(); ++i)
-//        {
-//            char currentChar = word[i];
-//
-//            if (std::tolower(currentChar) == 'i')
-//            {
-//                sarcasticWord += 'i';  // Keep 'i' as lowercase
-//            }
-//            else if (std::tolower(currentChar) == 'l')
-//            {
-//                sarcasticWord += 'L';  // Keep 'l' as uppercase
-//            }
-//            else if (std::isalpha(currentChar))
-//            {  // Check if the character is alphabetic
-//                if (capitalizeNext)
-//                {
-//                    sarcasticWord += std::toupper(currentChar);
-//                    capitalizeNext = false;  // Toggle for the next character
-//                }
-//                else {
-//                    sarcasticWord += std::tolower(currentChar);
-//                    capitalizeNext = true;  // Toggle for the next character
-//                }
-//            }
-//            else {
-//                sarcasticWord += currentChar;  // Preserve non-alphabetic characters
-//            }
-//        }
-//
-//        // Append the transformed word to the output stream
-//        oss << sarcasticWord << " ";
-//    }
-//
-//    // Get the resulting string from the output stream
-//    std::string sarcasticText = oss.str();
-//
-//    // Remove trailing space at the end (if any)
-//    if (!sarcasticText.empty() && sarcasticText.back() == ' ')
-//    {
-//        sarcasticText.pop_back();
-//    }
-//
-//    return sarcasticText;
-//}
+std::string to_sarcasm(const std::string& ogText)
+{
+    std::istringstream iss(ogText);
+    std::ostringstream oss;
+    std::string word;
+
+    // Tokenize the input string into words based on spaces
+    while (iss >> word)
+    {
+        bool capitalizeNext = false;  // Start with lowercase for the first letter
+        std::string sarcasticWord;
+
+        // Transform each word according to the specified rules
+        for (size_t i = 0; i < word.size(); ++i)
+        {
+            char currentChar = word[i];
+
+            if (std::tolower(currentChar) == 'i')
+            {
+                sarcasticWord += 'i';  // Keep 'i' as lowercase
+            }
+            else if (std::tolower(currentChar) == 'l')
+            {
+                sarcasticWord += 'L';  // Keep 'l' as uppercase
+            }
+            else if (std::isalpha(currentChar))
+            {  // Check if the character is alphabetic
+                if (capitalizeNext)
+                {
+                    sarcasticWord += std::toupper(currentChar);
+                    capitalizeNext = false;  // Toggle for the next character
+                }
+                else {
+                    sarcasticWord += std::tolower(currentChar);
+                    capitalizeNext = true;  // Toggle for the next character
+                }
+            }
+            else {
+                sarcasticWord += currentChar;  // Preserve non-alphabetic characters
+            }
+        }
+
+        // Append the transformed word to the output stream
+        oss << sarcasticWord << " ";
+    }
+
+    // Get the resulting string from the output stream
+    std::string sarcasticText = oss.str();
+
+    // Remove trailing space at the end (if any)
+    if (!sarcasticText.empty() && sarcasticText.back() == ' ')
+    {
+        sarcasticText.pop_back();
+    }
+
+    return sarcasticText;
+}
 
 
 // chat gpt "more randomized" version
-std::string to_sarcasm(const std::string& ogText)
+std::string to_sarcasm_randomized(const std::string& ogText)
 {
 	std::istringstream iss(ogText);
 	std::ostringstream oss;
