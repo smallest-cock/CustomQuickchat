@@ -15,14 +15,15 @@
 #include "Macros.hpp"
 #include "Events.hpp"
 #include "Cvars.hpp"
-#include "GuiTools.hpp"
+#include <ModUtils/includes.hpp>
 #include "Components/Includes.hpp"
 
 
-#define USE_SPEECH_TO_TEXT
+//#define USE_SPEECH_TO_TEXT
 
 
-constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
+constexpr auto full_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
+constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
 #if !defined(USE_SPEECH_TO_TEXT)
 constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
@@ -64,6 +65,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 	//Boilerplate
 	void onLoad() override;
 	void onUnload() override;
+
+
+	std::string h_label;
 
 
 	// constants

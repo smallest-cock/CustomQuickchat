@@ -2,7 +2,7 @@
 #include "CustomQuickchat.h"
 
 
-BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", full_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 

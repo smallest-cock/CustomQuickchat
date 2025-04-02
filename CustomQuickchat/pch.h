@@ -22,13 +22,13 @@
 #include <fstream>
 #include <shellapi.h>
 
-//#include "nlohmann.hpp"
-#include <nlohmann/json.hpp>
-#include "SDK/SdkHeaders.hpp"
+#pragma comment(lib, "Shlwapi.lib")
+
+#include <json/single_include/nlohmann/json.hpp>
+#include <RLSDK/RLSDK_w_pch_includes/SdkHeaders.hpp>
 
 #include "logging.h"
 
-#pragma comment(lib, "Shlwapi.lib")
 
 namespace fs = std::filesystem;
 using json = nlohmann::json;

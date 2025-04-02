@@ -12,7 +12,7 @@ void CustomQuickchat::RenderSettings()
 
 	if (ImGui::BeginChild("PluginSettingsSection", ImVec2(0, content_height)))
 	{
-		GUI::alt_settings_header("Plugin made by S S L o w", pretty_plugin_version);
+		GUI::alt_settings_header(h_label.c_str(), pretty_plugin_version);
 
 		bool enabled = enabled_cvar.getBoolValue();
 		if (ImGui::Checkbox("Enabled", &enabled))

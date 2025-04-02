@@ -302,20 +302,20 @@ UOnlinePlayer_X* InstancesComponent::GetOnlinePlayer()
 
 FString InstancesComponent::NewFString(const std::string& str)
 {
-	// have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
-	return UObject::RepeatString(Format::ToWideString(str).data(), 1);
+	std::wstring wide_str = StringUtils::ToWideString(str);
+	return UObject::RepeatString(wide_str.data(), 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
 }
 
 FString InstancesComponent::NewFString(const FString& old)
 {
-	// have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
-	return UObject::RepeatString(old, 1);
+	return UObject::RepeatString(old, 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
 }
 
 
 FName InstancesComponent::FindFName(const std::string& str)
 {
-	return FName(Format::ToWideString(str).data());
+	std::wstring wide_str = StringUtils::ToWideString(str);
+	return FName(wide_str.data());
 }
 
 
