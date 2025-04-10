@@ -42,9 +42,9 @@ You can run these commands in the bakkesmod console window (F6), or bind them to
 
 ## 🛠️ Building
 To build the project you'll need to do the following:
-1. initialize the repo's submodules
-2. install the remaining dependencies with vcpkg
-3. compile `speech-to-text-server.pyw` into an executable named `SpeechToText.exe`
+1. Initialize the repo's submodules
+2. Install the remaining dependencies with vcpkg
+3. Bundle `speech-to-text-server.pyw` into an executable named `SpeechToText.exe`
 
 Contributions are welcome 🤗
 
@@ -56,7 +56,7 @@ git submodule update --init --recursive
 ```
 
 
-### Installing other dependencies with vcpkg
+### Install other dependencies with vcpkg
 You'll need to install the libraries found in `vcpkg.json`
 
 Brief steps:
@@ -66,10 +66,10 @@ Brief steps:
    - [more info here](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
 
 
-### Python script
-To compile `speech-to-text-server.pyw` into an executable, I use [auto-py-to-exe](https://github.com/brentvollebregt/auto-py-to-exe) (which uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) internally) with the "One Directory" option (`--onedir` in pyinstaller)
+### Bundle Python script
+To bundle `speech-to-text-server.pyw` into an executable, I use [auto-py-to-exe](https://github.com/brentvollebregt/auto-py-to-exe) (which uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) internally) with the "One Directory" option (`--onedir` in pyinstaller)
 
-For the plugin to recognize the python program, the executable needs to be named `SpeechToText.exe` and should be located in the `bakkesmod\CustomQuickchat\SpeechToText` folder. (You can create the folder if it doesn't already exist)
+For the plugin to recognize the python program, the executable needs to be named `SpeechToText.exe` and should be located in the `bakkesmod\data\CustomQuickchat\SpeechToText` folder. (You can create the folder if it doesn't already exist)
 
 
 ## 👀 Credits
