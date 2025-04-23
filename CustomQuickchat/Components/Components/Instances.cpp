@@ -8,26 +8,26 @@ InstancesComponent::~InstancesComponent() { OnDestroy(); }
 
 void InstancesComponent::OnCreate()
 {
-	I_UCanvas = nullptr;
-	I_AHUD = nullptr;
-	I_UGameViewportClient = nullptr;
-	I_APlayerController = nullptr;
+    I_UCanvas = nullptr;
+    I_AHUD = nullptr;
+    I_UGameViewportClient = nullptr;
+    I_APlayerController = nullptr;
 }
 
 void InstancesComponent::OnDestroy()
 {
-	m_staticClasses.clear();
-	m_staticFunctions.clear();
+    m_staticClasses.clear();
+    m_staticFunctions.clear();
 
-	for (UObject* uObject : m_createdObjects)
-	{
-		if (uObject)
-		{
-			MarkForDestroy(uObject);
-		}
-	}
+    for (UObject* uObject : m_createdObjects)
+    {
+        if (uObject)
+        {
+            MarkForDestroy(uObject);
+        }
+    }
 
-	m_createdObjects.clear();
+    m_createdObjects.clear();
 }
 
 
@@ -35,90 +35,90 @@ void InstancesComponent::OnDestroy()
 
 uintptr_t InstancesComponent::FindPattern(HMODULE module, const unsigned char* pattern, const char* mask)
 {
-	MODULEINFO info = { };
-	GetModuleInformation(GetCurrentProcess(), module, &info, sizeof(MODULEINFO));
+    MODULEINFO info = { };
+    GetModuleInformation(GetCurrentProcess(), module, &info, sizeof(MODULEINFO));
 
-	uintptr_t start = reinterpret_cast<uintptr_t>(module);
-	size_t length = info.SizeOfImage;
+    uintptr_t start = reinterpret_cast<uintptr_t>(module);
+    size_t length = info.SizeOfImage;
 
-	size_t pos = 0;
-	size_t maskLength = std::strlen(mask) - 1;
+    size_t pos = 0;
+    size_t maskLength = std::strlen(mask) - 1;
 
-	for (uintptr_t retAddress = start; retAddress < start + length; retAddress++)
-	{
-		if (*reinterpret_cast<unsigned char*>(retAddress) == pattern[pos] || mask[pos] == '?')
-		{
-			if (pos == maskLength)
-			{
-				return (retAddress - maskLength);
-			}
-			pos++;
-		}
-		else
-		{
-			retAddress -= pos;
-			pos = 0;
-		}
-	}
-	return NULL;
+    for (uintptr_t retAddress = start; retAddress < start + length; retAddress++)
+    {
+        if (*reinterpret_cast<unsigned char*>(retAddress) == pattern[pos] || mask[pos] == '?')
+        {
+            if (pos == maskLength)
+            {
+                return (retAddress - maskLength);
+            }
+            pos++;
+        }
+        else
+        {
+            retAddress -= pos;
+            pos = 0;
+        }
+    }
+    return NULL;
 }
 
 uintptr_t InstancesComponent::GetGNamesAddress() 
 {
-	unsigned char GNamesPattern[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x35\x25\x02\x00";
-	char GNamesMask[] = "??????xx??xxxxxx";
+    unsigned char GNamesPattern[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x35\x25\x02\x00";
+    char GNamesMask[] = "??????xx??xxxxxx";
 
-	uintptr_t GNamesAddress = FindPattern(GetModuleHandle(L"RocketLeague.exe"), GNamesPattern, GNamesMask);
+    uintptr_t GNamesAddress = FindPattern(GetModuleHandle(L"RocketLeague.exe"), GNamesPattern, GNamesMask);
 
-	return GNamesAddress;
+    return GNamesAddress;
 }
 
 uintptr_t InstancesComponent::GetGObjectsAddress() 
 {
-	return GetGNamesAddress() + 0x48;
+    return GetGNamesAddress() + 0x48;
 }
 
 
 void InstancesComponent::InitGlobals()
 {
-	GObjects = reinterpret_cast<TArray<UObject*>*>(GetGObjectsAddress());
-	GNames = reinterpret_cast<TArray<FNameEntry*>*>(GetGNamesAddress());
+    GObjects = reinterpret_cast<TArray<UObject*>*>(GetGObjectsAddress());
+    GNames = reinterpret_cast<TArray<FNameEntry*>*>(GetGNamesAddress());
 }
 
 bool InstancesComponent::AreGObjectsValid()
 {
-	if (UObject::GObjObjects()->size() > 0 && UObject::GObjObjects()->capacity() > UObject::GObjObjects()->size())
-	{
-		if (UObject::GObjObjects()->at(0)->GetFullName() == "Class Core.Config_ORS")
-		{
-			return true;
-		}
-	}
-	return false;
+    if (UObject::GObjObjects()->size() > 0 && UObject::GObjObjects()->capacity() > UObject::GObjObjects()->size())
+    {
+        if (UObject::GObjObjects()->at(0)->GetFullName() == "Class Core.Config_ORS")
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool InstancesComponent::AreGNamesValid()
 {
-	if (FName::Names()->size() > 0 && FName::Names()->capacity() > FName::Names()->size())
-	{
-		if (FName(0).ToString() == "None")
-		{
-			return true;
-		}
-	}
-	return false;
+    if (FName::Names()->size() > 0 && FName::Names()->capacity() > FName::Names()->size())
+    {
+        if (FName(0).ToString() == "None")
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool InstancesComponent::CheckGlobals()
 {
-	if (!GObjects || !GNames || !AreGObjectsValid() || !AreGNamesValid()) {
-		LOG("(onLoad) Error: RLSDK classes are wrong... plugin needs an update :(");
-		LOG(std::to_string(!GObjects) + ", " + std::to_string(!GNames));
-		return false;
-	}
+    if (!GObjects || !GNames || !AreGObjectsValid() || !AreGNamesValid()) {
+        LOG("(onLoad) Error: RLSDK classes are wrong... plugin needs an update :(");
+        LOG(std::to_string(!GObjects) + ", " + std::to_string(!GNames));
+        return false;
+    }
 
-	LOG("Globals Initialized :)");
-	return true;
+    LOG("Globals Initialized :)");
+    return true;
 }
 
 // ===========================================================================================================
@@ -126,147 +126,147 @@ bool InstancesComponent::CheckGlobals()
 
 class UClass* InstancesComponent::FindStaticClass(const std::string& className)
 {
-	if (m_staticClasses.empty())
-	{
-		for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i++)
-		{
-			UObject* uObject = UObject::GObjObjects()->at(i);
+    if (m_staticClasses.empty())
+    {
+        for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i++)
+        {
+            UObject* uObject = UObject::GObjObjects()->at(i);
 
-			if (uObject)
-			{
-				if ((uObject->GetFullName().find("Class") == 0))
-				{
-					m_staticClasses[uObject->GetFullName()] = static_cast<UClass*>(uObject);
-				}
-			}
-		}
-	}
+            if (uObject)
+            {
+                if ((uObject->GetFullName().find("Class") == 0))
+                {
+                    m_staticClasses[uObject->GetFullName()] = static_cast<UClass*>(uObject);
+                }
+            }
+        }
+    }
 
-	if (m_staticClasses.contains(className))
-	{
-		return m_staticClasses[className];
-	}
+    if (m_staticClasses.contains(className))
+    {
+        return m_staticClasses[className];
+    }
 
-	return nullptr;
+    return nullptr;
 }
 
 class UFunction* InstancesComponent::FindStaticFunction(const std::string& className)
 {
-	if (m_staticFunctions.empty())
-	{
-		for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i++)
-		{
-			UObject* uObject = UObject::GObjObjects()->at(i);
+    if (m_staticFunctions.empty())
+    {
+        for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i++)
+        {
+            UObject* uObject = UObject::GObjObjects()->at(i);
 
-			if (uObject)
-			{
-				if (uObject && uObject->IsA<UFunction>())
-				{
-					m_staticFunctions[uObject->GetFullName()] = static_cast<UFunction*>(uObject);
-				}
-			}
-		}
-	}
+            if (uObject)
+            {
+                if (uObject && uObject->IsA<UFunction>())
+                {
+                    m_staticFunctions[uObject->GetFullName()] = static_cast<UFunction*>(uObject);
+                }
+            }
+        }
+    }
 
-	if (m_staticFunctions.contains(className))
-	{
-		return m_staticFunctions[className];
-	}
+    if (m_staticFunctions.contains(className))
+    {
+        return m_staticFunctions[className];
+    }
 
-	return nullptr;
+    return nullptr;
 }
 
 void InstancesComponent::MarkInvincible(class UObject* object)
 {
-	if (object)
-	{
-		object->ObjectFlags &= ~EObjectFlags::RF_Transient;
-		object->ObjectFlags &= ~EObjectFlags::RF_TagGarbage;
-		object->ObjectFlags &= ~EObjectFlags::RF_PendingKill;
-		object->ObjectFlags |= EObjectFlags::RF_DisregardForGC;
-		object->ObjectFlags |= EObjectFlags::RF_RootSet;
-	}
+    if (object)
+    {
+        object->ObjectFlags &= ~EObjectFlags::RF_Transient;
+        object->ObjectFlags &= ~EObjectFlags::RF_TagGarbage;
+        object->ObjectFlags &= ~EObjectFlags::RF_PendingKill;
+        object->ObjectFlags |= EObjectFlags::RF_DisregardForGC;
+        object->ObjectFlags |= EObjectFlags::RF_RootSet;
+    }
 }
 
 void InstancesComponent::MarkForDestroy(class UObject* object)
 {
-	if (object)
-	{
-		object->ObjectFlags |= EObjectFlags::RF_Transient;
-		object->ObjectFlags |= EObjectFlags::RF_TagGarbage;
-		object->ObjectFlags |= EObjectFlags::RF_PendingKill;
+    if (object)
+    {
+        object->ObjectFlags |= EObjectFlags::RF_Transient;
+        object->ObjectFlags |= EObjectFlags::RF_TagGarbage;
+        object->ObjectFlags |= EObjectFlags::RF_PendingKill;
 
-		auto objectIt = std::find(m_createdObjects.begin(), m_createdObjects.end(), object);
+        auto objectIt = std::find(m_createdObjects.begin(), m_createdObjects.end(), object);
 
-		if (objectIt != m_createdObjects.end())
-		{
-			m_createdObjects.erase(objectIt);
-		}
-	}
+        if (objectIt != m_createdObjects.end())
+        {
+            m_createdObjects.erase(objectIt);
+        }
+    }
 }
 
 class UEngine* InstancesComponent::IUEngine()
 {
-	return UEngine::GetEngine();
+    return UEngine::GetEngine();
 }
 
 class UAudioDevice* InstancesComponent::IUAudioDevice()
 {
-	return UEngine::GetAudioDevice();
+    return UEngine::GetAudioDevice();
 }
 
 class AWorldInfo* InstancesComponent::IAWorldInfo()
 {
-	return UEngine::GetCurrentWorldInfo();
+    return UEngine::GetCurrentWorldInfo();
 }
 
 class UCanvas* InstancesComponent::IUCanvas()
 {
-	return I_UCanvas;
+    return I_UCanvas;
 }
 
 class AHUD* InstancesComponent::IAHUD()
 {
-	return I_AHUD;
+    return I_AHUD;
 }
 
 class UFileSystem* InstancesComponent::IUFileSystem()
 {
-	return (UFileSystem*)UFileSystem::StaticClass();
+    return (UFileSystem*)UFileSystem::StaticClass();
 }
 
 class UGameViewportClient* InstancesComponent::IUGameViewportClient()
 {
-	return I_UGameViewportClient;
+    return I_UGameViewportClient;
 }
 
 class ULocalPlayer* InstancesComponent::IULocalPlayer()
 {
-	UEngine* engine = IUEngine();
+    UEngine* engine = IUEngine();
 
-	if (engine && engine->GamePlayers[0])
-	{
-		return engine->GamePlayers[0];
-	}
+    if (engine && engine->GamePlayers[0])
+    {
+        return engine->GamePlayers[0];
+    }
 
-	return nullptr;
+    return nullptr;
 }
 
 class APlayerController* InstancesComponent::IAPlayerController()
 {
-	return I_APlayerController;
+    return I_APlayerController;
 }
 
 struct FUniqueNetId InstancesComponent::GetUniqueID()
 {
-	ULocalPlayer* localPlayer = IULocalPlayer();
+    ULocalPlayer* localPlayer = IULocalPlayer();
 
-	if (localPlayer)
-	{
-		return localPlayer->eventGetUniqueNetId();
-	}
+    if (localPlayer)
+    {
+        return localPlayer->eventGetUniqueNetId();
+    }
 
-	return FUniqueNetId{};
+    return FUniqueNetId{};
 }
 
 
@@ -274,48 +274,45 @@ struct FUniqueNetId InstancesComponent::GetUniqueID()
 
 AGFxHUD_TA* InstancesComponent::GetHUD()
 {
-	if (hud) {
-		return hud;
-	}
+    if (hud)
+        return hud;
 
-	return GetInstanceOf<AGFxHUD_TA>();
+    return GetInstanceOf<AGFxHUD_TA>();
 }
 
 UGFxDataStore_X* InstancesComponent::GetDataStore()
 {
-	if (dataStore) {
-		return dataStore;
-	}
+    if (dataStore)
+        return dataStore;
 
-	return GetInstanceOf<UGFxDataStore_X>();
+    return GetInstanceOf<UGFxDataStore_X>();
 }
 
 UOnlinePlayer_X* InstancesComponent::GetOnlinePlayer()
 {
-	if (onlinePlayer) {
-		return onlinePlayer;
-	}
+    if (onlinePlayer)
+        return onlinePlayer;
 
-	return GetInstanceOf<UOnlinePlayer_X>();
+    return GetInstanceOf<UOnlinePlayer_X>();
 }
 
 
 FString InstancesComponent::NewFString(const std::string& str)
 {
-	std::wstring wide_str = StringUtils::ToWideString(str);
-	return UObject::RepeatString(wide_str.data(), 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
+    std::wstring wide_str = StringUtils::ToWideString(str);
+    return UObject::RepeatString(wide_str.data(), 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
 }
 
 FString InstancesComponent::NewFString(const FString& old)
 {
-	return UObject::RepeatString(old, 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
+    return UObject::RepeatString(old, 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
 }
 
 
 FName InstancesComponent::FindFName(const std::string& str)
 {
-	std::wstring wide_str = StringUtils::ToWideString(str);
-	return FName(wide_str.data());
+    std::wstring wide_str = StringUtils::ToWideString(str);
+    return FName(wide_str.data());
 }
 
 
@@ -325,84 +322,87 @@ FName InstancesComponent::FindFName(const std::string& str)
 
 void InstancesComponent::SpawnNotification(const std::string& title, const std::string& content, int duration, bool log)
 {
-	UNotificationManager_TA* notificationManager = Instances.GetInstanceOf<UNotificationManager_TA>();
-	if (!notificationManager) return;
+    UNotificationManager_TA* notificationManager = Instances.GetInstanceOf<UNotificationManager_TA>();
+    if (!notificationManager)
+        return;
 
-	if (!notificationClass)
-	{
-		notificationClass = UGenericNotification_TA::StaticClass();
-	}
+    if (!notificationClass)
+    {
+        notificationClass = UGenericNotification_TA::StaticClass();
+    }
 
-	UNotification_TA* notification = notificationManager->PopUpOnlyNotification(notificationClass);
-	if (!notification) return;
+    UNotification_TA* notification = notificationManager->PopUpOnlyNotification(notificationClass);
+    if (!notification)
+        return;
 
-	FString titleFStr = Instances.NewFString(title);
-	FString contentFStr = Instances.NewFString(content);
+    FString titleFStr = Instances.NewFString(title);
+    FString contentFStr = Instances.NewFString(content);
 
-	notification->SetTitle(titleFStr);
-	notification->SetBody(contentFStr);
-	notification->PopUpDuration = duration;
+    notification->SetTitle(titleFStr);
+    notification->SetBody(contentFStr);
+    notification->PopUpDuration = duration;
 
-	if (log)
-	{
-		LOG("[{}] {}", title.c_str(), content.c_str());
-	}
+    if (log)
+    {
+        LOG("[{}] {}", title.c_str(), content.c_str());
+    }
 }
 
 
 void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode, bool log)
 {
-	UGFxData_Chat_TA* chatBox = GetInstanceOf<UGFxData_Chat_TA>();
-	if (!chatBox) {
-		LOG("UGFxData_Chat_TA* is null!");
-		return;
-	}
+    UGFxData_Chat_TA* chatBox = GetInstanceOf<UGFxData_Chat_TA>();
+    if (!chatBox) {
+        LOG("UGFxData_Chat_TA* is null!");
+        return;
+    }
 
-	FString chatFStr = Instances.NewFString(chat);
+    FString chatFStr = Instances.NewFString(chat);
 
-	if (chatMode == EChatChannel::EChatChannel_Match)
-	{
-		chatBox->SendChatMessage(chatFStr, 0);		// match (lobby) chat
+    if (chatMode == EChatChannel::EChatChannel_Match)
+    {
+        chatBox->SendChatMessage(chatFStr, 0);      // match (lobby) chat
 
-		if (log)
-		{
-			LOG("Sent chat: '{}'", chat);
-		}
-	}
-	else if (chatMode == EChatChannel::EChatChannel_Team)
-	{
-		chatBox->SendTeamChatMessage(chatFStr, 0);	// team chat
+        if (log)
+        {
+            LOG("Sent chat: '{}'", chat);
+        }
+    }
+    else if (chatMode == EChatChannel::EChatChannel_Team)
+    {
+        chatBox->SendTeamChatMessage(chatFStr, 0);  // team chat
 
-		if (log)
-		{
-			LOG("Sent chat: [Team] '{}'", chat);
-		}
-	}
-	else if (chatMode == EChatChannel::EChatChannel_Party)
-	{
-		chatBox->SendPartyChatMessage(chatFStr, 0);	// party chat
+        if (log)
+        {
+            LOG("Sent chat: [Team] '{}'", chat);
+        }
+    }
+    else if (chatMode == EChatChannel::EChatChannel_Party)
+    {
+        chatBox->SendPartyChatMessage(chatFStr, 0); // party chat
 
-		if (log)
-		{
-			LOG("Sent chat: [Party] '{}'", chat);
-		}
-	}
+        if (log)
+        {
+            LOG("Sent chat: [Party] '{}'", chat);
+        }
+    }
 }
 
 
 void InstancesComponent::SetChatTimeoutMsg(const std::string& newMsg, AGFxHUD_TA* hud)
 {
-	if (!hud)
-	{
-		hud = GetInstanceOf<AGFxHUD_TA>();
-		if (!hud) return;
-	}
+    if (!hud)
+    {
+        hud = GetInstanceOf<AGFxHUD_TA>();
+        if (!hud)
+            return;
+    }
 
-	if (hud->ChatDisabledMessage.ToString() != newMsg)
-	{
-		hud->ChatDisabledMessage = Instances.NewFString(newMsg);	// overwrite ChatDisabledMessage
-		LOG("Set chat timeout message: {}", newMsg);
-	}
+    if (hud->ChatDisabledMessage.ToString() != newMsg)
+    {
+        hud->ChatDisabledMessage = Instances.NewFString(newMsg);    // overwrite ChatDisabledMessage
+        LOG("Set chat timeout message: {}", newMsg);
+    }
 }
 
 

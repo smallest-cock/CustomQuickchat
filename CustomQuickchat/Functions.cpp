@@ -53,7 +53,8 @@ void CustomQuickchat::PerformBindingAction(const Binding& binding)
 	}
 
 	// send processed chat
-	if (processed_chat.empty()) return;
+	if (processed_chat.empty())
+		return;
 	SendChat(processed_chat, binding.chatMode);
 }
 
@@ -116,11 +117,13 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 
 void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 {
-	if (chat.empty()) return;
+	if (chat.empty())
+		return;
 
 	// only send chat if custom quickchats are turned on
 	auto enabledCvar = GetCvar(Cvars::enabled);
-	if (!enabledCvar || !enabledCvar.getBoolValue()) return;
+	if (!enabledCvar || !enabledCvar.getBoolValue())
+		return;
 
 	Instances.SendChat(chat, chatMode, true);
 }
@@ -174,7 +177,8 @@ void CustomQuickchat::AddEmptyVariationList()
 
 void CustomQuickchat::DeleteBinding(int idx)
 {
-	if (Bindings.empty()) return;
+	if (Bindings.empty())
+		return;
 
 	// erase binding at given index
 	Bindings.erase(Bindings.begin() + idx);
@@ -189,7 +193,8 @@ void CustomQuickchat::DeleteBinding(int idx)
 
 void CustomQuickchat::DeleteVariationList(int idx)
 {
-	if (Variations.empty()) return;
+	if (Variations.empty())
+		return;
 
 	// erase variation list at given index
 	Variations.erase(Variations.begin() + idx);
@@ -723,13 +728,12 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 
 void CustomQuickchat::apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller)
 {
-	if (!caller) return;
+	if (!caller || !caller->Shell)
+		return;
 
-	auto shell = caller->Shell;
-	if (!shell) return;
-
-	auto ds = shell->DataStore;
-	if (!ds) return;
+	UGFxDataStore_X* ds = caller->Shell->DataStore;
+	if (!ds)
+		return;
 
 	const auto& groups_of_chat_labels = using_gamepad ? gp_qc_labels : pc_qc_labels;
 
@@ -761,16 +765,16 @@ void CustomQuickchat::apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller)
 
 void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params)
 {
-	if (!caller || !params) return;
+	if (!caller || !caller->Shell || !params)
+		return;
 
 	const int32_t& index = params->Index;
-	if (index == 420) return;
+	if (index == 420)
+		return;
 
-	auto shell = caller->Shell;
-	if (!shell) return;
-
-	auto ds = shell->DataStore;
-	if (!ds) return;
+	auto ds = caller->Shell->DataStore;
+	if (!ds)
+		return;
 
 	const auto& chat_labels = using_gamepad ? gp_qc_labels[index] : pc_qc_labels[index];
 
