@@ -19,7 +19,7 @@ jobs:
               uses: lukka/run-vcpkg@v11
               with:
                   vcpkgJsonGlob: "**/vcpkg.json"
-                  vcpkgGitCommitId: "11972bdacefc3eaade76df037b0f5fa112c0d36e"
+                  vcpkgGitCommitId: "760bfd0c8d7c89ec640aec4df89418b7c2745605"
 
             # Step 3: Set up MSBuild
             - name: 🛠️ Set up MSBuild
