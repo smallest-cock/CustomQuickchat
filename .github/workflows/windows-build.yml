@@ -19,6 +19,7 @@ jobs:
               uses: lukka/run-vcpkg@v11
               with:
                   vcpkgJsonGlob: "**/vcpkg.json"
+                  vcpkgBaseline: "latest"
 
             # Step 3: Set up MSBuild
             - name: 🛠️ Set up MSBuild
