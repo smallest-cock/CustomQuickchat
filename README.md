@@ -1,83 +1,123 @@
-# Custom Quickchat (BakkesMod plugin)
+# Custom Quickchat (BakkesMod Plugin)
 
-Enables custom quickchats in Rocket League
+Send custom quickchats directly through Rocket League’s native chat system – no hacky scripts, just seamless integration.
 
-<img src='./docs/images/cover_pic.png' alt="overview" width="600"/>
+<img src="./docs/images/cover_pic.png" alt="Plugin Overview" width="600"/>
 
+---
 
-<br>
+## ✅ Why Use This?
 
-Chats are sent through the native Rocket League chat system ✔️
-  - Better than using a script + macros to simulate keypresses, which is error prone and hacky (temporarily blocks gameplay inputs while chats are typed out)
+This plugin **sends chats through Rocket League’s built-in chat system**, offering a more reliable and polished solution than using scripts or macros.
+
+✔️ No simulated keypresses  
+✔️ No blocked inputs  
+✔️ No editing code
 
 >[!WARNING]
->This plugin seems to be incompatible with the latest version of [BetterChat](https://bakkesplugins.com/plugins/view/416). If you have both installed your game may crash!
+> This plugin is currently **incompatible with [BetterChat](https://bakkesplugins.com/plugins/view/416)**. If both plugins are installed, your game **may crash**!
+
+---
 
 ## 🎥 Video Tutorial
 
-https://youtu.be/P4UZTl09oYo
+[Watch on YouTube](https://youtu.be/P4UZTl09oYo)
 
-<a href='https://youtu.be/P4UZTl09oYo'>
-  <img src='./docs/images/YT_screenshot.png' alt="overview" width="400"/>
+<a href="https://youtu.be/P4UZTl09oYo">
+  <img src="./docs/images/YT_screenshot.png" alt="Tutorial Screenshot" width="400"/>
 </a>
 
-## 🔧 How To Install
+---
 
-Find the latest version in [Releases](https://github.com/smallest-cock/CustomQuickchat/releases)
+## 🔧 Installation
+
+Download the latest release from the [Releases page](https://github.com/smallest-cock/CustomQuickchat/releases).
+
+---
 
 ## 📖 Usage
 
-Check out the [Settings](./docs/Settings.md) page for info about special keywords, troubleshooting, and more
-   
-## 💻 Commands
-You can run these commands in the bakkesmod console window (F6), or bind them to a key
+See the [Settings documentation](./docs/Settings.md) for:
+- Custom keywords
+- Troubleshooting tips
+- Additional info
 
-| Command | Description | Preferred usage |
-|---|---|:---:|
-`cqc_toggle_enabled` | toggle custom quickchats on/off | key bind
-`cqc_forfeit` | forfeit the current match | key bind
-`cqc_exit_to_main_menu` | exit to the main menu | key bind
-`cqc_list_bindings` | list all your current RL bindings | console
-`cqc_list_custom_chat_labels` | list all custom chat labels that would show up in quickchat UI | console
+---
 
-## 🛠️ Building
-To build the project you'll need to do the following:
-1. Initialize the repo's submodules
-2. Install the remaining dependencies with vcpkg
-3. Bundle `speech-to-text-server.pyw` into an executable named `SpeechToText.exe`
+## 💻 Console Commands
 
-Contributions are welcome 🤗
+You can use the following commands in the BakkesMod console (`F6`) or bind them to keys:
 
-### Initialize submodules
-Assuming you already have git installed, run this command after cloning the repo to initialize the submodules:
+| Command | Description | Best Used With |
+|--------|-------------|----------------|
+| `cqc_toggle_enabled` | Toggle custom quickchats on or off | 🔑 Key bind |
+| `cqc_forfeit` | Instantly forfeit the match | 🔑 Key bind |
+| `cqc_exit_to_main_menu` | Instantly return to the main menu | 🔑 Key bind |
+| `cqc_list_bindings` | Lists your current quickchat bindings | 📋 Console |
+| `cqc_list_custom_chat_labels` | Shows all custom quickchat labels visible in-game | 📋 Console |
+
+---
+
+## 🛠️ Building the Plugin
+
+To build the project, follow these steps:
+
+### 1. Initialize Submodules
+
+Run the following after cloning the repo:
 
 ```bash
 git submodule update --init --recursive
 ```
 
+---
 
-### Install other dependencies with vcpkg
-You'll need to install the libraries found in `vcpkg.json`
+### 2. Install Dependencies via vcpkg
 
-Brief steps:
-1. Install vcpkg if you don't already have it ([follow step 1 here](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg))
-2. `cd` to the project folder (where `vcpkg.json` is) and install the project's dependencies with
-   ```vcpkg integrate install```
-   - [more info here](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
+This plugin uses `vcpkg` to manage certain dependencies.
 
+**Steps:**
 
-### Bundle Python script
-To bundle `speech-to-text-server.pyw` into an executable, I use [auto-py-to-exe](https://github.com/brentvollebregt/auto-py-to-exe) (which uses [pyinstaller](https://github.com/pyinstaller/pyinstaller) internally) with the "One Directory" option (`--onedir` in pyinstaller)
+1. Install [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get-started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg) if you haven't already.
+2. In the project directory (where `vcpkg.json` lives), run:
 
-For the plugin to recognize the python program, the executable needs to be named `SpeechToText.exe` and should be located in the `bakkesmod\data\CustomQuickchat\SpeechToText` folder. (You can create the folder if it doesn't already exist)
+```bash
+vcpkg integrate install
+```
 
+➡️ This will install all dependencies listed in `vcpkg.json`.
+
+More info: [vcpkg manifest mode](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
+
+---
+
+### 3. Bundle the Python Script
+
+This project includes a Python server `speech-to-text-server.pyw` that must be converted into an executable.
+
+**Instructions:**
+
+- Use [auto-py-to-exe](https://github.com/brentvollebregt/auto-py-to-exe) (wraps [PyInstaller](https://github.com/pyinstaller/pyinstaller)).
+- Use the `One Directory` option (`--onedir` in PyInstaller).
+- Name the output executable `SpeechToText.exe`.
+- Place it here:
+
+```
+bakkesmod/data/CustomQuickchat/SpeechToText/SpeechToText.exe
+```
+
+(You can manually create the folders if they don’t exist.)
+
+---
 
 ## 👀 Credits
 
-Inspired by Blaku's [CustomBindingPlugin](https://github.com/blaku-rl/CustomBindingPlugin)
+Inspired by Blaku’s [CustomBindingPlugin](https://github.com/blaku-rl/CustomBindingPlugin)
 
-## ❤️ Support
+---
 
-<br>
+## ❤️ Support This Project
+
+If you found this plugin helpful and want to support future development:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/sslowdev)
