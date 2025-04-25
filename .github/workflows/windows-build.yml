@@ -8,28 +8,28 @@ jobs:
         runs-on: windows-latest
 
         steps:
-            # Step 1: Checkout repository and submodules
+            # Step 1: 📥 Checkout your repository
             - name: 📥 Checkout repository (with submodules)
               uses: actions/checkout@v4
               with:
                   submodules: recursive # This ensures submodules are also initialized and updated
 
-            # Step 2: Set up vcpkg
+            # Step 2: 🧰 Set up vcpkg and install dependencies
             - name: 🧰 Set up vcpkg
               uses: lukka/run-vcpkg@v11
               with:
                   vcpkgJsonGlob: "**/vcpkg.json"
-                  vcpkgGitCommitId: "760bfd0c8d7c89ec640aec4df89418b7c2745605"
+                  vcpkgGitCommitId: "760bfd0c8d7c89ec640aec4df89418b7c2745605" # Your specific vcpkg commit
 
-            # Step 3: Set up MSBuild
+            # Step 3: 🛠️ Set up MSBuild
             - name: 🛠️ Set up MSBuild
               uses: microsoft/setup-msbuild@v2
 
-            # Step 4: Run MSBuild to build your solution (adjust path if needed)
+            # Step 4: 🔨 Build the solution
             - name: 🔨 Build solution
               run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64
 
-            # Step 5: Upload build artifacts (DLL and PDB files)
+            # Step 5: 📦 Upload build artifacts
             - name: 📦 Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
