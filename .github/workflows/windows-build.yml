@@ -1,0 +1,38 @@
+name: 🧱 Build DLL (Windows)
+
+on:
+    workflow_dispatch:
+
+jobs:
+    build:
+        runs-on: windows-latest
+
+        steps:
+            # Step 1: Checkout repository and submodules
+            - name: 📥 Checkout repository (with submodules)
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive # This ensures submodules are also initialized and updated
+
+            # Step 2: Set up vcpkg
+            - name: 🧰 Set up vcpkg
+              uses: lukka/run-vcpkg@v11
+              with:
+                  vcpkgJsonGlob: "**/vcpkg.json"
+
+            # Step 3: Set up MSBuild
+            - name: 🛠️ Set up MSBuild
+              uses: microsoft/setup-msbuild@v2
+
+            # Step 4: Run MSBuild to build your solution (adjust path if needed)
+            - name: 🔨 Build solution
+              run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64
+
+            # Step 5: Upload build artifacts (DLL and PDB files)
+            - name: 📦 Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dll-and-pdb
+                  path: |
+                      CustomQuickchat/plugins/*.dll
+                      CustomQuickchat/plugins/*.pdb
