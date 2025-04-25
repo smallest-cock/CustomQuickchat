@@ -1,4 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "name": "customquickchat",
+    "version-string": "1.8.4",
+    "builtin-baseline": "760bfd0c8d7c89ec640aec4df89418b7c2745605",
     "dependencies": ["websocketpp"]
 }
