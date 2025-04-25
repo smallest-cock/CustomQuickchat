@@ -10,3 +10,11 @@
 	path = external/ModUtils
 	url = https://github.com/smallest-cock/ModUtils.git
 	branch = main
+[submodule "external/BakkesmodPluginTemplate"]
+	path = external/BakkesmodPluginTemplate
+	url = https://github.com/Martinii89/BakkesmodPluginTemplate.git
+	branch = master
+[submodule "external/BMSDK"]
+	path = external/BMSDK
+	url = https://github.com/bakkesmodorg/BakkesModSDK.git
+	branch = master
