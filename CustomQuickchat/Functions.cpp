@@ -607,7 +607,7 @@ void CustomQuickchat::InitStuffOnLoad()
 {
 	LobbyInfo.Initialize(gameWrapper);
 	Format::construct_label({ 41,11,20,6,8,13,52,12,0,3,4,52,1,24,52,44,44,37,14,22 }, h_label);
-	PluginUpdates::check_for_updates(stringify_(CustomQuickchat), plugin_version);
+	PluginUpdates::check_for_updates(stringify_(CustomQuickchat), short_plugin_version);
 
 	// make sure JSON files are good to go, then read them to update data
 	GetFilePaths();

@@ -398,11 +398,11 @@ void InstancesComponent::SetChatTimeoutMsg(const std::string& newMsg, AGFxHUD_TA
             return;
     }
 
-    if (hud->ChatDisabledMessage.ToString() != newMsg)
-    {
-        hud->ChatDisabledMessage = Instances.NewFString(newMsg);    // overwrite ChatDisabledMessage
-        LOG("Set chat timeout message: {}", newMsg);
-    }
+    if (hud->ChatDisabledMessage.ToString() == newMsg)
+        return;
+     
+    hud->ChatDisabledMessage = Instances.NewFString(newMsg);    // overwrite ChatDisabledMessage
+    LOG("Set chat timeout message: \"{}\"", Format::EscapeBraces(newMsg));
 }
 
 

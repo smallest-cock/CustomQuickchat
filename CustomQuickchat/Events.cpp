@@ -161,13 +161,35 @@ void CustomQuickchat::Event_ApplyChatSpamFilter(ActorWrapper caller, void* param
 }
 
 
-void CustomQuickchat::Event_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName)
+void CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName)
 {
     gamePaused = false;
 
-    AGFxHUD_TA* hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
+    auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+    if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
+        return;
+
+    auto hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
     if (!hud)
         return;
+
+    Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
+}
+
+
+void CustomQuickchat::Event_PlayerController_EnterStartState(ActorWrapper Caller, void* Params, std::string eventName)
+{
+    inGameEvent = true;
+
+    // set chat timeout message
+    auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+    if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
+        return;
+
+    auto caller = reinterpret_cast<APlayerController*>(Caller.memory_address);
+    if (!caller || !caller->myHUD || !caller->myHUD->IsA<AGFxHUD_TA>())
+        return;
+    auto hud = static_cast<AGFxHUD_TA*>(caller->myHUD);
 
     Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
 }

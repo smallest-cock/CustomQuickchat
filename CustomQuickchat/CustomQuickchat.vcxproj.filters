@@ -13,15 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="imgui">
-      <UniqueIdentifier>{396e4dda-4fe2-4588-9756-a364a57aa8c1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\headers">
-      <UniqueIdentifier>{ae0c99c9-78de-41f1-8c8d-e6eb860af833}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="imgui\implementation">
-      <UniqueIdentifier>{d46c4711-0bdc-484c-bb4c-5526d80f7f5e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="PCH">
       <UniqueIdentifier>{65407bae-1075-4bdd-9dfd-acc5a636ec02}</UniqueIdentifier>
     </Filter>
@@ -55,44 +46,11 @@
     <Filter Include="utils\gui">
       <UniqueIdentifier>{4806fe9b-b7ac-418f-b2d9-5f0e0b451236}</UniqueIdentifier>
     </Filter>
+    <Filter Include="IMGUI">
+      <UniqueIdentifier>{3ce7c7d9-29c5-4827-9149-3fca3b3d3c6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="imgui\imgui.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_additions.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_demo.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_draw.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_impl_dx11.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_impl_win32.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_rangeslider.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_searchablecombo.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_timeline.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imgui_widgets.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="imgui\imguivariouscontrols.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
-    <ClCompile Include="IMGUI\imgui_stdlib.cpp">
-      <Filter>imgui\implementation</Filter>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>PCH</Filter>
     </ClCompile>
@@ -174,52 +132,46 @@
     <ClCompile Include="..\external\ModUtils\util\Utils.cpp">
       <Filter>utils\util</Filter>
     </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_additions.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_demo.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_draw.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_dx11.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_win32.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_rangeslider.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_searchablecombo.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_stdlib.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_timeline.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_widgets.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imguivariouscontrols.cpp">
+      <Filter>IMGUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="imgui\imgui_rangeslider.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_searchablecombo.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_timeline.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imguivariouscontrols.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_rectpack.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_textedit.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imstb_truetype.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imconfig.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_additions.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_dx11.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_impl_win32.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="imgui\imgui_internal.h">
-      <Filter>imgui\headers</Filter>
-    </ClInclude>
     <ClInclude Include="version.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IMGUI\imgui_stdlib.h">
-      <Filter>imgui\headers</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
       <Filter>PCH</Filter>
@@ -367,6 +319,48 @@
     </ClInclude>
     <ClInclude Include="..\external\ModUtils\util\Utils.hpp">
       <Filter>utils\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imconfig.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_additions.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_dx11.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_win32.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_internal.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_rangeslider.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_searchablecombo.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_stdlib.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_timeline.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imguivariouscontrols.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_rectpack.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_textedit.h">
+      <Filter>IMGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_truetype.h">
+      <Filter>IMGUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

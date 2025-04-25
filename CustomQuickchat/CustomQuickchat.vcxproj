@@ -50,7 +50,7 @@
     <OutDir>$(SolutionDir)plugins\</OutDir>
     <IntDir>$(SolutionDir)build\.intermediates\$(Configuration)\</IntDir>
     <ExternalIncludePath>$(ProjectDir)vcpkg_installed\x64-windows-static\x64-windows-static\include;$(ExternalIncludePath)</ExternalIncludePath>
-    <IncludePath>$(SolutionDir)external;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)external\BMSDK\include;$(SolutionDir)external;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -77,7 +77,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -86,22 +86,36 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(USERPROFILE)\AppData\Local\Programs\Python\Python312\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalOptions>/Zc:__cplusplus /std:c++20
- %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>$(ProjectDir)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(USERPROFILE)\AppData\Local\Programs\Python\Python312\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)external\BMSDK\lib</AdditionalLibraryDirectories>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <AdditionalOptions>/Brepro %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PreBuildEvent>
       <Command>powershell.exe -ExecutionPolicy Bypass -NoProfile -NonInteractive -File update_version.ps1 "./version.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imguivariouscontrols.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_additions.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_demo.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_draw.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_rangeslider.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_searchablecombo.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_stdlib.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_timeline.cpp" />
+    <ClCompile Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_widgets.cpp" />
     <ClCompile Include="..\external\ModUtils\gui\GuiTools.cpp" />
     <ClCompile Include="..\external\ModUtils\util\Utils.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\GameDefines.cpp" />
@@ -122,18 +136,6 @@
     <ClCompile Include="CvarChangeCallbacks.cpp" />
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="Functions.cpp" />
-    <ClCompile Include="imgui\imgui.cpp" />
-    <ClCompile Include="imgui\imguivariouscontrols.cpp" />
-    <ClCompile Include="imgui\imgui_additions.cpp" />
-    <ClCompile Include="imgui\imgui_demo.cpp" />
-    <ClCompile Include="imgui\imgui_draw.cpp" />
-    <ClCompile Include="imgui\imgui_impl_dx11.cpp" />
-    <ClCompile Include="imgui\imgui_impl_win32.cpp" />
-    <ClCompile Include="imgui\imgui_rangeslider.cpp" />
-    <ClCompile Include="imgui\imgui_searchablecombo.cpp" />
-    <ClCompile Include="IMGUI\imgui_stdlib.cpp" />
-    <ClCompile Include="imgui\imgui_timeline.cpp" />
-    <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -146,6 +148,20 @@
     <ClCompile Include="TextEffects.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imconfig.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imguivariouscontrols.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_additions.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_dx11.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_impl_win32.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_internal.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_rangeslider.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_searchablecombo.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_stdlib.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imgui_timeline.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_rectpack.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_textedit.h" />
+    <ClInclude Include="..\external\BakkesmodPluginTemplate\IMGUI\imstb_truetype.h" />
     <ClInclude Include="..\external\ModUtils\gui\GuiTools.hpp" />
     <ClInclude Include="..\external\ModUtils\includes.hpp" />
     <ClInclude Include="..\external\ModUtils\util\Utils.hpp" />
@@ -187,20 +203,6 @@
     <ClInclude Include="Components\Includes.hpp" />
     <ClInclude Include="Cvars.hpp" />
     <ClInclude Include="Events.hpp" />
-    <ClInclude Include="imgui\imconfig.h" />
-    <ClInclude Include="imgui\imgui.h" />
-    <ClInclude Include="imgui\imguivariouscontrols.h" />
-    <ClInclude Include="imgui\imgui_additions.h" />
-    <ClInclude Include="imgui\imgui_impl_dx11.h" />
-    <ClInclude Include="imgui\imgui_impl_win32.h" />
-    <ClInclude Include="imgui\imgui_internal.h" />
-    <ClInclude Include="imgui\imgui_rangeslider.h" />
-    <ClInclude Include="imgui\imgui_searchablecombo.h" />
-    <ClInclude Include="IMGUI\imgui_stdlib.h" />
-    <ClInclude Include="imgui\imgui_timeline.h" />
-    <ClInclude Include="imgui\imstb_rectpack.h" />
-    <ClInclude Include="imgui\imstb_textedit.h" />
-    <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Keys.h" />
     <ClInclude Include="logging.h" />
     <ClInclude Include="Macros.hpp" />

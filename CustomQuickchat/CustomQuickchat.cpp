@@ -2,7 +2,7 @@
 #include "CustomQuickchat.h"
 
 
-BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", full_version, PLUGINTYPE_FREEPLAY)
+BM_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -95,7 +95,7 @@ void CustomQuickchat::onLoad()
         std::bind(&CustomQuickchat::Event_ApplyChatSpamFilter, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     gameWrapper->HookEventWithCaller<ActorWrapper>(Events::GFxHUD_TA_NotifyChatDisabled,
-        std::bind(&CustomQuickchat::Event_NotifyChatDisabled, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        std::bind(&CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnChatMessage,
         std::bind(&CustomQuickchat::Event_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
@@ -106,10 +106,13 @@ void CustomQuickchat::onLoad()
     gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PopMenu,
         std::bind(&CustomQuickchat::Event_PopMenu, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-    gameWrapper->HookEventPost(Events::LoadingScreenStart, std::bind(&CustomQuickchat::Event_LoadingScreenStart, this, std::placeholders::_1));
+    gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PlayerController_EnterStartState,
+        std::bind(&CustomQuickchat::Event_PlayerController_EnterStartState, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+    gameWrapper->HookEventPost(Events::LoadingScreenStart,
+        std::bind(&CustomQuickchat::Event_LoadingScreenStart, this, std::placeholders::_1));
 
     gameWrapper->HookEventPost(Events::MatchEnded, [this](std::string eventName) { matchEnded = true; });
-    gameWrapper->HookEventPost(Events::EnterStartState, [this](std::string eventName) { inGameEvent = true; });
 
     // track the state of the chatbox UI
     auto set_chatbox_open = [this](std::string eventName) { chatbox_open = true; };
