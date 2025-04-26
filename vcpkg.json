@@ -2,5 +2,5 @@
     "name": "customquickchat",
     "version": "1.8.4",
     "dependencies": ["websocketpp"],
-    "builtin-baseline": "760bfd0c8d7c89ec640aec4df89418b7c2745605"
+    "builtin-baseline": "6760f636e7bcd0dd034c5c0906f6174009465c29"
 }

@@ -81,8 +81,9 @@ uintptr_t InstancesComponent::GetGObjectsAddress()
 
 void InstancesComponent::InitGlobals()
 {
-    GObjects = reinterpret_cast<TArray<UObject*>*>(GetGObjectsAddress());
-    GNames = reinterpret_cast<TArray<FNameEntry*>*>(GetGNamesAddress());
+    uintptr_t gnamesAddr = GetGNamesAddress();
+    GNames = reinterpret_cast<TArray<FNameEntry*>*>(gnamesAddr);
+    GObjects = reinterpret_cast<TArray<UObject*>*>(gnamesAddr + 0x48);
 }
 
 bool InstancesComponent::AreGObjectsValid()
