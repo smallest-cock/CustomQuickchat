@@ -78,7 +78,7 @@ This plugin uses `vcpkg` to manage certain dependencies.
 
 **Steps:**
 
-1. Install [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get-started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg) if you haven't already.
+1. Install [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg) if you haven't already.
 2. In the project directory (where `vcpkg.json` lives), run:
 
 ```bash
