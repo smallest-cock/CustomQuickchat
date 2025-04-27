@@ -49,7 +49,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)plugins\</OutDir>
     <IntDir>$(SolutionDir)build\.intermediates\$(Configuration)\</IntDir>
-    <ExternalIncludePath>$(ProjectDir)vcpkg_installed\x64-windows-static\x64-windows-static\include;$(ExternalIncludePath)</ExternalIncludePath>
+    <ExternalIncludePath>$(SolutionDir)vcpkg_installed\x64-windows-static\x64-windows-static\include;$(ExternalIncludePath)</ExternalIncludePath>
     <IncludePath>$(SolutionDir)external\BMSDK\include;$(SolutionDir)external;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">

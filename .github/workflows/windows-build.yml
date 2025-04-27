@@ -8,33 +8,49 @@ jobs:
         runs-on: windows-latest
 
         steps:
-            # Step 1: 📥 Checkout your repository
             - name: 📥 Checkout repository (with submodules)
               uses: actions/checkout@v4
               with:
                   submodules: recursive # This ensures submodules are also initialized and updated
+                  fetch-depth: 0 # Gets full history
 
-            # Step 2: 🧰 Set up vcpkg and install dependencies
-            - name: 🧰 Set up vcpkg
-              uses: lukka/run-vcpkg@v11
+            - name: 🗄️ Cache vcpkg dependencies
+              id: cache-vcpkg
+              uses: actions/cache@v4
               with:
-                  vcpkgJsonGlob: "**/vcpkg.json"
-                  vcpkgGitCommitId: "96d5fb3de135b86d7222c53f2352ca92827a156b" # Your specific vcpkg commit
-                  doNotCache: false
+                  path: |
+                      ${{ github.workspace }}\vcpkg_installed
+                  key: vcpkg-${{ hashFiles('**/vcpkg.json') }}-${{ runner.os }}
 
-            # Step 3: 🛠️ Set up MSBuild
+            - name: 📥 Clone vcpkg (if not cached)
+              if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+              run: |
+                  git clone https://github.com/microsoft/vcpkg.git "${{ github.workspace }}\vcpkg"
+                  cd vcpkg
+                  git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
+                  git submodule update --init --recursive
+                  echo "Verify websocketpp port exists:"
+                  ls ports/websocketpp/
+              shell: bash
+
+            - name: 🛠️ Manual vcpkg setup (if not cached)
+              if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+              run: |
+                  cd vcpkg
+                  ./bootstrap-vcpkg.bat
+                  ./vcpkg integrate install
+              shell: bash
+
             - name: 🛠️ Set up MSBuild
               uses: microsoft/setup-msbuild@v2
 
-            # Step 4: 🔨 Build the solution
             - name: 🔨 Build solution
-              run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64
+              run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgEnabled=true /p:VcpkgRoot=${{ github.workspace }}\vcpkg
 
-            # Step 5: 📦 Upload build artifacts
             - name: 📦 Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
                   name: dll-and-pdb
                   path: |
-                      CustomQuickchat/plugins/*.dll
-                      CustomQuickchat/plugins/*.pdb
+                      ${{ github.workspace }}\plugins\*.dll
+                      ${{ github.workspace }}\plugins\*.pdb

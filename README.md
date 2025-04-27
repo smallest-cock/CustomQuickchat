@@ -74,18 +74,23 @@ git submodule update --init --recursive
 
 ### 2. Install Dependencies via vcpkg
 
-This plugin uses `vcpkg` to manage certain dependencies.
+This project uses [websocketpp](https://github.com/zaphoyd/websocketpp), which was removed from vcpkg's official packages on March 3rd 2025. So you'll need to use an older vcpkg version that still contains it.
 
-**Steps:**
-
-1. Install [vcpkg](https://learn.microsoft.com/en-us/vcpkg/get_started/get-started-vs?pivots=shell-powershell#1---set-up-vcpkg) if you haven't already.
-2. In the project directory (where `vcpkg.json` lives), run:
-
+**Quick Setup**:
 ```bash
-vcpkg integrate install
+# Clone vcpkg at a last known good commit (minimal download)
+git clone https://github.com/microsoft/vcpkg.git --depth 1 --branch efb1e7436979a30c4d3e5ab2375fd8e2e461d541
+cd vcpkg
+
+# Initialize submodules (minimal download)
+git submodule update --init --recursive --depth 1
+
+# Bootstrap vcpkg and enable MSBuild integration
+./bootstrap-vcpkg.bat
+./vcpkg integrate install
 ```
 
-➡️ This will install all dependencies listed in `vcpkg.json`.
+➡️ Now when you build the project for the first time, vcpkg will build/install the dependencies listed in `vcpkg.json`.
 
 More info: [vcpkg manifest mode](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
 

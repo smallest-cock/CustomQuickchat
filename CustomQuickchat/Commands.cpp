@@ -93,6 +93,9 @@ void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 {
+    if (chatbox_open)
+        return;
+
     auto shell = Instances.GetInstanceOf<UGFxShell_X>();
     if (!shell)
         return;
@@ -105,6 +108,9 @@ void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 {
+    if (chatbox_open)
+        return;
+
     auto shell = Instances.GetInstanceOf<UGFxShell_TA>();
     if (!shell)
         return;

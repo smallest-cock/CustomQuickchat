@@ -112,9 +112,12 @@ bool InstancesComponent::AreGNamesValid()
 
 bool InstancesComponent::CheckGlobals()
 {
-    if (!GObjects || !GNames || !AreGObjectsValid() || !AreGNamesValid()) {
+    bool gnamesValid = GNames && AreGNamesValid();
+    bool gobjectsValid = GObjects && AreGObjectsValid();
+    if (!gnamesValid || !gobjectsValid)
+    {
         LOG("(onLoad) Error: RLSDK classes are wrong... plugin needs an update :(");
-        LOG(std::to_string(!GObjects) + ", " + std::to_string(!GNames));
+        LOG(std::format("GNames valid: {} -- GObjects valid: {}", gnamesValid, gobjectsValid));
         return false;
     }
 
