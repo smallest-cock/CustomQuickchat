@@ -65,8 +65,8 @@ uintptr_t InstancesComponent::FindPattern(HMODULE module, const unsigned char* p
 
 uintptr_t InstancesComponent::GetGNamesAddress() 
 {
-    unsigned char GNamesPattern[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x35\x25\x02\x00";
-    char GNamesMask[] = "??????xx??xxxxxx";
+    constexpr unsigned char GNamesPattern[] = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x35\x25\x02\x00";
+    constexpr char GNamesMask[] = "??????xx??xxxxxx";
 
     uintptr_t GNamesAddress = FindPattern(GetModuleHandle(L"RocketLeague.exe"), GNamesPattern, GNamesMask);
 
