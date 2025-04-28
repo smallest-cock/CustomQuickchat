@@ -64,11 +64,12 @@ To build the project, follow these steps:
 
 ### 1. Initialize Submodules
 
-Run the following after cloning the repo:
+Run `init-submodules.bat` after cloning the repo to initialize the submodules in an optimal way
 
-```bash
-git submodule update --init --recursive
-```
+<details> <summary>🔍 Why this instead of <code>git submodule update --init</code> ?</summary>
+<li>Avoids downloading 200MB of history for the <strong>nlohmann/json</strong> library</li>
+<li>Allows Git to detect updates for the other SDKs/libraries</li>
+</details>
 
 ---
 
