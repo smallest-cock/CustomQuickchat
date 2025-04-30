@@ -8,11 +8,14 @@ jobs:
         runs-on: windows-latest
 
         steps:
-            - name: 📥 Checkout repository (with submodules)
+            - name: 📥 Checkout repository
               uses: actions/checkout@v4
               with:
-                  submodules: recursive # This ensures submodules are also initialized and updated
-                  fetch-depth: 0 # Gets full history
+                  submodules: false
+
+            - name: 🍆 Initialize submodules
+              run: init-submodules.bat
+              shell: cmd
 
             - name: 🗄️ Cache vcpkg dependencies
               id: cache-vcpkg
