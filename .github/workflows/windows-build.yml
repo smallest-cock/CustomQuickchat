@@ -28,10 +28,11 @@ jobs:
             - name: 📥 Clone vcpkg (if not cached)
               if: steps.cache-vcpkg.outputs.cache-hit != 'true'
               run: |
-                  git clone https://github.com/microsoft/vcpkg.git "${{ github.workspace }}\vcpkg"
+                  git clone https://github.com/microsoft/vcpkg.git "${{ github.workspace }}\vcpkg" --depth 1
                   cd vcpkg
+                  git fetch --depth=1 origin efb1e7436979a30c4d3e5ab2375fd8e2e461d541
                   git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
-                  git submodule update --init --recursive
+                  git submodule update --init --recursive --depth 1
                   echo "Verify websocketpp port exists:"
                   ls ports/websocketpp/
               shell: bash
