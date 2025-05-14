@@ -702,7 +702,7 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 
 					if (second_button != chat_key.pc_key) continue;
 
-					pc_qc_labels[group_index][chat_index] = Instances.NewFString(binding.chat);
+					pc_qc_labels[group_index][chat_index] = StringUtils::newFString(binding.chat);
 					break;
 				}
 			}
@@ -715,7 +715,7 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 
 					if (second_button != chat_key.gamepad_key) continue;
 
-					gp_qc_labels[group_index][chat_index] = Instances.NewFString(binding.chat);
+					gp_qc_labels[group_index][chat_index] = StringUtils::newFString(binding.chat);
 					break;
 				}
 			}

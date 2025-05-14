@@ -206,7 +206,7 @@ void CustomQuickchat::Event_OnChatMessage(ActorWrapper caller, void* params, std
     if (!Params)
         return;
 
-    Params->TimeStamp = Instances.NewFString(L"");
+    Params->TimeStamp = StringUtils::newFString(L"");
 }
 
 

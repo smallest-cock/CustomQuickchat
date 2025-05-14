@@ -80,8 +80,10 @@ This project uses [websocketpp](https://github.com/zaphoyd/websocketpp), which w
 **Quick Setup**:
 ```bash
 # Clone vcpkg at a last known good commit (minimal download)
-git clone https://github.com/microsoft/vcpkg.git --depth 1 --branch efb1e7436979a30c4d3e5ab2375fd8e2e461d541
+git clone https://github.com/microsoft/vcpkg.git --depth 1
 cd vcpkg
+git fetch --depth=1 origin efb1e7436979a30c4d3e5ab2375fd8e2e461d541
+git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
 
 # Initialize submodules (minimal download)
 git submodule update --init --recursive --depth 1

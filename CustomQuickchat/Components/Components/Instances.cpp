@@ -78,7 +78,6 @@ uintptr_t InstancesComponent::GetGObjectsAddress()
     return GetGNamesAddress() + 0x48;
 }
 
-
 void InstancesComponent::InitGlobals()
 {
     uintptr_t gnamesAddr = GetGNamesAddress();
@@ -301,28 +300,7 @@ UOnlinePlayer_X* InstancesComponent::GetOnlinePlayer()
 }
 
 
-FString InstancesComponent::NewFString(const std::string& str)
-{
-    std::wstring wide_str = StringUtils::ToWideString(str);
-    return UObject::RepeatString(wide_str.data(), 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
-}
-
-FString InstancesComponent::NewFString(const FString& old)
-{
-    return UObject::RepeatString(old, 1); // have the game create a new FString using UE, rather than using new wchar_t* directly which causes crashes
-}
-
-
-FName InstancesComponent::FindFName(const std::string& str)
-{
-    std::wstring wide_str = StringUtils::ToWideString(str);
-    return FName(wide_str.data());
-}
-
-
-
 // ====================================== misc funcs ================================================
-
 
 void InstancesComponent::SpawnNotification(const std::string& title, const std::string& content, int duration, bool log)
 {
@@ -339,8 +317,8 @@ void InstancesComponent::SpawnNotification(const std::string& title, const std::
     if (!notification)
         return;
 
-    FString titleFStr = Instances.NewFString(title);
-    FString contentFStr = Instances.NewFString(content);
+    FString titleFStr = StringUtils::newFString(title);
+    FString contentFStr = StringUtils::newFString(content);
 
     notification->SetTitle(titleFStr);
     notification->SetBody(contentFStr);
@@ -361,7 +339,7 @@ void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode
         return;
     }
 
-    FString chatFStr = Instances.NewFString(chat);
+    FString chatFStr = StringUtils::newFString(chat);
 
     if (chatMode == EChatChannel::EChatChannel_Match)
     {
@@ -405,7 +383,7 @@ void InstancesComponent::SetChatTimeoutMsg(const std::string& newMsg, AGFxHUD_TA
     if (hud->ChatDisabledMessage.ToString() == newMsg)
         return;
      
-    hud->ChatDisabledMessage = Instances.NewFString(newMsg);    // overwrite ChatDisabledMessage
+    hud->ChatDisabledMessage = StringUtils::newFString(newMsg);    // overwrite ChatDisabledMessage
     LOG("Set chat timeout message: \"{}\"", Format::EscapeBraces(newMsg));
 }
 

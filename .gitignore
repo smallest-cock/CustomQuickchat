@@ -2,4 +2,5 @@
 .vscode
 build
 plugins
+vcpkg
 vcpkg_installed

@@ -122,6 +122,7 @@
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\AkAudio_classes.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Core_classes.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Engine_classes.cpp" />
+    <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Extras.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\GFxUI_classes.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\IpDrv_classes.cpp" />
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\OnlineSubsystemEOS_classes.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Engine_classes.hpp" />
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Engine_parameters.hpp" />
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Engine_structs.hpp" />
+    <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Extras.hpp" />
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\GFxUI_classes.hpp" />
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\GFxUI_parameters.hpp" />
     <ClInclude Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\GFxUI_structs.hpp" />
