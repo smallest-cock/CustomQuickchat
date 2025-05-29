@@ -5,7 +5,7 @@ on:
 
 jobs:
     build:
-        runs-on: windows-latest
+        runs-on: windows-latest # uses pwsh (PowerShell Core) as default shell
 
         steps:
             - name: 📥 Checkout repository
@@ -15,7 +15,6 @@ jobs:
 
             - name: 🍆 Initialize submodules
               run: ./scripts/init-submodules.bat
-              shell: pwsh
 
             - name: 🗄️ Cache vcpkg dependencies
               id: cache-vcpkg
@@ -28,14 +27,13 @@ jobs:
             - name: 📥 Clone vcpkg (if not cached)
               if: steps.cache-vcpkg.outputs.cache-hit != 'true'
               run: |
-                  git clone https://github.com/microsoft/vcpkg.git "${{ github.workspace }}\vcpkg" --depth 1
-                  cd vcpkg
+                  git clone https://github.com/microsoft/vcpkg.git "$env:GITHUB_WORKSPACE\vcpkg" --depth 1
+                  Set-Location "$env:GITHUB_WORKSPACE\vcpkg"
                   git fetch --depth=1 origin efb1e7436979a30c4d3e5ab2375fd8e2e461d541
                   git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
                   git submodule update --init --recursive --depth 1
-                  echo "Verify websocketpp port exists:"
-                  ls ports/websocketpp/
-              shell: bash
+                  Write-Host "Verify websocketpp port exists:"
+                  Get-ChildItem ports/websocketpp/
 
             - name: 🛠️ Manual vcpkg setup (if not cached)
               if: steps.cache-vcpkg.outputs.cache-hit != 'true'
@@ -43,18 +41,22 @@ jobs:
                   cd vcpkg
                   ./bootstrap-vcpkg.bat
                   ./vcpkg integrate install
-              shell: bash
 
             - name: 🛠️ Set up MSBuild
               uses: microsoft/setup-msbuild@v2
 
               # build without STT
             - name: 🧩 Comment out USE_SPEECH_TO_TEXT macro
-              shell: pwsh
               run: ./scripts/toggle-macro.ps1 -FilePath "./CustomQuickchat/CustomQuickchat.h" -MacroName "USE_SPEECH_TO_TEXT" -CommentOut 1
 
             - name: 🔨 Build solution
               run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgEnabled=true /p:VcpkgRoot=${{ github.workspace }}\vcpkg
+
+            - name: 🐞 Prepare .pdb zip
+              run: |
+                  mkdir pdb_zip
+                  copy "${{ github.workspace }}\plugins\CustomQuickchat.pdb" pdb_zip\
+              shell: cmd
 
             - name: 💼 Prepare installation zip (no STT)
               run: |
@@ -71,19 +73,21 @@ jobs:
 
             # build with STT
             - name: 🧩 Uncomment USE_SPEECH_TO_TEXT macro
-              shell: pwsh
               run: ./scripts/toggle-macro.ps1 -FilePath "./CustomQuickchat/CustomQuickchat.h" -MacroName "USE_SPEECH_TO_TEXT" -CommentOut 0
 
             - name: 🔨 Build solution (with STT)
               run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgEnabled=true /p:VcpkgRoot=${{ github.workspace }}\vcpkg
 
-            - name: 🐍 Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: "3.13"
+            - name: 🐞 Add STT .pdb to zip folder
+              run: |
+                  copy "${{ github.workspace }}\plugins\CustomQuickchat.pdb" "pdb_zip\CustomQuickchat-with-STT.pdb"
+              shell: cmd
 
-            - name: 📦 Install PyInstaller
-              run: pip install pyinstaller
+            - name: 📦 Upload debugging symbols zip
+              uses: actions/upload-artifact@v4
+              with:
+                  name: debug-symbols
+                  path: pdb_zip\*
 
             - name: 🤐 Prepare installation zip (with STT)
               run: |
@@ -92,10 +96,25 @@ jobs:
                   copy "${{ github.workspace }}\scripts\install.bat" installation_zip_w_stt\
               shell: cmd
 
+            - name: 🐍 Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.13"
+
+            - name: ⬇️ Install required python modules
+              run: |
+                  pip install pyinstaller
+                  cd ./speech_to_text_server
+                  pip install -r requirements.txt
+
             - name: 💩 Bundle Python script with PyInstaller
               run: |
-                  pyinstaller speech-to-text-server.pyw --noconfirm --onedir --console --name "SpeechToText" --distpath installation_zip_w_stt\CustomQuickchat
-              working-directory: ${{ github.workspace }}
+                  pyinstaller ./speech_to_text_server/speech-to-text-server.pyw \
+                  --noconfirm \
+                  --onedir \
+                  --console \
+                  --name "SpeechToText" \
+                  --distpath installation_zip_w_stt\CustomQuickchat
 
             - name: 📦 Upload CustomQuickchat-with-STT installation zip
               uses: actions/upload-artifact@v4
