@@ -109,12 +109,12 @@ jobs:
 
             - name: 💩 Bundle Python script with PyInstaller
               run: |
-                  pyinstaller ./speech_to_text_server/speech-to-text-server.pyw \
-                  --noconfirm \
-                  --onedir \
-                  --console \
-                  --name "SpeechToText" \
-                  --distpath installation_zip_w_stt\CustomQuickchat
+                  pyinstaller ./speech_to_text_server/speech-to-text-server.pyw `
+                  --noconfirm `
+                  --onedir `
+                  --console `
+                  --name "SpeechToText" `
+                  --distpath installation_zip_w_stt/CustomQuickchat
 
             - name: 📦 Upload CustomQuickchat-with-STT installation zip
               uses: actions/upload-artifact@v4
