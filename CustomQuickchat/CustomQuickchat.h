@@ -19,7 +19,7 @@
 #include "Components/Includes.hpp"
 
 
-#define USE_SPEECH_TO_TEXT
+//#define USE_SPEECH_TO_TEXT
 
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -81,6 +81,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     bool matchEnded =       false;
     bool inGameEvent =      false;
     bool chatbox_open =    false;
+
+    std::shared_ptr<bool> m_removeTimestamps =  std::make_shared<bool>(true);
+    std::shared_ptr<bool> m_uncensorChats =     std::make_shared<bool>(true);
 
     
     // CustomQuickchat filepaths
@@ -147,6 +150,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void SendChat(const std::string& chat, EChatChannel chatMode);
     std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
 
+    
+    // recieving chat stuff
+    ChatMsgData m_mostRecentUncensoredChat;
 
     // chat timeout stuff
     std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
@@ -252,11 +258,12 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void Event_InitUIBindings(ActorWrapper caller, void* params, std::string eventName);
     void Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName);
     void Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName);
-    void Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName);
     void Event_PushMenu(ActorWrapper caller, void* params, std::string eventName);
     void Event_PopMenu(ActorWrapper caller, void* params, std::string eventName);
     void Event_PlayerController_EnterStartState(ActorWrapper Caller, void* Params, std::string eventName);
     void Event_LoadingScreenStart(std::string eventName);
+    void event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
+    void event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
 
     
     // cvar helper stuff

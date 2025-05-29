@@ -88,50 +88,40 @@ void CustomQuickchat::GeneralSettings()
 	auto disablePostMatchQuickchats_cvar =  GetCvar(Cvars::disablePostMatchQuickchats);
 	auto removeTimestamps_cvar =            GetCvar(Cvars::removeTimestamps);
 	auto randomize_sarcasm_cvar =           GetCvar(Cvars::randomize_sarcasm);
+	auto uncensorChats_cvar =				GetCvar(Cvars::uncensorChats);
 
 	GUI::Spacing(2);
 
 	bool overrideDefaultQuickchats = overrideDefaultQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Override default quickchats", &overrideDefaultQuickchats))
-	{
 		overrideDefaultQuickchats_cvar.setValue(overrideDefaultQuickchats);
-	}
 	if (ImGui::IsItemHovered())
-	{
 		ImGui::SetTooltip("Block default quickchat if it conflicts with a custom chat (prevents both chats from being sent)");
-	}
 
 	bool blockDefaultQuickchats = blockDefaultQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Block all default quickchats", &blockDefaultQuickchats))
-	{
 		blockDefaultQuickchats_cvar.setValue(blockDefaultQuickchats);
-	}
 	if (ImGui::IsItemHovered())
-	{
 		ImGui::SetTooltip("Block all default quickchats from being sent... without having to unbind them :)");
-	}
 
 	bool disablePostMatchQuickchats = disablePostMatchQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Disable custom quickchats in post-match screen", &disablePostMatchQuickchats))
-	{
 		disablePostMatchQuickchats_cvar.setValue(disablePostMatchQuickchats);
-	}
 	if (ImGui::IsItemHovered())
-	{
 		ImGui::SetTooltip("Prevents your custom chats from overriding default post-match chats like 'gg'");
-	}
-
-	bool removeTimestamps = removeTimestamps_cvar.getBoolValue();
-	if (ImGui::Checkbox("Remove chat timestamps", &removeTimestamps))
-	{
-		removeTimestamps_cvar.setValue(removeTimestamps);
-	}
 
 	bool randomize_sarcasm = randomize_sarcasm_cvar.getBoolValue();
 	if (ImGui::Checkbox("Randomize sarcasm effect", &randomize_sarcasm))
-	{
 		randomize_sarcasm_cvar.setValue(randomize_sarcasm);
-	}
+
+	bool removeTimestamps = removeTimestamps_cvar.getBoolValue();
+	if (ImGui::Checkbox("Remove chat timestamps", &removeTimestamps))
+		removeTimestamps_cvar.setValue(removeTimestamps);
+
+	bool uncensorChats = uncensorChats_cvar.getBoolValue();
+	if (ImGui::Checkbox("Uncensor chats", &uncensorChats))
+		uncensorChats_cvar.setValue(uncensorChats);
+
 
 	GUI::Spacing(2);
 

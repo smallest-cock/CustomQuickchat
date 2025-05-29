@@ -433,6 +433,12 @@ struct UidWrapper
     }
 };
 
+struct FStringBase
+{
+    wchar_t*    data;
+    int32_t     size;
+    int32_t     capacity;
+};
 
 struct NetId
 {
@@ -511,6 +517,35 @@ struct ChatData
 
 
     bool is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const;
+};
+
+
+struct ChatMsgData
+{
+    std::string uid;
+    std::string uncensoredMsg;
+
+    ChatMsgData() {}
+    ChatMsgData(const FChatMessage& chat)
+    {
+        uncensoredMsg = chat.Message.ToString();
+        uid = generateUid(chat);
+    }
+
+    static std::string generateUid(const FChatMessage& data)
+    {
+        return std::format("{}|{}|{}|{}",
+            data.PlayerName.ToString(), data.TimeStamp.ToString(), data.Message.size(), data.ChatChannel);
+    }
+
+    static std::string generateUid(UGFxData_Chat_TA_execOnChatMessage_Params* data)
+    {
+        if (!data)
+            return std::string();
+
+        return std::format("{}|{}|{}|{}",
+            data->PlayerName.ToString(), data->TimeStamp.ToString(), data->Message.size(), data->ChatChannel);
+    }
 };
 
 

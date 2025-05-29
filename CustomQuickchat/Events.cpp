@@ -15,7 +15,7 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
             return;
     }
 
-    UGameViewportClient_TA_execHandleKeyPress_Params* keyPressData = reinterpret_cast<UGameViewportClient_TA_execHandleKeyPress_Params*>(params);
+    auto keyPressData = reinterpret_cast<UGameViewportClient_TA_execHandleKeyPress_Params*>(params);
     if (!keyPressData)
         return;
 
@@ -145,7 +145,7 @@ void CustomQuickchat::Event_OnPressChatPreset(ActorWrapper Caller, void* Params,
 
 void CustomQuickchat::Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName)
 {
-    APlayerController_TA* pc = reinterpret_cast<APlayerController_TA*>(caller.memory_address);
+    auto pc = reinterpret_cast<APlayerController_TA*>(caller.memory_address);
     if (!pc)
         return;
 
@@ -195,39 +195,72 @@ void CustomQuickchat::Event_PlayerController_EnterStartState(ActorWrapper Caller
 }
 
 
-// remove chat timestamps
-void CustomQuickchat::Event_OnChatMessage(ActorWrapper caller, void* params, std::string eventName)
+// when uncensored chat is recieved
+void CustomQuickchat::event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    auto removeTimestamps_cvar = GetCvar(Cvars::removeTimestamps);
-    if (!removeTimestamps_cvar || !removeTimestamps_cvar.getBoolValue())
+    if (!*m_uncensorChats)
         return;
 
-    FGFxChatMessage* Params = reinterpret_cast<FGFxChatMessage*>(params);
-    if (!Params)
+    auto params = reinterpret_cast<AHUDBase_TA_execOnChatMessage_Params*>(Params);
+    if (!params)
         return;
 
-    Params->TimeStamp = StringUtils::newFString(L"");
+    FChatMessage& msg = params->NewMsg;
+    if (msg.bPreset)
+        return;
+
+    auto caller = reinterpret_cast<AHUDBase_TA*>(Caller.memory_address);
+    if (!caller)
+        return;
+
+    m_mostRecentUncensoredChat = msg;
+}
+
+// when censored chat is displayed
+void CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName)
+{
+    auto params = reinterpret_cast<UGFxData_Chat_TA_execOnChatMessage_Params*>(Params);
+    if (!params)
+        return;
+
+    if (*m_uncensorChats)
+    {
+        std::string gfxUid = ChatMsgData::generateUid(params);
+        std::string censoredMsg = params->Message.ToString();
+        if (gfxUid == m_mostRecentUncensoredChat.uid && censoredMsg != m_mostRecentUncensoredChat.uncensoredMsg)
+        {
+			params->Message = StringUtils::newFString(m_mostRecentUncensoredChat.uncensoredMsg);
+            LOG("Uncensored chat: \"{}\" --> \"{}\"",
+                Format::EscapeBraces(censoredMsg), Format::EscapeBraces(m_mostRecentUncensoredChat.uncensoredMsg));
+        }
+    }
+
+    if (*m_removeTimestamps)
+    {
+		auto timeStampFstr = reinterpret_cast<FStringBase*>(&params->TimeStamp);
+		timeStampFstr->size = 0;
+    }
 }
 
 
-void CustomQuickchat::Event_PushMenu(ActorWrapper caller, void* params, std::string eventName)
+void CustomQuickchat::Event_PushMenu(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    UGFxData_MenuStack_TA_execPushMenu_Params* Params = reinterpret_cast<UGFxData_MenuStack_TA_execPushMenu_Params*>(params);
-    if (!Params)
+    auto params = reinterpret_cast<UGFxData_MenuStack_TA_execPushMenu_Params*>(Params);
+    if (!params)
         return;
 
-    if (Params->MenuName.ToString() == "MidGameMenuMovie")
+    if (params->MenuName.ToString() == "MidGameMenuMovie")
         gamePaused = true;
 }
 
 
-void CustomQuickchat::Event_PopMenu(ActorWrapper caller, void* params, std::string eventName)
+void CustomQuickchat::Event_PopMenu(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    UGFxData_MenuStack_TA_execPopMenu_Params* Params = reinterpret_cast<UGFxData_MenuStack_TA_execPopMenu_Params*>(params);
-    if (!Params)
+    auto params = reinterpret_cast<UGFxData_MenuStack_TA_execPopMenu_Params*>(Params);
+    if (!params)
         return;
 
-    if (Params->MenuName.ToString() == "MidGameMenuMovie")
+    if (params->MenuName.ToString() == "MidGameMenuMovie")
         gamePaused = false;
 }
 

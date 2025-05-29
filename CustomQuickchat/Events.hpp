@@ -5,7 +5,7 @@
 namespace Events
 {
     constexpr const char* SendChatPresetMessage =               "Function TAGame.GFxData_Chat_TA.SendChatPresetMessage";
-    constexpr const char* OnChatMessage =                       "Function TAGame.GFxData_Chat_TA.OnChatMessage";
+    constexpr const char* GFxData_Chat_TA_OnChatMessage =       "Function TAGame.GFxData_Chat_TA.OnChatMessage";
     constexpr const char* OnPressChatPreset =                   "Function TAGame.GFxData_Chat_TA.OnPressChatPreset";
     constexpr const char* UpdateChatGroups =                    "Function TAGame.GFxData_Chat_TA.UpdateChatGroups";
     constexpr const char* RefreshQuickChat =                    "Function TAGame.GFxData_Chat_TA.RefreshQuickChat";
@@ -41,4 +41,6 @@ namespace Events
     // constexpr std::string_view SetGamePaused =         "Function ProjectX.GFxShell_X.SetGamePaused";
     // constexpr std::string_view PodiumBegin =           "Function GameEvent_Soccar_TA.PrePodiumSpotlight.BeginState";
     // constexpr std::string_view PodiumEnd =             "Function GameEvent_Soccar_TA.PodiumSpotlight.EndState";
+
+    constexpr const char* HUDBase_TA_OnChatMessage =            "Function TAGame.HUDBase_TA.OnChatMessage";
 }

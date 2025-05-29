@@ -36,6 +36,10 @@ void CustomQuickchat::onLoad()
     auto party_chats_in_last_chat_cvar =        RegisterCvar_Bool(Cvars::party_chats_in_last_chat,      true);
     auto team_chats_in_last_chat_cvar =         RegisterCvar_Bool(Cvars::team_chats_in_last_chat,       true);
     auto randomize_sarcasm_cvar =               RegisterCvar_Bool(Cvars::randomize_sarcasm,             true);
+    auto uncensorChats_cvar =                   RegisterCvar_Bool(Cvars::uncensorChats,                 true);
+
+    removeTimestamps_cvar.bindTo(m_removeTimestamps);
+    uncensorChats_cvar.bindTo(m_uncensorChats);
 
     // numbers
     auto micEnergyThreshold_cvar =              RegisterCvar_Number(Cvars::micEnergyThreshold,          420);
@@ -97,9 +101,6 @@ void CustomQuickchat::onLoad()
     gameWrapper->HookEventWithCaller<ActorWrapper>(Events::GFxHUD_TA_NotifyChatDisabled,
         std::bind(&CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-    gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnChatMessage,
-        std::bind(&CustomQuickchat::Event_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-
     gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::PushMenu,
         std::bind(&CustomQuickchat::Event_PushMenu, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
@@ -136,6 +137,13 @@ void CustomQuickchat::onLoad()
     // apply custom chat labels to ui
     gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnPressChatPreset,
         std::bind(&CustomQuickchat::Event_OnPressChatPreset, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+
+
+	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::HUDBase_TA_OnChatMessage,
+        std::bind(&CustomQuickchat::event_HUDBase_TA_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    
+    gameWrapper->HookEventWithCaller<ActorWrapper>(Events::GFxData_Chat_TA_OnChatMessage,
+        std::bind(&CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     // ========================================================================================
 

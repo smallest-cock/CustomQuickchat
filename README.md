@@ -1,6 +1,6 @@
 # Custom Quickchat (BakkesMod Plugin)
 
-Send custom quickchats directly through Rocket League’s native chat system – no hacky scripts, just seamless integration.
+Send custom quickchats using Rocket League’s native chat system. No more hacky keypress scripts.
 
 <img src="./docs/images/cover_pic.png" alt="Plugin Overview" width="600"/>
 
@@ -64,7 +64,7 @@ To build the project, follow these steps:
 
 ### 1. Initialize Submodules
 
-Run `init-submodules.bat` after cloning the repo to initialize the submodules in an optimal way
+Run `scripts\init-submodules.bat` after cloning the repo to initialize the submodules in an optimal way
 
 <details> <summary>🔍 Why this instead of <code>git submodule update --init</code> ?</summary>
 <li>Avoids downloading 200MB of history for the <strong>nlohmann/json</strong> library</li>
