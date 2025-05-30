@@ -1,11 +1,15 @@
 @echo off
 setlocal
 
-rem Change the current working directory to the script's directory
+rem ----------------------------------------------------------------------
+echo Changing current working directory to be script's directory...
 cd /d "%~dp0"
 
 rem Specify the destination CustomQuickchat folder for installation
 set "customQuickchatInstallationFolder=%APPDATA%\bakkesmod\bakkesmod\data\CustomQuickchat"
+
+rem Specify SpeechToText subfolder path
+set "speechToTextFolder=%customQuickchatInstallationFolder%\SpeechToText"
 
 rem Specify the bakkesmod plugins folder
 set "bmPluginsFolder=%APPDATA%\bakkesmod\bakkesmod\plugins"
@@ -18,7 +22,8 @@ set "dllFile=%~dp0CustomQuickchat.dll"
 set "cfgFolder=%APPDATA%\bakkesmod\bakkesmod\cfg"
 
 
-rem ----------- Copy .dll file to bakkesmod plugins folder -----------
+rem ----------------------------------------------------------------------
+echo Copying .dll to bakkesmod plugins folder...
 
 rem Check if the source folder exists before attempting to copy
 if not exist "%bmPluginsFolder%" (
@@ -36,11 +41,7 @@ xcopy "%dllFile%" "%bmPluginsFolder%" /Y
 
 rem Check the exit code of xcopy and handle any errors if needed
 if errorlevel 1 (
-    echo.
-    echo.
     echo Error occurred while copying .dll file to bakkesmod plugins folder.
-    echo.
-    echo .... maybe try running as Administrator?
     echo.
     echo.
     pause
@@ -50,19 +51,21 @@ if errorlevel 1 (
 )
 
 
-rem ----------- Copy CustomQuickchat folder to bakkesmod data folder -----------
+rem ----------------------------------------------------------------------
+echo Copying CustomQuickchat folder to bakkesmod data folder...
 
 rem Check if the source folder exists before attempting to copy
 if not exist "%sourceFolder%" (
-    echo.
-    echo.
     echo Error: Source folder does not exist: "%sourceFolder%"
-    echo.
-    echo .... maybe try running as Administrator?
     echo.
     echo.
     pause
     exit /b 1
+)
+
+rem Remove old SpeechToText folder if it exists
+if exist "%speechToTextFolder%" (
+    rmdir /s /q "%speechToTextFolder%"
 )
 
 rem Perform the copy operation
@@ -70,11 +73,7 @@ xcopy "%sourceFolder%" "%customQuickchatInstallationFolder%" /E /I /Y
 
 rem Check the exit code of xcopy and handle any errors if needed
 if errorlevel 1 (
-    echo.
-    echo.
     echo Error occurred while copying the CustomQuickchat folder to bakkesmod data folder.
-    echo.
-    echo .... maybe try running as Administrator?
     echo.
     echo.
     pause
@@ -84,7 +83,8 @@ if errorlevel 1 (
 )
 
 
-rem ----------- Add line: plugin load customquickchat to plugins.cfg -------------
+rem ----------------------------------------------------------------------
+echo Adding line: "plugin load customquickchat" to plugins.cfg...
 
 cd /d %cfgFolder%
 
@@ -101,39 +101,7 @@ IF %ERRORLEVEL% EQU 0 (
 
 
 
-rem -------------------------- download plugin assets --------------------------
-
-rem Define the folder for assets
-set "ASSET_DIR=%APPDATA%\bakkesmod\bakkesmod\data\sslow_plugin_assets"
-
-rem Create the folder if it doesn't exist
-if not exist "%ASSET_DIR%" (
-    mkdir "%ASSET_DIR%"
-    echo Created folder: %ASSET_DIR%
-)
-
-rem Define image URLs and local file paths
-set "URL1=https://raw.githubusercontent.com/smallest-cock/plugin-assets/main/images/settings-footer/discord.png"
-set "URL2=https://raw.githubusercontent.com/smallest-cock/plugin-assets/main/images/settings-footer/github.png"
-set "URL3=https://raw.githubusercontent.com/smallest-cock/plugin-assets/main/images/settings-footer/youtube.png"
-
-set "FILE1=%ASSET_DIR%\discord.png"
-set "FILE2=%ASSET_DIR%\github.png"
-set "FILE3=%ASSET_DIR%\youtube.png"
-
-rem Download the images
-echo.
-echo.
-echo Downloading assets...
-echo.
-echo.
-
-curl -o "%FILE1%" "%URL1%" || echo Failed to download discord.png
-curl -o "%FILE2%" "%URL2%" || echo Failed to download github.png
-curl -o "%FILE3%" "%URL3%" || echo Failed to download youtube.png
-
-
-rem ------------------------------ success message -------------------------------
+rem success message
 echo.
 echo.
 echo.
