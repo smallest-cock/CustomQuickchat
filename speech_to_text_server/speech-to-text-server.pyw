@@ -159,6 +159,9 @@ class WebsocketHandler:
             # notify client that mic is listening
             await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))
 
+            if mic is None:
+                return { "success": False, "errorMsg": "Microphone initialization failed. Make sure mic access is enabled" }
+
             with mic as source:
                 recognizer.adjust_for_ambient_noise(source)
 
