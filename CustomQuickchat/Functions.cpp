@@ -559,9 +559,9 @@ void CustomQuickchat::initFilePaths()
 	m_variationsJsonPath =			m_pluginFolder / "Variations.json";
 
 #ifdef USE_SPEECH_TO_TEXT
-	speechToTextJsonPath =			customQuickchatFolder / "SpeechToText.json";
-	speechToTextExePath =			customQuickchatFolder / "SpeechToText" / "SpeechToText.exe";
-	speechToTextErrorLogPath =		customQuickchatFolder / "SpeechToText" / "ErrorLog.txt";
+	speechToTextJsonPath =			m_pluginFolder / "SpeechToText.json";
+	speechToTextExePath =			m_pluginFolder / "SpeechToText" / "SpeechToText.exe";
+	speechToTextErrorLogPath =		m_pluginFolder / "SpeechToText" / "ErrorLog.txt";
 #endif
 	
 	// Lobby Info JSON files
