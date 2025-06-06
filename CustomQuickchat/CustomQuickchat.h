@@ -71,49 +71,47 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 
 
     // constants
-    static constexpr const char* keywordRegexPattern = R"(\[\[(.*?)\]\])";
+    static constexpr const char* KEYWORD_REGEX_PATTERN = R"(\[\[(.*?)\]\])";
     static constexpr double BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1;       // maybe turn into a cvar w slider in settings
 
-
     // flags
-    bool onLoadComplete =   false;
-    bool gamePaused =       false;
-    bool matchEnded =       false;
-    bool inGameEvent =      false;
-    bool chatbox_open =    false;
+	bool m_onLoadComplete = false;
+	bool m_gamePaused = false;
+	bool m_matchEnded = false;
+	bool m_inGameEvent = false;
+	bool m_chatboxOpen = false;
 
     std::shared_ptr<bool> m_removeTimestamps =  std::make_shared<bool>(true);
     std::shared_ptr<bool> m_uncensorChats =     std::make_shared<bool>(true);
 
-    
-    // CustomQuickchat filepaths
-    fs::path customQuickchatFolder;
-    fs::path bindingsFilePath;
-    fs::path variationsFilePath;
+    // Custom Quickchat filepaths
+    fs::path m_pluginFolder;
+    fs::path m_bindingsJsonPath;
+    fs::path m_variationsJsonPath;
 
     // Lobby Info filepaths
-    fs::path lobbyInfoFolder;
-    fs::path lobbyInfoChatsFilePath;
-    fs::path lobbyInfoRanksFilePath;
-
+    fs::path m_lobbyInfoFolder;
+    fs::path m_lobbyInfoChatsJsonPath;
+    fs::path m_lobbyInfoRanksJsonPath;
 
     // plugin init
-    void InitStuffOnLoad();
-    void InitKeyStates();
-    void CheckJsonFiles();
-    void GetFilePaths();
-    void ReadDataFromJson();
+    void initStuffOnLoad();
+    void initKeyStates();
+    void initJsonFiles();
+    void initFilePaths();
+    void updateVariationsFromJson();
+    void updateBindingsFromJson();
+    void updateDataFromJson();
     void PreventGameFreeze();   // hacky solution to prevent game freezing for few seconds on 1st chat sent
 
-
     // bindings & variations stuff
-    std::vector<Binding> Bindings;
-    std::vector<VariationList> Variations;
+    std::vector<Binding> m_bindings;
+    std::vector<VariationList> m_variations;
 
-    int selectedBindingIndex = 0;
-    int selectedVariationIndex = 0;
+    int m_selectedBindingIndex = 0;
+    int m_selectedVariationIndex = 0;
 
-    std::unordered_map<std::string, bool> keyStates;
+    std::unordered_map<std::string, bool> m_keyStates;
 
     std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
     std::chrono::steady_clock::time_point lastBindingActivated;
@@ -122,35 +120,32 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void ResetAllFirstButtonStates();
     int FindButtonIndex(const std::string& buttonName);
 
-    void UpdateBindingsData();
-    void WriteBindingsToJson();
-    void WriteVariationsToJson();
+    void updateBindingsData();
+    void writeBindingsToJson();
+    void writeVariationsToJson();
 
-    void AddEmptyBinding();
-    void AddEmptyVariationList();
+    void addEmptyBinding();
+    void addEmptyVariationList();
 
     void DeleteBinding(int idx);
     void DeleteVariationList(int idx);
-    void UpdateDataFromVariationStr();
+    void updateAllVariationsData();
 
-    std::string Variation(const std::string& listName);
+    std::string getVariationFromList(const std::string& listName);
     std::vector<std::string> ShuffleWordList(const std::vector<std::string>& ogList);
     void ReshuffleWordList(int idx);
 
-    void PerformBindingAction(const Binding& binding);
+    void performBindingAction(const Binding& binding);
     std::string process_keywords_in_chat_str(const Binding& binding);
-
 
     // Lobby Info stuff (last chat & blast ranks)
     std::string get_last_chat();
     std::string get_last_chatter_rank_str(EKeyword keyword);
 
-
     // sending chat stuff
     void SendChat(const std::string& chat, EChatChannel chatMode);
     std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
 
-    
     // recieving chat stuff
     ChatMsgData m_mostRecentUncensoredChat;
 
@@ -158,9 +153,8 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
     void ResetChatTimeoutMsg();
 
-
     // modify quickchat UI stuff
-    static constexpr std::array<const char*, 4> preset_group_names = { "ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4" };
+    static constexpr std::array<const char*, 4> PRESET_GROUP_NAMES = { "ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4" };
     std::array<std::array<FString, 4>, 4>   pc_qc_labels;
     std::array<std::array<FString, 4>, 4>   gp_qc_labels;
     bool using_gamepad = false;
@@ -169,11 +163,9 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params = nullptr);
     void apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller);
 
-
     // misc functions
     void NotifyAndLog(const std::string& title, const std::string& message, int duration = 3);
     
-
 
 #if defined(USE_SPEECH_TO_TEXT)
 
@@ -232,7 +224,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
 #endif
 
 
-
     // commands
     void cmd_toggleEnabled(std::vector<std::string> args);
     void cmd_listBindings(std::vector<std::string> args);
@@ -265,7 +256,6 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
     void event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
 
-    
     // cvar helper stuff
     CVarWrapper RegisterCvar_Bool(const CvarData& cvar, bool startingValue);
     CVarWrapper RegisterCvar_String(const CvarData& cvar, const std::string& startingValue);
@@ -276,28 +266,27 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void RunCommand(const CvarData& command, float delaySeconds = 0);
     void RunCommandInterval(const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
 
-
 public:
-
     // GUI
     void RenderSettings() override;
     void RenderWindow() override;
 
-    void GeneralSettings();
-    void ChatTimeoutSettings();
-    void SpeechToTextSettings();
-    void LastChatSettings();
+    void display_generalSettings();
+    void display_chatTimeoutSettings();
+    void display_speechToTextSettings();
+    void display_lastChatSettings();
 
-    void RenderAllBindings();
-    void RenderBindingDetails();
-    void RenderChatDetails(Binding& selectedBinding);
-    void RenderBindingTriggerDetails(Binding& selectedBinding);
+    void display_bindingsList();
+    void display_bindingDetails();
+    void display_bindingChatDetails(Binding& selectedBinding);
+    void display_bindingTriggerDetails(Binding& selectedBinding);
     
-    void RenderAllVariationListNames();
-    void RenderVariationListDetails();
-
+    void display_variationListList();
+    void display_variationListDetails();
 
     // header/footer stuff
+    static constexpr float footer_height =                  40.0f;
+/*
     void gui_footer_init();
     bool assets_exist = false;
     std::shared_ptr<GUI::FooterLinks> footer_links;
@@ -308,4 +297,5 @@ public:
 
     static constexpr const wchar_t* github_link =           L"https://github.com/smallest-cock/CustomQuickchat";
     static constexpr const char* github_link_tooltip =      "See the sauce";
+*/
 };

@@ -113,14 +113,14 @@ void CustomQuickchat::onLoad()
     gameWrapper->HookEventPost(Events::LoadingScreenStart,
         std::bind(&CustomQuickchat::Event_LoadingScreenStart, this, std::placeholders::_1));
 
-    gameWrapper->HookEventPost(Events::MatchEnded, [this](std::string eventName) { matchEnded = true; });
+    gameWrapper->HookEventPost(Events::MatchEnded, [this](std::string eventName) { m_matchEnded = true; });
 
     // track the state of the chatbox UI
-    auto set_chatbox_open = [this](std::string eventName) { chatbox_open = true; };
+    auto set_chatbox_open = [this](std::string eventName) { m_chatboxOpen = true; };
     gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenChat,        set_chatbox_open);
     gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenTeamChat,    set_chatbox_open);
     gameWrapper->HookEventPost(Events::GFxData_Chat_TA_OpenPartyChat,   set_chatbox_open);
-    gameWrapper->HookEventPost(Events::GFxData_Chat_TA_ClearDistracted, [this](std::string eventName) { chatbox_open = false; });
+    gameWrapper->HookEventPost(Events::GFxData_Chat_TA_ClearDistracted, [this](std::string eventName) { m_chatboxOpen = false; });
 
 
     gameWrapper->HookEvent(Events::SendChatPresetMessage, [this](std::string eventName)
@@ -147,10 +147,9 @@ void CustomQuickchat::onLoad()
 
     // ========================================================================================
 
-
+    
     // other init
-    InitStuffOnLoad();
-
+    initStuffOnLoad();
 
     LOG("CustomQuickchat loaded! :)");
 }
@@ -158,7 +157,7 @@ void CustomQuickchat::onLoad()
 
 void CustomQuickchat::onUnload()
 {
-    WriteBindingsToJson();      // just to make sure any unsaved changes are saved before exiting
+    writeBindingsToJson();      // just to make sure any unsaved changes are saved before exiting
 
 #ifdef USE_SPEECH_TO_TEXT
 

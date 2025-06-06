@@ -5,10 +5,10 @@
 
 void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName)
 {
-    if (gamePaused || !inGameEvent || chatbox_open)
+    if (m_gamePaused || !m_inGameEvent || m_chatboxOpen)
         return;
 
-    if (matchEnded)
+    if (m_matchEnded)
     {
         auto disablePostMatchQuickchats_cvar = GetCvar(Cvars::disablePostMatchQuickchats);
         if (!disablePostMatchQuickchats_cvar || disablePostMatchQuickchats_cvar.getBoolValue()) 
@@ -24,7 +24,7 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 
     if (keyEventType == EInputEvent::IE_Pressed)
     {
-        keyStates[keyName] = true;      // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
+        m_keyStates[keyName] = true;      // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
 
         // update state for tracking whether user is using gamepad or pc inputs
         using_gamepad = keyPressData->bGamepad;
@@ -48,22 +48,22 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 
 
         // check if any bindings triggered
-        for (Binding& binding : Bindings)
+        for (Binding& binding : m_bindings)
         {
-            if (binding.enabled && binding.ShouldBeTriggered(buttonPressEvent, keyStates, lastBindingActivated, epochTime, minBindingDelay, sequenceTimeWindow))
+            if (binding.enabled && binding.shouldBeTriggered(buttonPressEvent, m_keyStates, lastBindingActivated, epochTime, minBindingDelay, sequenceTimeWindow))
             {
                 // reset/update data for all bindings
                 lastBindingActivated = std::chrono::steady_clock::now();
                 ResetAllFirstButtonStates();
 
                 // activate binding action
-                PerformBindingAction(binding);
+                performBindingAction(binding);
                 return;
             }
         }
     }
     else if (keyEventType == EInputEvent::IE_Released)
-        keyStates[keyName] = false;     // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
+        m_keyStates[keyName] = false;     // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
 }
 
 
@@ -163,7 +163,7 @@ void CustomQuickchat::Event_ApplyChatSpamFilter(ActorWrapper caller, void* param
 
 void CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, void* params, std::string eventName)
 {
-    gamePaused = false;
+    m_gamePaused = false;
 
     auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
     if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
@@ -179,7 +179,7 @@ void CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, vo
 
 void CustomQuickchat::Event_PlayerController_EnterStartState(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    inGameEvent = true;
+    m_inGameEvent = true;
 
     // set chat timeout message
     auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
@@ -250,7 +250,7 @@ void CustomQuickchat::Event_PushMenu(ActorWrapper Caller, void* Params, std::str
         return;
 
     if (params->MenuName.ToString() == "MidGameMenuMovie")
-        gamePaused = true;
+        m_gamePaused = true;
 }
 
 
@@ -261,18 +261,18 @@ void CustomQuickchat::Event_PopMenu(ActorWrapper Caller, void* Params, std::stri
         return;
 
     if (params->MenuName.ToString() == "MidGameMenuMovie")
-        gamePaused = false;
+        m_gamePaused = false;
 }
 
 
 void CustomQuickchat::Event_LoadingScreenStart(std::string eventName)
 {
-    gamePaused = false;
-    matchEnded = false;
-    inGameEvent = false;
-    chatbox_open = false;
+    m_gamePaused = false;
+    m_matchEnded = false;
+    m_inGameEvent = false;
+    m_chatboxOpen = false;
 
     // reset all "pressed" buttons (to fix bug of bindings mistakenly firing bc a key's state is stuck in "pressed" mode upon joining a game/freeplay)
-    for (auto& [key, state] : keyStates)
+    for (auto& [key, state] : m_keyStates)
         state = false;
 }

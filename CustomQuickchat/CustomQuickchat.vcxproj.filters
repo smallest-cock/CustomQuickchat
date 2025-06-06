@@ -171,6 +171,9 @@
     <ClCompile Include="..\external\RLSDK\RLSDK_w_pch_includes\SDK_HEADERS\Extras.cpp">
       <Filter>RLSDK\SDK_HEADERS</Filter>
     </ClCompile>
+    <ClCompile Include="Structs.cpp">
+      <Filter>Plugin\src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="version.h">

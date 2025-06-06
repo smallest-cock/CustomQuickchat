@@ -4,7 +4,7 @@
 
 
 
-void CustomQuickchat::PerformBindingAction(const Binding& binding)
+void CustomQuickchat::performBindingAction(const Binding& binding)
 {
 	// processedChat starts out as the original raw chat string, and will get processed if it includes word variations or relevant keywords (i.e. lastChat)
 	std::string processed_chat = binding.chat;
@@ -65,7 +65,7 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 
 	for (int i = 0; i < MAX_KEYWORD_DEPTH; i++)
 	{
-		auto keyword_strings_to_replace = binding.GetMatchedSubstrings(result, keywordRegexPattern);
+		auto keyword_strings_to_replace = binding.getMatchedSubstrings(result, KEYWORD_REGEX_PATTERN);
 
 		if (keyword_strings_to_replace.empty())
 		{
@@ -106,7 +106,7 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 			// if something else was found, like a word variation list name
 			else
 			{
-				result = std::regex_replace(result, keyword_regex_pattern, Variation(keyword_str_to_replace));
+				result = std::regex_replace(result, keyword_regex_pattern, getVariationFromList(keyword_str_to_replace));
 			}
 		}
 	}
@@ -139,7 +139,7 @@ void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& 
 
 void CustomQuickchat::ResetAllFirstButtonStates()
 {
-	for (Binding& binding : Bindings)
+	for (Binding& binding : m_bindings)
 	{
 		binding.firstButtonState.Reset(epochTime);
 	}
@@ -152,58 +152,58 @@ void CustomQuickchat::ResetChatTimeoutMsg()
 }
 
 
-void CustomQuickchat::InitKeyStates()
+void CustomQuickchat::initKeyStates()
 {
 	for (const std::string& keyName : possibleKeyNames)
 	{
-		keyStates[keyName] = false;
+		m_keyStates[keyName] = false;
 	}
 }
 
 
-void CustomQuickchat::AddEmptyBinding()
+void CustomQuickchat::addEmptyBinding()
 {
 	Binding newBinding;
-	Bindings.push_back(newBinding);
+	m_bindings.push_back(newBinding);
 }
 
 
-void CustomQuickchat::AddEmptyVariationList()
+void CustomQuickchat::addEmptyVariationList()
 {
 	VariationList list;
-	Variations.push_back(list);
+	m_variations.push_back(list);
 }
 
 
 void CustomQuickchat::DeleteBinding(int idx)
 {
-	if (Bindings.empty())
+	if (m_bindings.empty())
 		return;
 
 	// erase binding at given index
-	Bindings.erase(Bindings.begin() + idx);
+	m_bindings.erase(m_bindings.begin() + idx);
 
 	// reset selected binding index
-	selectedBindingIndex = Bindings.empty() ? 0 : Bindings.size() - 1;
+	m_selectedBindingIndex = m_bindings.empty() ? 0 : m_bindings.size() - 1;
 
 	// update JSON
-	WriteBindingsToJson();
+	writeBindingsToJson();
 }
 
 
 void CustomQuickchat::DeleteVariationList(int idx)
 {
-	if (Variations.empty())
+	if (m_variations.empty())
 		return;
 
 	// erase variation list at given index
-	Variations.erase(Variations.begin() + idx);
+	m_variations.erase(m_variations.begin() + idx);
 	
 	// reset selected variation list index
-	selectedVariationIndex = Variations.empty() ? 0 : Variations.size() - 1;
+	m_selectedVariationIndex = m_variations.empty() ? 0 : m_variations.size() - 1;
 
 	// update JSON
-	WriteVariationsToJson();
+	writeVariationsToJson();
 }
 
 
@@ -220,27 +220,27 @@ int CustomQuickchat::FindButtonIndex(const std::string& buttonName)
 }
 
 
-void CustomQuickchat::CheckJsonFiles()
+void CustomQuickchat::initJsonFiles()
 {
 	// create 'CustomQuickchat' folder if it doesn't exist
-	if (!fs::exists(customQuickchatFolder))
+	if (!fs::exists(m_pluginFolder))
 	{
-		fs::create_directory(customQuickchatFolder);
+		fs::create_directory(m_pluginFolder);
 		LOG("'CustomQuickchat' folder didn't exist... so I created it.");
 	}
 
 	// create JSON files if they don't exist
-	if (!fs::exists(bindingsFilePath))
+	if (!fs::exists(m_bindingsJsonPath))
 	{
-		std::ofstream NewFile(bindingsFilePath);
+		std::ofstream NewFile(m_bindingsJsonPath);
 
 		NewFile << "{ \"bindings\": [] }";
 		NewFile.close();
 		LOG("'Bindings.json' didn't exist... so I created it.");
 	}
-	if (!fs::exists(variationsFilePath))
+	if (!fs::exists(m_variationsJsonPath))
 	{
-		std::ofstream NewFile(variationsFilePath);
+		std::ofstream NewFile(m_variationsJsonPath);
 		NewFile << "{ \"variations\": [] }";
 		NewFile.close();
 		LOG("'Variations.json' didn't exist... so I created it.");
@@ -248,123 +248,92 @@ void CustomQuickchat::CheckJsonFiles()
 }
 
 
-void CustomQuickchat::ReadDataFromJson()
+void CustomQuickchat::updateBindingsFromJson()
 {
-	json bindings_json_data = Files::get_json(bindingsFilePath);
+	json bindingsJson = Files::get_json(m_bindingsJsonPath);
+	if (bindingsJson.empty() || !bindingsJson.contains("bindings"))
+		return;
 
-	if (!bindings_json_data.empty() && bindings_json_data.contains("bindings"))
+	auto& bindingsList = bindingsJson.at("bindings");
+	if (bindingsList.empty())
+		return;
+
+	m_bindings.clear();
+
+	for (int i = 0; i < bindingsList.size(); ++i)
 	{
-		auto bindingsList = bindings_json_data.at("bindings");
+		auto& bindingObj = bindingsList[i];
+		Binding binding;
 
-		if (bindingsList.size() > 0)
-		{
-			for (int i = 0; i < bindingsList.size(); i++)
-			{
-				// read data from each binding obj and update Bindings vector
-				auto bindingObj = bindingsList[i];
+		binding.chat =			bindingObj.value("chat", "im gay");
+		binding.chatMode =		bindingObj.value("chatMode", EChatChannel::EChatChannel_Match);
+		binding.bindingType =	bindingObj.value("bindingType", EBindingType::Combination);
+		binding.buttons =		bindingObj.value("buttons", std::vector<std::string>{});
+		binding.enabled =		bindingObj.value("enabled", true);
 
-				Binding binding;
-				binding.chat =			bindingObj.value("chat",			"im gay");
-				binding.chatMode =		bindingObj.value("chatMode",		EChatChannel::EChatChannel_Match);
-				binding.bindingType =	bindingObj.value("bindingType",		EBindingType::Combination);
+		// lastly, update the binding's keyWord and textEffect values (depends on the chat value set above)
+		binding.updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
 
-				// use value for "enabled" key if it exists, otherwise default to true
-				// (to make backwards compatible with old json files that don't contain an "enabled" key)
-				binding.enabled = bindingObj.value("enabled", true);
-
-				if (bindingObj.contains("buttons") && bindingObj.at("buttons").is_array())
-				{
-					binding.buttons = bindingObj.value("buttons", std::vector<std::string>{});
-				}
-				else
-				{
-					LOG("[ERROR] Missing or invalid \"buttons\" array in JSON");
-				}
-
-				// lastly, update binding's keyWord and textEffect values (which depend on the chat value above)
-				binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
-
-				Bindings.push_back(binding);
-			}
-		}
-	}
-
-
-	// ... same thing for variations
-	json variations_json_data = Files::get_json(variationsFilePath);
-
-	if (!variations_json_data.empty() && variations_json_data.contains("variations"))
-	{
-		auto variations_list = variations_json_data.at("variations");
-
-		if (variations_list.size() > 0)
-		{
-			for (int i = 0; i < variations_list.size(); i++)
-			{
-				// read data from each variation list obj and update Variations vector
-				auto variationListObj = variations_list[i];
-
-				VariationList variationList;
-				variationList.listName = variationListObj["listName"];
-
-				for (const std::string& word : variationListObj["wordList"])
-				{
-					variationList.wordList.push_back(word);
-					variationList.unparsedString += (word + "\n");
-				}
-
-				variationList.shuffledWordList = ShuffleWordList(variationList.wordList);
-
-				Variations.push_back(variationList);
-			}
-		}
+		m_bindings.push_back(binding);
 	}
 }
 
-
-std::string CustomQuickchat::Variation(const std::string& listName)
+void CustomQuickchat::updateVariationsFromJson()
 {
-	for (int i = 0; i < Variations.size(); i++)
-	{
-		VariationList& list = Variations[i];
-		
-		if (list.listName == listName)
-		{
-			if (list.wordList.size() < 3)
-			{
-				LOG("** '{}' word variation list has less than 3 items... and cannot be used **", listName);
-				return listName;
-			}
+	json variationsJson = Files::get_json(m_variationsJsonPath);
+	if (variationsJson.empty() || !variationsJson.contains("variations"))
+		return;
 
-			std::string variation = list.shuffledWordList[list.nextUsableIndex];
-			
-			if (list.nextUsableIndex != (list.shuffledWordList.size() - 1))
-			{
-				list.nextUsableIndex++;
-				return variation;
-			}
-			else {
-				ReshuffleWordList(i);
-				return variation;
-			}
-		}
+	auto& variationsList = variationsJson.at("variations");
+	if (variationsList.empty())
+		return;
+
+	m_variations.clear();
+
+	for (int i = 0; i < variationsList.size(); ++i)
+	{
+		auto& variationListObj = variationsList[i];
+		VariationList list;
+
+		list.listName = variationListObj.value("listName", "Unnamed");
+		list.wordList = variationListObj.value("wordList", std::vector<std::string>{});
+		list.shuffleWordList = variationListObj.value("shuffleWordList", true);
+		
+		// reconstruct the raw word list string (for ImGui)
+		for (const std::string& word : list.wordList)
+			list.unparsedString += (word + "\n");
+
+		list.shuffledWordList = list.generateShuffledWordList();
+
+		m_variations.push_back(list);
+	}
+}
+
+void CustomQuickchat::updateDataFromJson()
+{
+	updateBindingsFromJson();
+	updateVariationsFromJson();
+}
+
+
+std::string CustomQuickchat::getVariationFromList(const std::string& listName)
+{
+	for (int i = 0; i < m_variations.size(); ++i)
+	{
+		VariationList& list = m_variations[i];
+		if (list.listName != listName)
+			continue;
+
+		return list.getNextVariation();
 	}
 	return listName;
 }
 
 
-void CustomQuickchat::UpdateDataFromVariationStr()
+void CustomQuickchat::updateAllVariationsData()
 {
-	for (auto& variation : Variations)	// <--- not const bc variation instances should be modified
-	{
-		// update word list based on parsed string
-		std::vector<std::string> parsedVariations = Format::SplitStrByNewline(variation.unparsedString);
-		variation.wordList = parsedVariations;
-
-		// reset & create new shuffled word list
-		variation.nextUsableIndex = 0;
-		variation.shuffledWordList = ShuffleWordList(variation.wordList);
-	}
+	for (auto& variation : m_variations)
+		variation.updateDataFromUnparsedString();
 }
 
 
@@ -426,7 +395,7 @@ std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std:
 
  void CustomQuickchat::ReshuffleWordList(int idx)
  {
-	 auto& variationList = Variations[idx];
+	 auto& variationList = m_variations[idx];
 	 std::vector<std::string> prevShuffled = variationList.shuffledWordList;
 
 	 // skip all the non-repetition BS if the list has less than 4 variations... and just shuffle it
@@ -523,20 +492,18 @@ void CustomQuickchat::PreventGameFreeze()
 }
 
 
-void CustomQuickchat::UpdateBindingsData()
+void CustomQuickchat::updateBindingsData()
 {
-	for (auto& binding : Bindings)
-	{
-		binding.UpdateKeywordAndTextEffect(keywordRegexPattern);
-	}
+	for (auto& binding : m_bindings)
+		binding.updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
 }
 
 
-void CustomQuickchat::WriteBindingsToJson()
+void CustomQuickchat::writeBindingsToJson()
 {
 	json bindingsJsonObj;
 	
-	for (const auto& binding : Bindings)
+	for (const auto& binding : m_bindings)
 	{
 		json singleBinding;
 
@@ -554,20 +521,21 @@ void CustomQuickchat::WriteBindingsToJson()
 		bindingsJsonObj["bindings"].push_back(singleBinding);
 	}
 
-	Files::write_json(bindingsFilePath, bindingsJsonObj);
+	Files::write_json(m_bindingsJsonPath, bindingsJsonObj);
 	LOG("Updated 'Bindings.json' :)");
 }
 
 
-void CustomQuickchat::WriteVariationsToJson()
+void CustomQuickchat::writeVariationsToJson()
 {
 	json variationsJsonObj;
 
-	for (const auto& list : Variations)
+	for (const auto& list : m_variations)
 	{
 		json variationList;
 
 		variationList["listName"] = list.listName;
+		variationList["shuffleWordList"] = list.shuffleWordList;
 		variationList["wordList"] = {};
 
 		for (const auto& word : list.wordList)
@@ -578,17 +546,17 @@ void CustomQuickchat::WriteVariationsToJson()
 		variationsJsonObj["variations"].push_back(variationList);
 	}
 
-	Files::write_json(variationsFilePath, variationsJsonObj);
+	Files::write_json(m_variationsJsonPath, variationsJsonObj);
 	LOG("Updated 'Variations.json' :)");
 }
 
 
-void CustomQuickchat::GetFilePaths()
+void CustomQuickchat::initFilePaths()
 {
 	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
-	customQuickchatFolder =			bmDataFolderFilePath / "CustomQuickchat";
-	bindingsFilePath =				customQuickchatFolder / "Bindings.json";
-	variationsFilePath =			customQuickchatFolder / "Variations.json";
+	m_pluginFolder =				bmDataFolderFilePath / "CustomQuickchat";
+	m_bindingsJsonPath =			m_pluginFolder / "Bindings.json";
+	m_variationsJsonPath =			m_pluginFolder / "Variations.json";
 
 #ifdef USE_SPEECH_TO_TEXT
 	speechToTextJsonPath =			customQuickchatFolder / "SpeechToText.json";
@@ -597,23 +565,22 @@ void CustomQuickchat::GetFilePaths()
 #endif
 	
 	// Lobby Info JSON files
-	lobbyInfoFolder =				bmDataFolderFilePath / "Lobby Info";
-	lobbyInfoChatsFilePath =		lobbyInfoFolder / "Chats.json";
-	lobbyInfoRanksFilePath =		lobbyInfoFolder / "Ranks.json";
+	m_lobbyInfoFolder =				bmDataFolderFilePath / "Lobby Info";
+	m_lobbyInfoChatsJsonPath =		m_lobbyInfoFolder / "Chats.json";
+	m_lobbyInfoRanksJsonPath =		m_lobbyInfoFolder / "Ranks.json";
 }
 
 
-void CustomQuickchat::InitStuffOnLoad()
+void CustomQuickchat::initStuffOnLoad()
 {
 	LobbyInfo.Initialize(gameWrapper);
 	Format::construct_label({ 41,11,20,6,8,13,52,12,0,3,4,52,1,24,52,44,44,37,14,22 }, h_label);
 	PluginUpdates::check_for_updates(stringify_(CustomQuickchat), short_plugin_version);
 
-	// make sure JSON files are good to go, then read them to update data
-	GetFilePaths();
-	CheckJsonFiles();
-	ReadDataFromJson();
-	gui_footer_init();
+	initFilePaths();
+	initJsonFiles();
+	updateDataFromJson();
+	//gui_footer_init();
 
 #ifdef USE_SPEECH_TO_TEXT
 	
@@ -622,10 +589,10 @@ void CustomQuickchat::InitStuffOnLoad()
 
 #endif
 
-	InitKeyStates();
+	initKeyStates();
 	PreventGameFreeze();
 
-	inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
+	m_inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
 }
 
 
@@ -649,7 +616,7 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 		{
 			std::string action_name = binding.Action.ToString();
 
-			if (action_name != preset_group_names[i]) continue;
+			if (action_name != PRESET_GROUP_NAMES[i]) continue;
 
 			preset_group_bindings[i].action = action_name;
 			preset_group_bindings[i].pc_key = binding.Key.ToString();
@@ -660,7 +627,7 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 		{
 			std::string action_name = binding.Action.ToString();
 
-			if (action_name != preset_group_names[i]) continue;
+			if (action_name != PRESET_GROUP_NAMES[i]) continue;
 
 			preset_group_bindings[i].action = action_name;
 			preset_group_bindings[i].gamepad_key = binding.Key.ToString();
@@ -678,10 +645,10 @@ void CustomQuickchat::determine_quickchat_labels(UGFxData_Controls_TA* controls,
 			LOG("gamepad_key: {}", preset_group_bindings[i].gamepad_key);
 		}
 		
-		LOG("Bindings.size(): {}", Bindings.size());
+		LOG("Bindings.size(): {}", m_bindings.size());
 	}
 
-	for (const auto& binding : Bindings)
+	for (const auto& binding : m_bindings)
 	{
 		if (binding.bindingType != EBindingType::Sequence || binding.buttons.size() < 2) continue;
 
@@ -799,10 +766,10 @@ void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGF
 	}
 
 
-	LOG("Applied quickchat labels to UI for {} group", preset_group_names[index]);
+	LOG("Applied quickchat labels to UI for {} group", PRESET_GROUP_NAMES[index]);
 }
 
-
+/*
 void CustomQuickchat::gui_footer_init()
 {
 	fs::path plugin_assets_folder = gameWrapper->GetDataFolder() / "sslow_plugin_assets";
@@ -834,3 +801,4 @@ void CustomQuickchat::gui_footer_init()
 		LOG("One or more plugin asset is missing... will use old ugly settings footer instead :(");
 	}
 }
+*/

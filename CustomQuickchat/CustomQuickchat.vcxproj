@@ -146,6 +146,7 @@
     <ClCompile Include="RegisterCvars.cpp" />
     <ClCompile Include="Settings.cpp" />
     <ClCompile Include="SpeechToText.cpp" />
+    <ClCompile Include="Structs.cpp" />
     <ClCompile Include="TextEffects.cpp" />
   </ItemGroup>
   <ItemGroup>

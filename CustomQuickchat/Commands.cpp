@@ -50,7 +50,7 @@ void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
     {
         const auto& chat_label_arr = pc_qc_labels[i];
 
-        LOG("{}:", preset_group_names[i]);
+        LOG("{}:", PRESET_GROUP_NAMES[i]);
         for (int j = 0; j < 4; j++)
         {
             LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
@@ -62,7 +62,7 @@ void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
     {
         const auto& chat_label_arr = gp_qc_labels[i];
 
-        LOG("{}:", preset_group_names[i]);
+        LOG("{}:", PRESET_GROUP_NAMES[i]);
         for (int j = 0; j < 4; j++)
         {
             LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
@@ -73,7 +73,7 @@ void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
 {
-    UOnlineGamePlaylists_X* playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
+    auto playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
     if (!playlists)
         return;
 
@@ -93,7 +93,7 @@ void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 {
-    if (chatbox_open)
+    if (m_chatboxOpen)
         return;
 
     auto shell = Instances.GetInstanceOf<UGFxShell_X>();
@@ -108,7 +108,7 @@ void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 
 void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 {
-    if (chatbox_open)
+    if (m_chatboxOpen)
         return;
 
     auto shell = Instances.GetInstanceOf<UGFxShell_TA>();
@@ -135,8 +135,7 @@ void CustomQuickchat::cmd_test(std::vector<std::string> args)
     LOG("did the test");
 }
 
-
 void CustomQuickchat::cmd_test2(std::vector<std::string> args)
 {
-    // ...
+    LOG("Did test 2");
 }

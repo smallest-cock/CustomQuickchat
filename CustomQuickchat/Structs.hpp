@@ -117,178 +117,51 @@ struct Binding
     ButtonPress firstButtonState;
 
 
-    bool ShouldBeTriggered(
+    bool shouldBeTriggered(
         const ButtonPress& buttonEvent,
         const std::unordered_map<std::string, bool>& keyStates,
         const std::chrono::steady_clock::time_point& lastChatSent,
         const std::chrono::steady_clock::time_point& epochTime,
         const std::chrono::duration<double>& minDelayBetweenBindings,
-        const std::chrono::duration<double>& maxTimeWindow)
-    {
-        switch (bindingType)
-        {
-        case EBindingType::Combination:
-            return CheckCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
-        case EBindingType::Sequence:
-            return CheckSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
-        default:
-            return false;   // if there's no valid binding type for some reason
-        }
-    }
-    
-    bool CheckCombination(
+        const std::chrono::duration<double>& maxTimeWindow);
+    bool checkCombination(
         const ButtonPress& buttonEvent,
         const std::unordered_map<std::string, bool>& keyStates,
         const std::chrono::steady_clock::time_point& lastBindingActivated,
-        const std::chrono::duration<double>& minDelayBetweenBindings)
-    {
-        if (buttons.empty())
-            return false;
-
-        for (const std::string& button : buttons)
-        {
-            if (keyStates.contains(button))
-            {
-                if (!keyStates.at(button))
-                    return false;
-            }
-        }
-
-        // check if event happened AFTER minBindingDelay
-        return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
-    }
-
-    bool CheckSequence(
+        const std::chrono::duration<double>& minDelayBetweenBindings);
+    bool checkSequence(
         const ButtonPress& buttonEvent,
         const std::chrono::steady_clock::time_point& lastChatSent,
         const std::chrono::steady_clock::time_point& epochTime,
         const std::chrono::duration<double>& minDelayBetweenBindings,
-        const std::chrono::duration<double>& maxTimeWindow)
-    {
-        if (buttons.size() < 2)
-            return false;   // exit if there's not at least 2 buttons in binding
-
-        bool button1Pressed = buttonEvent.buttonName == buttons[0];
-        bool button2Pressed = buttonEvent.buttonName == buttons[1];
-
-        if (!button1Pressed && !button2Pressed)
-            return false;   // early exit if no buttons from binding have been pressed
-
-        // if first button press data is empty...
-        if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
-        {
-            if (button1Pressed)
-                firstButtonState = buttonEvent;     // update first button press data then exit
-            return false;
-        }
-
-        // if first button press data exists.......
-        
-        // if first button press data is too old... reset or update it, then exit
-        if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
-        {
-            if (button1Pressed)
-                firstButtonState = buttonEvent;     // update first button press data
-            else
-                firstButtonState.Reset(epochTime);  // reset info bc 1st button doesn't match
-            return false;
-        }
-
-        // if first button press data is still valid.......
-
-        if (!button2Pressed)
-            return false;
-
-        // make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
-        bool correct1stButtonPressed = firstButtonState.buttonName == buttons[0];
-        bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
-
-        if (correct1stButtonPressed)
-        {
-            if (button2PressedLateEnough)
-            {
-                firstButtonState.Reset(epochTime);
-                return true;
-            } 
-
-            firstButtonState.Reset(epochTime);  // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
-        }
-
-        return false;
-    }
+        const std::chrono::duration<double>& maxTimeWindow);
 
     // determine if chat contains any special keyword or text effect (once, at the time of binding creation, rather than every time binding is triggered)
-    void UpdateKeywordAndTextEffect(const std::string& regexPatternStr)
-    {
-        std::vector<std::string> matchedSubstrings = GetMatchedSubstrings(chat, regexPatternStr);
-        
-        // handle any words in double brackets, like special keywords or word variations
-        for (const std::string& stringFoundInBrackets : matchedSubstrings)
-        {
-            auto it = keywordsMap.find(stringFoundInBrackets);
-
-            // if a special keyword was found
-            if (it != keywordsMap.end())
-            {
-                keyWord = it->second;                   // update binding's keyword
-                textEffect = GetTextEffect(keyWord);    // update binding's text effect (if any)
-            }
-            // if something else was found in double brackets (aka a word variation)
-            else if (keyWord == EKeyword::None)
-            {
-                keyWord = EKeyword::WordVariation;
-            }
-        }
-    }
-
-    static ETextEffect GetTextEffect(EKeyword keyword)
-    {
-        switch (keyword)
-        {
-        case EKeyword::LastChatUwu:
-        case EKeyword::SpeechToTextUwu:
-            return ETextEffect::Uwu;
-        case EKeyword::LastChatSarcasm:
-        case EKeyword::SpeechToTextSarcasm:
-            return ETextEffect::Sarcasm;
-        default:
-            return ETextEffect::None;
-        }
-    }
-
-    static std::vector<std::string> GetMatchedSubstrings(const std::string& str, const std::string& regexPatternStr)
-    {
-        std::regex regexPattern(regexPatternStr);
-
-        std::vector<std::string> matchedSubstrings;
-        std::sregex_iterator it(str.begin(), str.end(), regexPattern);
-        std::sregex_iterator end;
-
-        while (it != end)
-        {
-            std::string matchedSubstring = (*it)[1].str();
-            matchedSubstrings.push_back(matchedSubstring);
-            ++it;
-        }
-
-        return matchedSubstrings;
-    }
+    void updateKeywordAndTextEffect(const std::string& regexPatternStr);
+    static ETextEffect getTextEffect(EKeyword keyword);
+    static std::vector<std::string> getMatchedSubstrings(const std::string& str, const std::string& regexPatternStr);
 };
 
 
 struct VariationList
 {
     std::string listName;
-    std::string unparsedString;
+    std::string unparsedString; // for ImGui
     std::vector<std::string> wordList;
     std::vector<std::string> shuffledWordList;
     int nextUsableIndex = 0;
+    bool shuffleWordList = true;
+
+
+    std::vector<std::string> generateShuffledWordList() const;
+    void reshuffleWordList(); // also sets nextUsableIndex to 0
+    std::string getNextVariation();
+    void updateDataFromUnparsedString();
 };
 
 
 
 // ============================================= RANKS =============================================
-
 
 enum class ERankPlaylists : uint8_t
 {
