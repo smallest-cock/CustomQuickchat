@@ -317,8 +317,8 @@ void InstancesComponent::SpawnNotification(const std::string& title, const std::
     if (!notification)
         return;
 
-    FString titleFStr = StringUtils::newFString(title);
-    FString contentFStr = StringUtils::newFString(content);
+    FString titleFStr = FString::create(title);
+    FString contentFStr = FString::create(content);
 
     notification->SetTitle(titleFStr);
     notification->SetBody(contentFStr);
@@ -339,7 +339,7 @@ void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode
         return;
     }
 
-    FString chatFStr = StringUtils::newFString(chat);
+    FString chatFStr = FString::create(chat);
 
     if (chatMode == EChatChannel::EChatChannel_Match)
     {
@@ -383,7 +383,7 @@ void InstancesComponent::SetChatTimeoutMsg(const std::string& newMsg, AGFxHUD_TA
     if (hud->ChatDisabledMessage.ToString() == newMsg)
         return;
      
-    hud->ChatDisabledMessage = StringUtils::newFString(newMsg);    // overwrite ChatDisabledMessage
+    hud->ChatDisabledMessage = FString::create(newMsg);    // overwrite ChatDisabledMessage
     LOG("Set chat timeout message: \"{}\"", Format::EscapeBraces(newMsg));
 }
 

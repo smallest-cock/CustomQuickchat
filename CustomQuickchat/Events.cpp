@@ -229,7 +229,7 @@ void CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, v
         std::string censoredMsg = params->Message.ToString();
         if (gfxUid == m_mostRecentUncensoredChat.uid && censoredMsg != m_mostRecentUncensoredChat.uncensoredMsg)
         {
-			params->Message = StringUtils::newFString(m_mostRecentUncensoredChat.uncensoredMsg);
+			params->Message = FString::create(m_mostRecentUncensoredChat.uncensoredMsg);
             LOG("Uncensored chat: \"{}\" --> \"{}\"",
                 Format::EscapeBraces(censoredMsg), Format::EscapeBraces(m_mostRecentUncensoredChat.uncensoredMsg));
         }

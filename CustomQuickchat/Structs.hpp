@@ -334,7 +334,7 @@ struct NetId
         FUniqueNetId id;
         id.Uid =                Uid;
         id.NpId =               NpId;
-        id.EpicAccountId =      StringUtils::newFString(EpicAccountId);
+        id.EpicAccountId =      FString::create(EpicAccountId);
         id.Platform =           Platform;
         id.SplitscreenID =      SplitscreenID;
         
