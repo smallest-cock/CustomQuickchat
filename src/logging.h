@@ -51,12 +51,6 @@ struct FormatWstring
 };
 
 
-//template <typename... Args>
-//void LOG(std::string_view format_str, Args&&... args)
-//{
-//	_globalCvarManager->log(std::vformat(format_str, std::make_format_args(std::forward<Args>(args)...)));
-//}
-
 template <typename... Args>
 void LOG(std::string_view format_str, Args&&... args)
 {
@@ -69,11 +63,17 @@ void LOG(std::wstring_view format_str, Args&&... args)
 	_globalCvarManager->log(std::vformat(format_str, std::make_wformat_args(args...)));
 }
 
-//template <typename... Args>
-//void LOG(std::wstring_view format_str, Args&&... args)
-//{
-//	_globalCvarManager->log(std::vformat(format_str, std::make_wformat_args(std::forward<Args>(args)...)));
-//}
+template <typename... Args>
+void LOGERROR(std::string_view format_str, Args&&... args)
+{
+	_globalCvarManager->log("ERROR: " + std::vformat(format_str, std::make_format_args(args...)));
+}
+
+template <typename... Args>
+void LOGERROR(std::wstring_view format_str, Args&&... args)
+{
+	_globalCvarManager->log("ERROR: " + std::vformat(format_str, std::make_wformat_args(args...)));
+}
 
 
 template <typename... Args>

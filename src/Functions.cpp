@@ -1,7 +1,12 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
+#include "CustomQuickchat.hpp"
+#include "Macros.hpp"
+#include "TextEffects.hpp"
+#include "Keys.hpp"
+#include "components/Instances.hpp"
+#include "components/LobbyInfo.hpp"
 #include <regex>
-
+#include <random>
 
 
 void CustomQuickchat::performBindingAction(const Binding& binding)
@@ -34,10 +39,10 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 		SendChat(get_last_chatter_rank_str(binding.keyWord), binding.chatMode);
 		return;
 	case EKeyword::Forfeit:
-		RunCommand(Commands::forfeit);
+		runCommand(Commands::forfeit);
 		return;
 	case EKeyword::ExitToMainMenu:
-		RunCommand(Commands::exitToMainMenu);
+		runCommand(Commands::exitToMainMenu);
 		return;
 
 	// lastChat and word variations need to parse the chat string every time binding is triggered (but im prolly wrong, and theres a way to eliminate the need)
@@ -121,7 +126,7 @@ void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
 		return;
 
 	// only send chat if custom quickchats are turned on
-	auto enabledCvar = GetCvar(Cvars::enabled);
+	auto enabledCvar = getCvar(Cvars::enabled);
 	if (!enabledCvar || !enabledCvar.getBoolValue())
 		return;
 
@@ -461,11 +466,11 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 {
 	auto apply_sarcasm_effect = [this](const std::string& text)
 		{
-			auto randomize_sarcasm_cvar = GetCvar(Cvars::randomize_sarcasm);
+			auto randomize_sarcasm_cvar = getCvar(Cvars::randomize_sarcasm);
 			if (randomize_sarcasm_cvar.getBoolValue())
-				return to_sarcasm_randomized(text);
+				return TextEffects::toSarcasmRandomized(text);
 			else
-				return to_sarcasm(text);
+				return TextEffects::toSarcasm(text);
 		};
 
 	switch (effect)
@@ -473,7 +478,7 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	case ETextEffect::None:
 		return originalText;
 	case ETextEffect::Uwu:
-		return to_uwu(originalText);
+		return TextEffects::toUwu(originalText);
 	case ETextEffect::Sarcasm:
 		return apply_sarcasm_effect(originalText);
 	default:

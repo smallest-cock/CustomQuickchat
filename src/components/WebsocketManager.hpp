@@ -1,11 +1,12 @@
 #pragma once
-
+#define ASIO_STANDALONE
+#define _WEBSOCKETPP_CPP11_STL_
+#define _WEBSOCKETPP_NO_BOOST
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
 
 using websocketpp::connection_hdl;
-
 
 class WebsocketClientManager
 {

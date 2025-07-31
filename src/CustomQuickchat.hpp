@@ -1,25 +1,15 @@
 #pragma once
-
-#include "pch.h"
 #include "GuiBase.h"
-#include "bakkesmod/plugin/bakkesmodplugin.h"
-#include "bakkesmod/plugin/pluginwindow.h"
-#include "bakkesmod/plugin/PluginSettingsWindow.h"
-
-#include "Structs.hpp"
-#include "Keys.h"
-#include "TextEffects.h"
+#include <bakkesmod/plugin/bakkesmodplugin.h>
+#include <bakkesmod/plugin/pluginwindow.h>
+#include <bakkesmod/plugin/PluginSettingsWindow.h>
 
 #include "version.h"
 
-#include "Macros.hpp"
-#include "Events.hpp"
+#include <ModUtils/util/Utils.hpp>
+#include "components/WebsocketManager.hpp"
+#include "Structs.hpp"
 #include "Cvars.hpp"
-#include <ModUtils/includes.hpp>
-#include "Components/Includes.hpp"
-
-
-//#define USE_SPEECH_TO_TEXT
 
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -256,15 +246,29 @@ class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin
     void event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
     void event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName);
 
-    // cvar helper stuff
-    CVarWrapper RegisterCvar_Bool(const CvarData& cvar, bool startingValue);
-    CVarWrapper RegisterCvar_String(const CvarData& cvar, const std::string& startingValue);
-    CVarWrapper RegisterCvar_Number(const CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
-    CVarWrapper RegisterCvar_Color(const CvarData& cvar, const std::string& startingValue);
-    CVarWrapper GetCvar(const CvarData& cvar);
-    void RegisterCommand(const CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
-    void RunCommand(const CvarData& command, float delaySeconds = 0);
-    void RunCommandInterval(const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
+private:
+	// plugin boilerplate helper stuff
+	CVarWrapper registerCvar_Bool(const CvarData& cvar, bool startingValue);
+	CVarWrapper registerCvar_String(const CvarData& cvar, const std::string& startingValue);
+	CVarWrapper registerCvar_Number(const CvarData& cvar, float startingValue, bool hasMinMax = false, float min = 0, float max = 0);
+	CVarWrapper registerCvar_Color(const CvarData& cvar, const std::string& startingValue);
+	void registerCommand(const CvarData& cvar, std::function<void(std::vector<std::string>)> callback);
+	CVarWrapper getCvar(const CvarData& cvar);
+
+	void hookEvent(const char* funcName, std::function<void(std::string)> callback);
+	void hookEventPost(const char* funcName, std::function<void(std::string)> callback);
+	void hookWithCaller(const char* funcName, std::function<void(ActorWrapper, void*, std::string)> callback);
+	void hookWithCallerPost(const char* funcName, std::function<void(ActorWrapper, void*, std::string)> callback);
+
+	void runCommand(const CvarData& command, float delaySeconds = 0.0f);
+	void autoRunCommand(const CvarData& autoRunBool, const CvarData& command, float delaySeconds = 0.0f);
+	void runCommandInterval(const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
+	void autoRunCommandInterval(
+		const CvarData& autoRunBool,
+		const CvarData& command,
+		int numIntervals,
+		float delaySeconds,
+		bool delayFirstCommand = false);
 
 public:
     // GUI

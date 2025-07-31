@@ -1,6 +1,8 @@
 .vs
 .vscode
+.cache
 build
 plugins
-vcpkg
 vcpkg_installed
+
+CMakeUserPresets.json

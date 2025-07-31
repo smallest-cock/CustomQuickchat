@@ -32,50 +32,27 @@ You can use the following commands in the BakkesMod console (`F6`) or bind them 
 | `cqc_list_bindings` | Lists your current quickchat bindings | Console |
 | `cqc_list_custom_chat_labels` | Shows all custom quickchat labels visible in-game | Console |
 
-<br>
-
-## 🛠️ Building the Plugin
-To build the project, follow these steps:
+## 🔨 Building
+> [!NOTE]  
+> Building this plugin requires **64-bit Windows** and the **MSVC** toolchain
+> - Due to reliance on the Windows SDK and the need for ABI compatibility with Rocket League
 
 ### 1. Initialize Submodules
-
-Run `scripts\init-submodules.bat` after cloning the repo to initialize the submodules in an optimal way.
+Run `./scripts/init-submodules.bat` after cloning the repo to initialize the submodules optimally.
 
 <details> <summary>🔍 Why this instead of <code>git submodule update --init</code> ?</summary>
+<li>Uses a specific version of the <strong>asio</strong> library (1.18.2) required for compatibility with <strong>websocketpp</strong></li>
 <li>Avoids downloading 200MB of history for the <strong>nlohmann/json</strong> library</li>
-<li>Allows Git to detect updates for the other submodules</li>
+<li>Ensures Git can detect updates for the other submodules</li>
 </details>
 
----
-
-### 2. Install Dependencies via vcpkg
-
-This project uses [websocketpp](https://github.com/zaphoyd/websocketpp), which was removed from vcpkg's official packages on March 3rd 2025. So you'll need to use an older vcpkg version that still contains it.
-
-**Quick Setup**:
-```bash
-# Clone vcpkg at a last known good commit (minimal download)
-git clone https://github.com/microsoft/vcpkg.git --depth 1
-cd vcpkg
-git fetch --depth=1 origin efb1e7436979a30c4d3e5ab2375fd8e2e461d541
-git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
-
-# Initialize submodules (minimal download)
-git submodule update --init --recursive --depth 1
-
-# Bootstrap vcpkg and enable MSBuild integration
-./bootstrap-vcpkg.bat
-./vcpkg integrate install
-```
-
-➡️ Now when you build the project for the first time, vcpkg will build/install the dependencies listed in `vcpkg.json`.
-
-More info: [vcpkg manifest mode](https://learn.microsoft.com/en-us/vcpkg/consume/manifest-mode?tabs=msbuild%2Cbuild-MSBuild#2---integrate-vcpkg-with-your-build-system)
-
----
+### 2. Build with CMake
+1. Install [CMake](https://cmake.org/download) and [Ninja](https://github.com/ninja-build/ninja/releases) (or another build system if you prefer)
+2. Run `cmake --preset windows-x64-msvc` (or create your own preset in a `CMakeUserPresets.json`) to configure
+3. Run `cmake --build build`
+   - The built binaries will be in `./plugins`
 
 ### 3. Bundle the Python Script
-
 This project includes `speech-to-text-server.pyw` which is a Python server that must be converted into an executable.
 
 **Instructions:**

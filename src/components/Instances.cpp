@@ -78,11 +78,13 @@ uintptr_t InstancesComponent::GetGObjectsAddress()
     return GetGNamesAddress() + 0x48;
 }
 
-void InstancesComponent::InitGlobals()
+bool InstancesComponent::InitGlobals()
 {
-    uintptr_t gnamesAddr = GetGNamesAddress();
-    GNames = reinterpret_cast<TArray<FNameEntry*>*>(gnamesAddr);
-    GObjects = reinterpret_cast<TArray<UObject*>*>(gnamesAddr + 0x48);
+	uintptr_t gnamesAddr = GetGNamesAddress();
+	GNames = reinterpret_cast<TArray<FNameEntry*>*>(gnamesAddr);
+	GObjects = reinterpret_cast<TArray<UObject*>*>(gnamesAddr + 0x48);
+
+	return CheckGlobals();
 }
 
 bool InstancesComponent::AreGObjectsValid()

@@ -1,6 +1,8 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
-
+#include "CustomQuickchat.hpp"
+#include "Macros.hpp"
+#include "components/Instances.hpp"
+#include <ModUtils/util/Utils.hpp>
 
 
 void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::string eventName)
@@ -10,7 +12,7 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 
     if (m_matchEnded)
     {
-        auto disablePostMatchQuickchats_cvar = GetCvar(Cvars::disablePostMatchQuickchats);
+        auto disablePostMatchQuickchats_cvar = getCvar(Cvars::disablePostMatchQuickchats);
         if (!disablePostMatchQuickchats_cvar || disablePostMatchQuickchats_cvar.getBoolValue()) 
             return;
     }
@@ -33,14 +35,14 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
         ButtonPress buttonPressEvent{ keyName, std::chrono::steady_clock::now() };
 
         // get min binding delay
-        auto minBindingDelay_cvar = GetCvar(Cvars::minBindingDelay);
+        auto minBindingDelay_cvar = getCvar(Cvars::minBindingDelay);
         if (!minBindingDelay_cvar)
             return;
         double minBindingDelay_raw = minBindingDelay_cvar.getFloatValue();
         auto minBindingDelay = std::chrono::duration<double>(minBindingDelay_raw);
 
         // get max sequence time window
-        auto sequenceTimeWindow_cvar = GetCvar(Cvars::sequenceTimeWindow);
+        auto sequenceTimeWindow_cvar = getCvar(Cvars::sequenceTimeWindow);
         if (!sequenceTimeWindow_cvar)
             return;
         double sequenceTimeWindow_raw = sequenceTimeWindow_cvar.getFloatValue();
@@ -67,16 +69,16 @@ void CustomQuickchat::Event_KeyPressed(ActorWrapper caller, void* params, std::s
 }
 
 
-void CustomQuickchat::Event_GFxHUD_TA_ChatPreset(ActorWrapper caller, void* params, std::string eventName)
+void CustomQuickchat::Event_GFxHUD_TA_ChatPreset(ActorWrapper caller, void* Params, std::string eventName)
 {
-    AGFxHUD_TA_execChatPreset_Params* Params = reinterpret_cast<AGFxHUD_TA_execChatPreset_Params*>(params);
-    if (!Params)
+    auto* params = reinterpret_cast<AGFxHUD_TA_execChatPreset_Params*>(Params);
+    if (!params)
         return;
 
     // get cvars
-    auto enabled_cvar =                     GetCvar(Cvars::enabled);
-    auto overrideDefaultQuickchats_cvar =   GetCvar(Cvars::overrideDefaultQuickchats);
-    auto blockDefaultQuickchats_cvar =      GetCvar(Cvars::blockDefaultQuickchats);
+    auto enabled_cvar =                     getCvar(Cvars::enabled);
+    auto overrideDefaultQuickchats_cvar =   getCvar(Cvars::overrideDefaultQuickchats);
+    auto blockDefaultQuickchats_cvar =      getCvar(Cvars::blockDefaultQuickchats);
 
     if (!enabled_cvar || !enabled_cvar.getBoolValue())
         return;
@@ -85,25 +87,20 @@ void CustomQuickchat::Event_GFxHUD_TA_ChatPreset(ActorWrapper caller, void* para
     if (overrideDefaultQuickchats_cvar.getBoolValue())
     {
         auto currentTime = std::chrono::steady_clock::now();
-
         auto blockQuickchatWindow = std::chrono::duration<double>(BLOCK_DEFAULT_QUICKCHAT_WINDOW);
 
         if (currentTime <= (lastBindingActivated + blockQuickchatWindow))
-        {
-            Params->Index = 420;    // effectively blocks default quickchat from propagating
-        }
+            params->Index = 420; // effectively blocks default quickchat from propagating
     }
     else if (blockDefaultQuickchats_cvar.getBoolValue())
-    {
-        Params->Index = 420;    // effectively blocks default quickchat from propagating
-    }
+        params->Index = 420;
 }
 
 
 // happens after joining a match and after a binding has been changed in RL settings
 void CustomQuickchat::Event_InitUIBindings(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    auto caller = reinterpret_cast<UGFxData_Controls_TA*>(Caller.memory_address);
+    auto* caller = reinterpret_cast<UGFxData_Controls_TA*>(Caller.memory_address);
     if (!caller)
         return;
 
@@ -124,8 +121,8 @@ void CustomQuickchat::Event_OnPressChatPreset(ActorWrapper Caller, void* Params,
     if (gameWrapper->IsInFreeplay())
         return;
 
-    auto enabled_cvar = GetCvar(Cvars::enabled);
-    auto overrideDefaultQuickchats_cvar = GetCvar(Cvars::overrideDefaultQuickchats);
+    auto enabled_cvar = getCvar(Cvars::enabled);
+    auto overrideDefaultQuickchats_cvar = getCvar(Cvars::overrideDefaultQuickchats);
     if (!enabled_cvar || !enabled_cvar.getBoolValue())
         return;
     if (!overrideDefaultQuickchats_cvar || !overrideDefaultQuickchats_cvar.getBoolValue())
@@ -145,11 +142,11 @@ void CustomQuickchat::Event_OnPressChatPreset(ActorWrapper Caller, void* Params,
 
 void CustomQuickchat::Event_ApplyChatSpamFilter(ActorWrapper caller, void* params, std::string eventName)
 {
-    auto pc = reinterpret_cast<APlayerController_TA*>(caller.memory_address);
+    auto* pc = reinterpret_cast<APlayerController_TA*>(caller.memory_address);
     if (!pc)
         return;
 
-    auto disableChatTimeout_cvar = GetCvar(Cvars::disableChatTimeout);
+    auto disableChatTimeout_cvar = getCvar(Cvars::disableChatTimeout);
     if (!disableChatTimeout_cvar)
         return;
     bool disableChatTimeout = disableChatTimeout_cvar.getBoolValue();
@@ -165,7 +162,7 @@ void CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, vo
 {
     m_gamePaused = false;
 
-    auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+    auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
     if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
         return;
 
@@ -182,7 +179,7 @@ void CustomQuickchat::Event_PlayerController_EnterStartState(ActorWrapper Caller
     m_inGameEvent = true;
 
     // set chat timeout message
-    auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+    auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
     if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
         return;
 

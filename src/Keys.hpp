@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <vector>
 
@@ -22,7 +21,7 @@ const std::vector<std::string> possibleKeyNames =
 	"XboxTypeS_LeftX",
 	"XboxTypeS_LeftY",
 	"XboxTypeS_RightX",
-	"XboxTypeS_RightY"
+	"XboxTypeS_RightY",
 	"XboxTypeS_LeftTrigger",
 	"XboxTypeS_RightTrigger",
 	"XboxTypeS_LeftTriggerAxis",

@@ -1,6 +1,7 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
-
+#include "CustomQuickchat.hpp"
+#include "Macros.hpp"
+#include "components/Instances.hpp"
 
 
 void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedCvar)
@@ -14,7 +15,6 @@ void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedC
 	, msg);
 }
 
-
 void CustomQuickchat::changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool enableSTTNotifications = updatedCvar.getBoolValue();
@@ -24,7 +24,6 @@ void CustomQuickchat::changed_enableSTTNotifications(std::string cvarName, CVarW
 	LOG(msg);
 }
 
-
 void CustomQuickchat::changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool overrideDefaultQuickchats = updatedCvar.getBoolValue();
@@ -32,14 +31,13 @@ void CustomQuickchat::changed_overrideDefaultQuickchats(std::string cvarName, CV
 	// there can be only one...
 	if (overrideDefaultQuickchats)
 	{
-		auto blockDefaultQuickchats_cvar = GetCvar(Cvars::blockDefaultQuickchats);
+		auto blockDefaultQuickchats_cvar = getCvar(Cvars::blockDefaultQuickchats);
 		if (!blockDefaultQuickchats_cvar)
 			return;
 
 		blockDefaultQuickchats_cvar.setValue(false);
 	}
 }
-
 
 void CustomQuickchat::changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar)
 {
@@ -48,7 +46,7 @@ void CustomQuickchat::changed_blockDefaultQuickchats(std::string cvarName, CVarW
 	// there can be only one...
 	if (blockDefaultQuickchats)
 	{
-		auto overrideDefaultQuickchats_cvar = GetCvar(Cvars::overrideDefaultQuickchats);
+		auto overrideDefaultQuickchats_cvar = getCvar(Cvars::overrideDefaultQuickchats);
 		if (!overrideDefaultQuickchats_cvar)
 			return;
 
@@ -56,14 +54,13 @@ void CustomQuickchat::changed_blockDefaultQuickchats(std::string cvarName, CVarW
 	}
 }
 
-
 void CustomQuickchat::changed_useCustomChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool useCustomChatTimeoutMsg = updatedCvar.getBoolValue();
 
 	if (useCustomChatTimeoutMsg)
 	{
-		auto customChatTimeoutMsg_cvar = GetCvar(Cvars::customChatTimeoutMsg);
+		auto customChatTimeoutMsg_cvar = getCvar(Cvars::customChatTimeoutMsg);
 		if (!customChatTimeoutMsg_cvar)
 			return;
 	
@@ -80,10 +77,9 @@ void CustomQuickchat::changed_useCustomChatTimeoutMsg(std::string cvarName, CVar
 
 }
 
-
 void CustomQuickchat::changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar)
 {
-	auto useCustomChatTimeoutMsg_cvar = GetCvar(Cvars::useCustomChatTimeoutMsg);
+	auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
 	if (!useCustomChatTimeoutMsg_cvar)
 		return;
 

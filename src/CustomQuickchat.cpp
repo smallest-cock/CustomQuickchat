@@ -1,8 +1,10 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
+#include "CustomQuickchat.hpp"
+#include "components/Instances.hpp"
+#include "Events.hpp"
 
 
-BM_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
@@ -11,48 +13,44 @@ void CustomQuickchat::onLoad()
 {
     _globalCvarManager = cvarManager;
     
-
-    // init globals
-    Instances.InitGlobals();
-    if (!Instances.CheckGlobals())
+    if (!Instances.InitGlobals())
         return;
-
 
     // ====================================== cvars ===========================================
 
     // bools
-    auto enabled_cvar =                         RegisterCvar_Bool(Cvars::enabled,                       true);
-    auto overrideDefaultQuickchats_cvar =       RegisterCvar_Bool(Cvars::overrideDefaultQuickchats,     true);
-    auto blockDefaultQuickchats_cvar =          RegisterCvar_Bool(Cvars::blockDefaultQuickchats,        false);
-    auto disablePostMatchQuickchats_cvar =      RegisterCvar_Bool(Cvars::disablePostMatchQuickchats,    false);
-    auto disableChatTimeout_cvar =              RegisterCvar_Bool(Cvars::disableChatTimeout,            true);
-    auto useCustomChatTimeoutMsg_cvar =         RegisterCvar_Bool(Cvars::useCustomChatTimeoutMsg,       true);
-    auto removeTimestamps_cvar =                RegisterCvar_Bool(Cvars::removeTimestamps,              true);
-    auto enableSTTNotifications_cvar =          RegisterCvar_Bool(Cvars::enableSTTNotifications,        true);
-    auto autoCalibrateMic_cvar =                RegisterCvar_Bool(Cvars::autoCalibrateMic,              true);
-    auto user_chats_in_last_chat_cvar =         RegisterCvar_Bool(Cvars::user_chats_in_last_chat,       false);
-    auto teammate_chats_in_last_chat_cvar =     RegisterCvar_Bool(Cvars::teammate_chats_in_last_chat,   true);
-    auto quickchats_in_last_chat_cvar =         RegisterCvar_Bool(Cvars::quickchats_in_last_chat,       true);
-    auto party_chats_in_last_chat_cvar =        RegisterCvar_Bool(Cvars::party_chats_in_last_chat,      true);
-    auto team_chats_in_last_chat_cvar =         RegisterCvar_Bool(Cvars::team_chats_in_last_chat,       true);
-    auto randomize_sarcasm_cvar =               RegisterCvar_Bool(Cvars::randomize_sarcasm,             true);
-    auto uncensorChats_cvar =                   RegisterCvar_Bool(Cvars::uncensorChats,                 true);
+    auto enabled_cvar =                         registerCvar_Bool(Cvars::enabled,                       true);
+    auto overrideDefaultQuickchats_cvar =       registerCvar_Bool(Cvars::overrideDefaultQuickchats,     true);
+    auto blockDefaultQuickchats_cvar =          registerCvar_Bool(Cvars::blockDefaultQuickchats,        false);
+    auto disablePostMatchQuickchats_cvar =      registerCvar_Bool(Cvars::disablePostMatchQuickchats,    false);
+    auto disableChatTimeout_cvar =              registerCvar_Bool(Cvars::disableChatTimeout,            true);
+    auto useCustomChatTimeoutMsg_cvar =         registerCvar_Bool(Cvars::useCustomChatTimeoutMsg,       true);
+    auto removeTimestamps_cvar =                registerCvar_Bool(Cvars::removeTimestamps,              true);
+    auto enableSTTNotifications_cvar =          registerCvar_Bool(Cvars::enableSTTNotifications,        true);
+    auto autoCalibrateMic_cvar =                registerCvar_Bool(Cvars::autoCalibrateMic,              true);
+    auto user_chats_in_last_chat_cvar =         registerCvar_Bool(Cvars::user_chats_in_last_chat,       false);
+    auto teammate_chats_in_last_chat_cvar =     registerCvar_Bool(Cvars::teammate_chats_in_last_chat,   true);
+    auto quickchats_in_last_chat_cvar =         registerCvar_Bool(Cvars::quickchats_in_last_chat,       true);
+    auto party_chats_in_last_chat_cvar =        registerCvar_Bool(Cvars::party_chats_in_last_chat,      true);
+    auto team_chats_in_last_chat_cvar =         registerCvar_Bool(Cvars::team_chats_in_last_chat,       true);
+    auto randomize_sarcasm_cvar =               registerCvar_Bool(Cvars::randomize_sarcasm,             true);
+    auto uncensorChats_cvar =                   registerCvar_Bool(Cvars::uncensorChats,                 true);
 
     removeTimestamps_cvar.bindTo(m_removeTimestamps);
     uncensorChats_cvar.bindTo(m_uncensorChats);
 
     // numbers
-    auto micEnergyThreshold_cvar =              RegisterCvar_Number(Cvars::micEnergyThreshold,          420);
-    auto sequenceTimeWindow_cvar =              RegisterCvar_Number(Cvars::sequenceTimeWindow,          2,      true, 0,    10);
-    auto minBindingDelay_cvar =                 RegisterCvar_Number(Cvars::minBindingDelay,             0.05,   true, 0,    1);
-    auto notificationDuration_cvar =            RegisterCvar_Number(Cvars::notificationDuration,        3,      true, 1.5,  10);
-    auto beginSpeechTimeout_cvar =              RegisterCvar_Number(Cvars::beginSpeechTimeout,          3,      true, 1.5,  10);
-    auto speechProcessingTimeout_cvar =         RegisterCvar_Number(Cvars::speechProcessingTimeout,     10,     true, 3,    500);
-    auto micCalibrationTimeout_cvar =           RegisterCvar_Number(Cvars::micCalibrationTimeout,       10,     true, 3,    20);
-    auto websocket_port_cvar =                  RegisterCvar_Number(Cvars::websocket_port,              8003,   true, 0,    65535);
+    auto micEnergyThreshold_cvar =              registerCvar_Number(Cvars::micEnergyThreshold,          420);
+    auto sequenceTimeWindow_cvar =              registerCvar_Number(Cvars::sequenceTimeWindow,          2,      true, 0,    10);
+    auto minBindingDelay_cvar =                 registerCvar_Number(Cvars::minBindingDelay,             0.05,   true, 0,    1);
+    auto notificationDuration_cvar =            registerCvar_Number(Cvars::notificationDuration,        3,      true, 1.5,  10);
+    auto beginSpeechTimeout_cvar =              registerCvar_Number(Cvars::beginSpeechTimeout,          3,      true, 1.5,  10);
+    auto speechProcessingTimeout_cvar =         registerCvar_Number(Cvars::speechProcessingTimeout,     10,     true, 3,    500);
+    auto micCalibrationTimeout_cvar =           registerCvar_Number(Cvars::micCalibrationTimeout,       10,     true, 3,    20);
+    auto websocket_port_cvar =                  registerCvar_Number(Cvars::websocket_port,              8003,   true, 0,    65535);
 
     // strings
-    auto customChatTimeoutMsg_cvar =            RegisterCvar_String(Cvars::customChatTimeoutMsg, "Wait [Time] seconds lil bro");
+    auto customChatTimeoutMsg_cvar =            registerCvar_String(Cvars::customChatTimeoutMsg, "Wait [Time] seconds lil bro");
 
 
     // cvar change callbacks
@@ -77,14 +75,14 @@ void CustomQuickchat::onLoad()
 
     // ===================================== commands =========================================
 
-    RegisterCommand(Commands::toggleEnabled,            std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1));
-    RegisterCommand(Commands::listBindings,             std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1));
-    RegisterCommand(Commands::list_custom_chat_labels,  std::bind(&CustomQuickchat::cmd_list_custom_chat_labels, this, std::placeholders::_1));
-    RegisterCommand(Commands::list_playlist_info,       std::bind(&CustomQuickchat::cmd_list_playlist_info, this, std::placeholders::_1));
-    RegisterCommand(Commands::exitToMainMenu,           std::bind(&CustomQuickchat::cmd_exitToMainMenu, this, std::placeholders::_1));
-    RegisterCommand(Commands::forfeit,                  std::bind(&CustomQuickchat::cmd_forfeit, this, std::placeholders::_1));
-    RegisterCommand(Commands::test,                     std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1));
-    RegisterCommand(Commands::test2,                    std::bind(&CustomQuickchat::cmd_test2, this, std::placeholders::_1));
+    registerCommand(Commands::toggleEnabled,            std::bind(&CustomQuickchat::cmd_toggleEnabled, this, std::placeholders::_1));
+    registerCommand(Commands::listBindings,             std::bind(&CustomQuickchat::cmd_listBindings, this, std::placeholders::_1));
+    registerCommand(Commands::list_custom_chat_labels,  std::bind(&CustomQuickchat::cmd_list_custom_chat_labels, this, std::placeholders::_1));
+    registerCommand(Commands::list_playlist_info,       std::bind(&CustomQuickchat::cmd_list_playlist_info, this, std::placeholders::_1));
+    registerCommand(Commands::exitToMainMenu,           std::bind(&CustomQuickchat::cmd_exitToMainMenu, this, std::placeholders::_1));
+    registerCommand(Commands::forfeit,                  std::bind(&CustomQuickchat::cmd_forfeit, this, std::placeholders::_1));
+    registerCommand(Commands::test,                     std::bind(&CustomQuickchat::cmd_test, this, std::placeholders::_1));
+    registerCommand(Commands::test2,                    std::bind(&CustomQuickchat::cmd_test2, this, std::placeholders::_1));
 
 
     // ======================================= hooks ==========================================
@@ -123,7 +121,7 @@ void CustomQuickchat::onLoad()
     gameWrapper->HookEventPost(Events::GFxData_Chat_TA_ClearDistracted, [this](std::string eventName) { m_chatboxOpen = false; });
 
 
-    gameWrapper->HookEvent(Events::SendChatPresetMessage, [this](std::string eventName)
+    hookEvent(Events::SendChatPresetMessage, [this](std::string eventName)
     {
         // reset/update data for all bindings
         lastBindingActivated = std::chrono::steady_clock::now();
@@ -131,18 +129,17 @@ void CustomQuickchat::onLoad()
     });
 
     // determine custom chat labels based on user's bindings
-    gameWrapper->HookEventWithCallerPost<ActorWrapper>(Events::InitUIBindings,
+    hookWithCallerPost(Events::InitUIBindings,
         std::bind(&CustomQuickchat::Event_InitUIBindings, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     // apply custom chat labels to ui
-    gameWrapper->HookEventWithCaller<ActorWrapper>(Events::OnPressChatPreset,
+    hookWithCaller(Events::OnPressChatPreset,
         std::bind(&CustomQuickchat::Event_OnPressChatPreset, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
-
-	gameWrapper->HookEventWithCaller<ActorWrapper>(Events::HUDBase_TA_OnChatMessage,
+	hookWithCaller(Events::HUDBase_TA_OnChatMessage,
         std::bind(&CustomQuickchat::event_HUDBase_TA_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     
-    gameWrapper->HookEventWithCaller<ActorWrapper>(Events::GFxData_Chat_TA_OnChatMessage,
+    hookWithCaller(Events::GFxData_Chat_TA_OnChatMessage,
         std::bind(&CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
     // ========================================================================================

@@ -1,0 +1,69 @@
+{
+    "version": 10,
+    "cmakeMinimumRequired": {
+        "major": 4,
+        "minor": 0,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "description": "Sets generator and source directory",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build"
+        },
+        {
+            "name": "windows-x64-msvc-stt-on",
+            "displayName": "Windows (x64): Ninja + cl.exe (with STT)",
+            "inherits": "default",
+            "description": "Sets x64 architecture, compiler/linker, and build type",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "USE_SPEECH_TO_TEXT": "ON",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_CXX_COMPILER": "cl",
+                "CMAKE_LINKER": "link"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "windows-x64-msvc-stt-off",
+            "displayName": "Windows (x64): Ninja + cl.exe (without STT)",
+            "inherits": "default",
+            "description": "Sets x64 architecture, compiler/linker, and build type",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "USE_SPEECH_TO_TEXT": "OFF",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_CXX_COMPILER": "cl",
+                "CMAKE_LINKER": "link"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "build-stt-on",
+            "configurePreset": "windows-x64-msvc-stt-on"
+        },
+        {
+            "name": "build-stt-off",
+            "configurePreset": "windows-x64-msvc-stt-off"
+        }
+    ]
+}

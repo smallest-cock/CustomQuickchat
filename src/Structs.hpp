@@ -1,9 +1,8 @@
 #pragma once
-#include "pch.h"
-#include <regex>
-#include "Components/Components/Instances.hpp"
+#include <string>
 
-// ------------------------------ for imgui -----------------------------------
+
+// ==================================== for imgui ====================================
 
 const std::vector<std::string> possibleBindingTypes =
 {
@@ -19,8 +18,7 @@ const std::vector<std::string> possibleChatModes =
 };
 
 
-
-// ---------------------------- keyword stuff ---------------------------------
+// ==================================== keyword stuff ====================================
 
 enum class EKeyword : uint8_t
 {
@@ -65,7 +63,7 @@ const std::unordered_map<std::string, EKeyword> keywordsMap =
     { "menu",                       EKeyword::ExitToMainMenu        },
 };
 
-// ----------------------------------------------------------------------------
+// ============================================================================
 
 
 enum class EBindingType : uint8_t
@@ -80,22 +78,12 @@ struct ButtonPress
     std::string buttonName;
     std::chrono::steady_clock::time_point pressedTime;
 
-
-    // default (empty)
-    ButtonPress()
-        : buttonName(std::string()), pressedTime(std::chrono::steady_clock::time_point()) {}
-
-    // specific button press event
+    ButtonPress() : buttonName(std::string()), pressedTime(std::chrono::steady_clock::time_point()) {} // default (empty) (idk if this is needed)
     ButtonPress(const std::string& button, const std::chrono::steady_clock::time_point& time)
         : buttonName(button), pressedTime(time) {}
     
-    void Reset(const std::chrono::steady_clock::time_point& epochTime)
-    {
-        buttonName.clear();
-        pressedTime = epochTime;
-    }
+    void Reset(const std::chrono::steady_clock::time_point& epochTime);
 };
-
 
 struct BindingKey
 {
@@ -152,7 +140,6 @@ struct VariationList
     int nextUsableIndex = 0;
     bool shuffleWordList = true;
 
-
     std::vector<std::string> generateShuffledWordList() const;
     void reshuffleWordList(); // also sets nextUsableIndex to 0
     std::string getNextVariation();
@@ -161,7 +148,9 @@ struct VariationList
 
 
 
+// =================================================================================================
 // ============================================= RANKS =============================================
+// =================================================================================================
 
 enum class ERankPlaylists : uint8_t
 {
@@ -170,7 +159,6 @@ enum class ERankPlaylists : uint8_t
     Threes =    2,
     Casual =    3
 };
-
 
 const std::unordered_map<int, std::string> skill_tier_to_label =
 {
@@ -198,7 +186,6 @@ const std::unordered_map<int, std::string> skill_tier_to_label =
     { 21,   "GC3" },
     { 22,   "SSL" }
 };
-
 
 enum class SkillTier
 {
@@ -234,7 +221,7 @@ const std::map<std::string, std::string> quickchat_ids_to_text =
         {"Group1Message1",  "I got it!"},               // Je l'ai !
         {"Group1Message2",  "Need boost!"},             // Besoin de turbo !
         {"Group1Message3",  "Take the shot!"},          // Prends-le !
-        {"Group1Message4",  "Defending."},              // Je défends.
+        {"Group1Message4",  "Defending."},              // Je dï¿½fends.
         {"Group1Message5",  "Go for it!"},              // Vas-y !
         {"Group1Message6",  "Centering!"},              // Centre !
         {"Group1Message7",  "All yours."},              // Il est pour toi.
@@ -252,47 +239,47 @@ const std::map<std::string, std::string> quickchat_ids_to_text =
         {"Group2Message1",  "Nice shot!"},              // Beau tir !
         {"Group2Message2",  "Great pass!"},             // Belle passe !
         {"Group2Message3",  "Thanks!"},                 // Merci !
-        {"Group2Message4",  "What a save!"},            // Quel arrêt !
+        {"Group2Message4",  "What a save!"},            // Quel arrï¿½t !
         {"Group2Message5",  "Nice one!"},               // Bien vu !
-        {"Group2Message6",  "What a play!"},            // Quelle intensité !
-        {"Group2Message7",  "Great clear!"},            // Beau dégagement !
+        {"Group2Message6",  "What a play!"},            // Quelle intensitï¿½ !
+        {"Group2Message7",  "Great clear!"},            // Beau dï¿½gagement !
         {"Group2Message8",  "Nice block!"},             // Super blocage !
         {"Group2Message9",  "Nice bump!"},              // Bel impact !
-        {"Group2Message10", "Nice demo!"},              // Jolie démo !
+        {"Group2Message10", "Nice demo!"},              // Jolie dï¿½mo !
         {"Group2Message11", "We got this."},            // On assure !
 
         {"Group3Message1",  "OMG!"},                    // Oh mon dieu !
         {"Group3Message2",  "Noooo!"},                  // Noooon !
         {"Group3Message3",  "Wow!"},                    // Wow !
-        {"Group3Message4",  "Close one..."},            // C'était pas loin...
+        {"Group3Message4",  "Close one..."},            // C'ï¿½tait pas loin...
         {"Group3Message5",  "No way!"},                 // Pas possible !
-        {"Group3Message6",  "Holy cow!"},               // Sérieux ?!
+        {"Group3Message6",  "Holy cow!"},               // Sï¿½rieux ?!
         {"Group3Message7",  "Whew."},                   // Waouh.
         {"Group3Message8",  "Siiiick!"},                // Truc de ouf !
-        {"Group3Message9",  "Calculated."},             // C'est prévu.
+        {"Group3Message9",  "Calculated."},             // C'est prï¿½vu.
         {"Group3Message10", "Savage!"},                 // Sauvage !
         {"Group3Message11", "Okay."},                   // Ok.
         {"Group3Message12", "Yes!"},                    // Oui !
 
         {"Group4Message1",  "$#@%!"},                   // $#@%!
-        {"Group4Message2",  "No problem."},             // Pas de problèmes.
+        {"Group4Message2",  "No problem."},             // Pas de problï¿½mes.
         {"Group4Message3",  "Whoops..."},               // Oups...
-        {"Group4Message4",  "Sorry!"},                  // Désolé !
+        {"Group4Message4",  "Sorry!"},                  // Dï¿½solï¿½ !
         {"Group4Message5",  "My bad..."},               // Pardon...
         {"Group4Message6",  "Oops!"},                   // Oups !
         {"Group4Message7",  "My fault."},               // Ma faute.
 
         {"Group5Message1",  "gg"},                      // gg
-        {"Group5Message2",  "Well played."},            // Bien joué.
-        {"Group5Message3",  "That was fun!"},           // C'était cool !
-        {"Group5Message4",  "Rematch!"},                // On remet ça !
+        {"Group5Message2",  "Well played."},            // Bien jouï¿½.
+        {"Group5Message3",  "That was fun!"},           // C'ï¿½tait cool !
+        {"Group5Message4",  "Rematch!"},                // On remet ï¿½a !
         {"Group5Message5",  "One. More. Game."},        // Encore. Une. Partie.
         {"Group5Message6",  "What a game!"},            // Quelle partie !
-        {"Group5Message7",  "Nice moves!"},             // Super déplacements !
+        {"Group5Message7",  "Nice moves!"},             // Super dï¿½placements !
         {"Group5Message8",  "Everybody dance!"},        // Que tout le monde dance !
         {"Group5Message9",  "Party Up?"},               // On groupe ?
 
-        {"Group6Message4",  "This is Rocket League!"}   // Ça c'est Rocket League !
+        {"Group6Message4",  "This is Rocket League!"}   // ï¿½a c'est Rocket League !
 };
 
 
@@ -329,17 +316,7 @@ struct NetId
         Platform(unreal_id.Platform),
         SplitscreenID(unreal_id.SplitscreenID) {}
 
-    FUniqueNetId to_unreal_id() const
-    {
-        FUniqueNetId id;
-        id.Uid =                Uid;
-        id.NpId =               NpId;
-        id.EpicAccountId =      FString::create(EpicAccountId);
-        id.Platform =           Platform;
-        id.SplitscreenID =      SplitscreenID;
-        
-        return id;
-    }
+    FUniqueNetId to_unreal_id() const;
 };
 
 
@@ -351,7 +328,6 @@ struct LastChatPreferences
     bool PartyChats;
     bool TeammateChats;
 };
-
 
 struct ChatData
 {
@@ -365,33 +341,10 @@ struct ChatData
     bool                IsUser;
     bool                IsQuickchat;
 
-    ChatData(const FGFxChatMessage& msg)
-    {
-        // parse quickchat message if necessary
-        std::string chat_text = msg.Message.ToString();
-        if (msg.bPreset)
-        {
-            auto it = quickchat_ids_to_text.find(chat_text);
-            if (it != quickchat_ids_to_text.end())
-                chat_text = it->second;
-        }
-
-        PlayerName =        msg.PlayerName.ToString();
-        Message =           chat_text;
-        TimeStamp =         msg.TimeStamp.ToString();
-        Team =              msg.Team;
-        ChatChannel =       static_cast<EChatChannel>(msg.ChatChannel);
-        SenderId =          msg.SenderId;
-        IsUser =            msg.bLocalPlayer;
-        IsQuickchat =       msg.bPreset;
-
-        IdString = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
-    }
-
+    ChatData(const FGFxChatMessage& msg);
 
     bool is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const;
 };
-
 
 struct ChatMsgData
 {
@@ -399,28 +352,11 @@ struct ChatMsgData
     std::string uncensoredMsg;
 
     ChatMsgData() {}
-    ChatMsgData(const FChatMessage& chat)
-    {
-        uncensoredMsg = chat.Message.ToString();
-        uid = generateUid(chat);
-    }
+    ChatMsgData(const FChatMessage& chat);
 
-    static std::string generateUid(const FChatMessage& data)
-    {
-        return std::format("{}|{}|{}|{}",
-            data.PlayerName.ToString(), data.TimeStamp.ToString(), data.Message.size(), data.ChatChannel);
-    }
-
-    static std::string generateUid(UGFxData_Chat_TA_execOnChatMessage_Params* data)
-    {
-        if (!data)
-            return std::string();
-
-        return std::format("{}|{}|{}|{}",
-            data->PlayerName.ToString(), data->TimeStamp.ToString(), data->Message.size(), data->ChatChannel);
-    }
+    static std::string generateUid(const FChatMessage& data);
+    static std::string generateUid(UGFxData_Chat_TA_execOnChatMessage_Params* data);
 };
-
 
 struct RankData
 {
@@ -431,31 +367,9 @@ struct RankData
     RankData() {}
     RankData(const FPlayerSkillRating& skill) { assign(skill); }
 
-    void assign(const FPlayerSkillRating& skill)
-    {
-        skill_data = skill;
-        
-        // update tier string
-        auto it = skill_tier_to_label.find(skill.Tier);
-        if (it != skill_tier_to_label.end())
-        {
-            tier = it->second;
-        }
-
-        // update div string
-        div = std::to_string(skill.Division + 1);
-    }
-
-    inline std::string get_rank_str() const
-    {
-        if (skill_data.Tier == 0 || skill_data.MatchesPlayed == 0)
-        {
-            return "--";
-        }
-        return tier + "..div" + div;
-    }
+    void assign(const FPlayerSkillRating& skill);
+    std::string get_rank_str() const;
 };
-
 
 struct ChatterRanks
 {
@@ -467,134 +381,16 @@ struct ChatterRanks
     //std::unordered_map <std::string, Rank> ranks;
 
     ChatterRanks() {}
-
     ChatterRanks(const std::string& name, const RankData& ones, const RankData& twos, const RankData& threes, const RankData& cas) :
     playerName(name), ones(ones), twos(twos), threes(threes), casual(cas) {}
-
     ChatterRanks(const ChatData& chat, UOnlineGameSkill_X* game_skill) { assign(chat, game_skill); }
 
+    void assign(const ChatData& chat, UOnlineGameSkill_X* game_skill);
+    RankData get_rank(ERankPlaylists playlist);
+    std::string get_all_ranks_str() const;
+    std::string get_playlist_rank_str(ERankPlaylists playlist);
 
-    void assign(const ChatData& chat, UOnlineGameSkill_X* game_skill)
-    {
-        if (!game_skill)
-        {
-            LOG("Unable to get chatter ranks... UOnlineGameSkill_X* is null");
-            return;
-        }
-
-        playerName = chat.PlayerName;
-
-        ones =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedSoloDuel),       game_skill);
-        twos =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedTeamDoubles),    game_skill);
-        threes =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedStandard),       game_skill);
-        casual =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::Casual),               game_skill);
-    }
-
-
-    inline RankData get_rank(ERankPlaylists playlist)
-    {
-        switch (playlist)
-        {
-        case ERankPlaylists::Ones:
-            return ones;
-        case ERankPlaylists::Twos:
-            return twos;
-        case ERankPlaylists::Threes:
-            return threes;
-        case ERankPlaylists::Casual:
-            return casual;
-        default:
-            return RankData();
-        }
-    }
-
-
-    inline std::string get_all_ranks_str() const
-    {
-        // to make return line readable
-        std::string ones_str =      ones.get_rank_str();
-        std::string twos_str =      twos.get_rank_str();
-        std::string threes_str =    threes.get_rank_str();
-
-        return playerName + ": [1s] " + ones_str + " [2s] " + twos_str + " [3s] " + threes_str;
-    }
-
-
-    inline std::string get_playlist_rank_str(ERankPlaylists playlist)
-    {
-        std::string rank_str;
-
-        RankData specificRank = get_rank(playlist);
-
-        rank_str = playerName + " [" + ChatterRanks::get_playlist_str(playlist) + "] ";
-
-        if (playlist == ERankPlaylists::Casual)
-        {
-            rank_str += std::to_string(std::lround(specificRank.skill_data.MMR)) + " mmr (" + std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
-        }
-        else if (specificRank.skill_data.Tier != 0 )
-        {
-            rank_str += specificRank.tier + "..div" + specificRank.div;
-
-            if (specificRank.skill_data.MatchesPlayed != 0)
-            {
-                rank_str += " (" + std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
-            }
-            else if (specificRank.skill_data.PlacementMatchesPlayed != 0)
-            {
-                rank_str += " (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
-            }
-            else
-            {
-                rank_str += " (prev season)";
-            }
-        }
-        else
-        {
-            rank_str += "** doesnt play ** (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
-        }
-
-        return rank_str;
-    }
-
-    
-    static inline FPlayerSkillRating get_skill_rating(const FUniqueNetId& id, int playlist_id, UOnlineGameSkill_X* game_skill)
-    {
-        if (!game_skill)
-            return FPlayerSkillRating{};
-
-        FPlayerSkillRating rank_data = game_skill->GetPlayerRating(id, playlist_id);
-        rank_data.MMR = calculate_skill_rating(rank_data.Mu);       // <--- change to be the value that everyone refers to as "MMR"
-
-        return rank_data;
-    }
-
-
-    // NOTE: This formula is what's used for RL leaderboards and is what people refer to as "MMR"
-    // ... but it's not what is used internally to determine matchmaking. Apparently that would be the Microsoft TrueSkill formula: Mu - (3 * Sigma) 
-    static inline float calculate_skill_rating(float mu)
-    {
-        return (mu * 20) + 100;
-    }
-
-    
-    static inline std::string get_playlist_str(ERankPlaylists playlist)
-    {
-        switch (playlist)
-        {
-        case ERankPlaylists::Ones:
-            //return "1v1";
-            return "1s";
-        case ERankPlaylists::Twos:
-            //return "2v2";
-            return "2s";
-        case ERankPlaylists::Threes:
-            //return "3v3";
-            return "3s";
-        case ERankPlaylists::Casual:
-            return "casual";
-        default:
-            return "";
-        }
-    }
+    static float calculate_skill_rating(float mu);
+    static FPlayerSkillRating get_skill_rating(const FUniqueNetId& id, int playlist_id, UOnlineGameSkill_X* game_skill);
+    static std::string get_playlist_str(ERankPlaylists playlist);
 };

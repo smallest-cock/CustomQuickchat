@@ -1,6 +1,8 @@
 #include "pch.h"
-#include "TextEffects.h"
-
+#include "TextEffects.hpp"
+#include <sstream>
+#include <random>
+#include <cctype>
 
 
 bool isVowel(char ch)
@@ -8,7 +10,6 @@ bool isVowel(char ch)
 	ch = std::tolower(ch);
 	return (ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u');
 }
-
 
 // Function to split a string into words based on spaces
 std::vector<std::string> splitIntoWords(const std::string& input)
@@ -35,121 +36,6 @@ std::vector<std::string> splitIntoWords(const std::string& input)
 
 	return words;
 }
-
-
-
-// ==================================================== text effects ====================================================
-
-
-std::string to_sarcasm(const std::string& ogText)
-{
-    std::istringstream iss(ogText);
-    std::ostringstream oss;
-    std::string word;
-
-    // Tokenize the input string into words based on spaces
-    while (iss >> word)
-    {
-        bool capitalizeNext = false;  // Start with lowercase for the first letter
-        std::string sarcasticWord;
-
-        // Transform each word according to the specified rules
-        for (size_t i = 0; i < word.size(); ++i)
-        {
-            char currentChar = word[i];
-
-            if (std::tolower(currentChar) == 'i')
-            {
-                sarcasticWord += 'i';  // Keep 'i' as lowercase
-            }
-            else if (std::tolower(currentChar) == 'l')
-            {
-                sarcasticWord += 'L';  // Keep 'l' as uppercase
-            }
-            else if (std::isalpha(currentChar))
-            {  // Check if the character is alphabetic
-                if (capitalizeNext)
-                {
-                    sarcasticWord += std::toupper(currentChar);
-                    capitalizeNext = false;  // Toggle for the next character
-                }
-                else {
-                    sarcasticWord += std::tolower(currentChar);
-                    capitalizeNext = true;  // Toggle for the next character
-                }
-            }
-            else {
-                sarcasticWord += currentChar;  // Preserve non-alphabetic characters
-            }
-        }
-
-        // Append the transformed word to the output stream
-        oss << sarcasticWord << " ";
-    }
-
-    // Get the resulting string from the output stream
-    std::string sarcasticText = oss.str();
-
-    // Remove trailing space at the end (if any)
-    if (!sarcasticText.empty() && sarcasticText.back() == ' ')
-    {
-        sarcasticText.pop_back();
-    }
-
-    return sarcasticText;
-}
-
-
-// chat gpt "more randomized" version
-std::string to_sarcasm_randomized(const std::string& ogText)
-{
-	std::istringstream iss(ogText);
-	std::ostringstream oss;
-	std::string word;
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(0, 1);  // 50% chance
-
-	while (iss >> word)
-	{
-		std::string sarcasticWord;
-		bool capitalizeNext = dist(gen);  // Start randomly with upper or lower case
-
-		for (size_t i = 0; i < word.size(); ++i)
-		{
-			char currentChar = word[i];
-
-			if (std::tolower(currentChar) == 'i')
-			{
-				sarcasticWord += 'i';  // Keep 'i' lowercase
-			}
-			else if (std::tolower(currentChar) == 'l')
-			{
-				sarcasticWord += 'L';  // Keep 'l' uppercase
-			}
-			else if (std::isalpha(currentChar))
-			{
-				sarcasticWord += dist(gen) ? std::toupper(currentChar) : std::tolower(currentChar);     // Randomly decide case
-			}
-			else
-			{
-				sarcasticWord += currentChar;  // Preserve non-alphabetic characters
-			}
-		}
-
-		oss << sarcasticWord << " ";
-	}
-
-	std::string sarcasticText = oss.str();
-	if (!sarcasticText.empty() && sarcasticText.back() == ' ')
-	{
-		sarcasticText.pop_back();
-	}
-
-	return sarcasticText;
-}
-
 
 // uwu effect
 std::string translateChar(char currentChar, char previousChar, char nextChar)
@@ -226,7 +112,118 @@ std::string translateWord(const std::string& input)
 }
 
 
-std::string to_uwu(const std::string& ogText)
+
+// ==================================================== text effects ====================================================
+
+std::string TextEffects::toSarcasm(const std::string& ogText)
+{
+    std::istringstream iss(ogText);
+    std::ostringstream oss;
+    std::string word;
+
+    // Tokenize the input string into words based on spaces
+    while (iss >> word)
+    {
+        bool capitalizeNext = false;  // Start with lowercase for the first letter
+        std::string sarcasticWord;
+
+        // Transform each word according to the specified rules
+        for (size_t i = 0; i < word.size(); ++i)
+        {
+            char currentChar = word[i];
+
+            if (std::tolower(currentChar) == 'i')
+            {
+                sarcasticWord += 'i';  // Keep 'i' as lowercase
+            }
+            else if (std::tolower(currentChar) == 'l')
+            {
+                sarcasticWord += 'L';  // Keep 'l' as uppercase
+            }
+            else if (std::isalpha(currentChar))
+            {  // Check if the character is alphabetic
+                if (capitalizeNext)
+                {
+                    sarcasticWord += std::toupper(currentChar);
+                    capitalizeNext = false;  // Toggle for the next character
+                }
+                else {
+                    sarcasticWord += std::tolower(currentChar);
+                    capitalizeNext = true;  // Toggle for the next character
+                }
+            }
+            else {
+                sarcasticWord += currentChar;  // Preserve non-alphabetic characters
+            }
+        }
+
+        // Append the transformed word to the output stream
+        oss << sarcasticWord << " ";
+    }
+
+    // Get the resulting string from the output stream
+    std::string sarcasticText = oss.str();
+
+    // Remove trailing space at the end (if any)
+    if (!sarcasticText.empty() && sarcasticText.back() == ' ')
+    {
+        sarcasticText.pop_back();
+    }
+
+    return sarcasticText;
+}
+
+// chat gpt "more randomized" version
+std::string TextEffects::toSarcasmRandomized(const std::string& ogText)
+{
+	std::istringstream iss(ogText);
+	std::ostringstream oss;
+	std::string word;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(0, 1);  // 50% chance
+
+	while (iss >> word)
+	{
+		std::string sarcasticWord;
+		bool capitalizeNext = dist(gen);  // Start randomly with upper or lower case
+
+		for (size_t i = 0; i < word.size(); ++i)
+		{
+			char currentChar = word[i];
+
+			if (std::tolower(currentChar) == 'i')
+			{
+				sarcasticWord += 'i';  // Keep 'i' lowercase
+			}
+			else if (std::tolower(currentChar) == 'l')
+			{
+				sarcasticWord += 'L';  // Keep 'l' uppercase
+			}
+			else if (std::isalpha(currentChar))
+			{
+				sarcasticWord += dist(gen) ? std::toupper(currentChar) : std::tolower(currentChar);     // Randomly decide case
+			}
+			else
+			{
+				sarcasticWord += currentChar;  // Preserve non-alphabetic characters
+			}
+		}
+
+		oss << sarcasticWord << " ";
+	}
+
+	std::string sarcasticText = oss.str();
+	if (!sarcasticText.empty() && sarcasticText.back() == ' ')
+	{
+		sarcasticText.pop_back();
+	}
+
+	return sarcasticText;
+}
+
+std::string TextEffects::toUwu(const std::string &ogText)
 {
 	std::vector<std::string> words = splitIntoWords(ogText);
 	std::string modifiedString;
@@ -249,4 +246,3 @@ std::string to_uwu(const std::string& ogText)
 
 	return modifiedString;
 }
-

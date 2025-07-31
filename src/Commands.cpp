@@ -1,11 +1,11 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
-
+#include "CustomQuickchat.hpp"
+#include "components/Instances.hpp"
 
 
 void CustomQuickchat::cmd_toggleEnabled(std::vector<std::string> args)
 {
-    CVarWrapper enabledCvar = GetCvar(Cvars::enabled);
+    CVarWrapper enabledCvar = getCvar(Cvars::enabled);
     if (!enabledCvar)
         return;
 
@@ -13,13 +13,13 @@ void CustomQuickchat::cmd_toggleEnabled(std::vector<std::string> args)
     enabledCvar.setValue(!enabled);
 }
 
-
 void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
 {
     // list button bindings
     auto controls = Instances.GetInstanceOf<UGFxData_Controls_TA>();
-    if (!controls) {
-        LOG("UGFxData_Controls_TA* is null!");
+    if (!controls)
+    {
+        LOGERROR("UGFxData_Controls_TA* is null!");
         return;
     }
 
@@ -38,7 +38,6 @@ void CustomQuickchat::cmd_listBindings(std::vector<std::string> args)
         LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
     }
 }
-
 
 void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
 {
@@ -70,10 +69,9 @@ void CustomQuickchat::cmd_list_custom_chat_labels(std::vector<std::string> args)
     }
 }
 
-
 void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
 {
-    auto playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
+    auto* playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
     if (!playlists)
         return;
 
@@ -90,7 +88,6 @@ void CustomQuickchat::cmd_list_playlist_info(std::vector<std::string> args)
     }
 }
 
-
 void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 {
     if (m_chatboxOpen)
@@ -104,7 +101,6 @@ void CustomQuickchat::cmd_exitToMainMenu(std::vector<std::string> args)
 
     LOG("exited to main menu");
 }
-
 
 void CustomQuickchat::cmd_forfeit(std::vector<std::string> args)
 {

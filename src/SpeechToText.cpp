@@ -1,6 +1,6 @@
 #include "pch.h"
-#include "CustomQuickchat.h"
-
+#include "CustomQuickchat.hpp"
+#include "Macros.hpp"
 
 
 #if !defined(USE_SPEECH_TO_TEXT)
@@ -50,10 +50,10 @@ void CustomQuickchat::start_websocket_stuff(bool onLoad)
 
 	auto ws_client_setup = [this, onLoad]()
 	{
-		auto websocket_port_cvar = GetCvar(Cvars::websocket_port);
+		auto websocket_port_cvar = getCvar(Cvars::websocket_port);
 		if (!websocket_port_cvar)
 		{
-			LOG("[ERROR] websocket_port cvar invalid");
+			LOGERROR("websocket_port cvar invalid");
 			connecting_to_ws_server.store(false);
 			return;
 		}
@@ -110,7 +110,7 @@ void CustomQuickchat::start_websocket_stuff(bool onLoad)
 
 bool CustomQuickchat::start_websocket_server()
 {
-	auto websocket_port_cvar = GetCvar(Cvars::websocket_port);
+	auto websocket_port_cvar = getCvar(Cvars::websocket_port);
 	if (!websocket_port_cvar) return false;
 	int websocket_port = websocket_port_cvar.getIntValue();
 
@@ -156,10 +156,10 @@ json CustomQuickchat::generate_data_for_STT_attempt()
 {
 	json data;
 
-	auto beginSpeechTimeout_cvar = GetCvar(Cvars::beginSpeechTimeout);
-	auto speechProcessingTimeout_cvar = GetCvar(Cvars::speechProcessingTimeout);
-	auto autoCalibrateMic_cvar = GetCvar(Cvars::autoCalibrateMic);
-	auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
+	auto beginSpeechTimeout_cvar = getCvar(Cvars::beginSpeechTimeout);
+	auto speechProcessingTimeout_cvar = getCvar(Cvars::speechProcessingTimeout);
+	auto autoCalibrateMic_cvar = getCvar(Cvars::autoCalibrateMic);
+	auto micEnergyThreshold_cvar = getCvar(Cvars::micEnergyThreshold);
 
 	if (!beginSpeechTimeout_cvar || !speechProcessingTimeout_cvar) return data;
 
@@ -287,18 +287,12 @@ void CustomQuickchat::process_ws_response(const json& response)
 		// TODO: check for attempt ID, and do specific things based on if it matches the active attempt ID
 
 		if (error_data.contains("errorMsg"))
-		{
-			STTLog("[ERROR] " + error_data["errorMsg"]);
-		}
+			STTLog(std::format("[ERROR] {}", error_data["errorMsg"].get<std::string>()));
 		else
-		{
-			STTLog("[ERROR] Missing 'errorMsg' field in error response JSON");
-		}
+			STTLog("[ERROR] Missing \"errorMsg\" field in error response JSON");
 	}
 	else
-	{
 		STTLog("[ERROR] Unknown event type in response JSON");
-	}
 }
 
 
@@ -379,7 +373,7 @@ void CustomQuickchat::process_mic_calibration_result(const json& response_data)
 		{
 			if (response_data.contains("mic_energy_threshold"))
 			{
-				auto micEnergyThreshold_cvar = GetCvar(Cvars::micEnergyThreshold);
+				auto micEnergyThreshold_cvar = getCvar(Cvars::micEnergyThreshold);
 				if (!micEnergyThreshold_cvar) return;
 
 				int new_energy_threshold = response_data["mic_energy_threshold"];
@@ -439,7 +433,7 @@ void CustomQuickchat::CalibrateMicrophone()
 
 	calibratingMicLevel = true;
 
-	auto micCalibrationTimeout_cvar = GetCvar(Cvars::micCalibrationTimeout);
+	auto micCalibrationTimeout_cvar = getCvar(Cvars::micCalibrationTimeout);
 	if (!micCalibrationTimeout_cvar) return;
 
 	DELAY(micCalibrationTimeout_cvar.getFloatValue(),
@@ -455,13 +449,10 @@ std::string CustomQuickchat::CreateCommandString(const fs::path& executablePath,
 	std::string commandStr = "\"" + executablePath.string() + "\"";
 
 	for (const std::string& arg : args)
-	{
 		commandStr += " \"" + arg + "\"";
-	}
 
 	return commandStr;
 }
-
 
 void CustomQuickchat::ClearSttErrorLog()
 {
@@ -472,18 +463,15 @@ void CustomQuickchat::ClearSttErrorLog()
 	LOG("Cleared '{}'", speechToTextErrorLogPath.string());
 }
 
-
 void CustomQuickchat::STTLog(const std::string& message)
 {
-	auto enableSTTNotifications_cvar =	GetCvar(Cvars::enableSTTNotifications);
-	auto notificationDuration_cvar =	GetCvar(Cvars::notificationDuration);
-	if (!enableSTTNotifications_cvar || !notificationDuration_cvar) return;
+	auto enableSTTNotifications_cvar =	getCvar(Cvars::enableSTTNotifications);
+	auto notificationDuration_cvar =	getCvar(Cvars::notificationDuration);
+	if (!enableSTTNotifications_cvar || !notificationDuration_cvar)
+		return;
 
 	if (enableSTTNotifications_cvar.getBoolValue())
-	{
 		NotifyAndLog("Speech-To-Text", message, notificationDuration_cvar.getFloatValue());
-	}
 }
 
 #endif // USE_SPEECH_TO_TEXT
-
