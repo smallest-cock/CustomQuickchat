@@ -58,9 +58,6 @@ jobs:
     build:
         runs-on: windows-latest
         needs: check-changelog
-        strategy:
-            matrix:
-                speech_to_text: [ON, OFF]
 
         steps:
             - name: 📥 Checkout repository
@@ -80,11 +77,8 @@ jobs:
             - name: 🥷 Set up Ninja
               uses: seanmiddleditch/gha-setup-ninja@v3
 
-            - name: 🧱 Configure project (CMake)
-              run: cmake --preset windows-x64-msvc
-
             - name: 🔨 Build project (CMake + Ninja)
-              run: cmake --build build
+              run: cmake --build --preset build-no-stt
 
             - name: 🥵 Prepare release files
               shell: bash
@@ -99,59 +93,134 @@ jobs:
                   7z a "dist/${{ env.PLUGIN_NAME }}.zip" ./temp/installation_zip/*
                   7z a dist/debug.zip ./temp/debug/*
 
-            - name: 📦 Upload build artifacts (${{ inputs.artifact_suffix }})
+            - name: ⬆️ Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
                   name: artifacts
                   path: dist/*
 
-            # build with STT
-            - name: 🧩 Uncomment USE_SPEECH_TO_TEXT macro
-              run: ./scripts/toggle-macro.ps1 -FilePath "./CustomQuickchat/CustomQuickchat.h" -MacroName "USE_SPEECH_TO_TEXT" -CommentOut 0
+    build-with-stt:
+        runs-on: windows-latest
+        needs: check-changelog
+        steps:
+            - name: 📥 Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  submodules: false
 
-            - name: 🔨 Build solution (with STT)
-              run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgEnabled=true /p:VcpkgRoot=${{ github.workspace }}\vcpkg
+            - name: 🍆 Initialize submodules
+              run: ./scripts/init-submodules.bat
 
-            - name: 🐞 Add STT .pdb to zip folder
+            - name: 🪟 Set up MSVC
+              uses: ilammy/msvc-dev-cmd@v1
+
+            - name: ⚙️ Set up CMake
+              uses: jwlawson/actions-setup-cmake@v1
+
+            - name: 🥷 Set up Ninja
+              uses: seanmiddleditch/gha-setup-ninja@v3
+
+            - name: 🔨 Build project (CMake + Ninja)
+              run: cmake --build --preset build-with-stt
+
+            - name: 🥵 Prepare release files
+              shell: bash
               run: |
-                  copy "${{ github.workspace }}\plugins\CustomQuickchat.pdb" "pdb_zip\CustomQuickchat-with-STT.pdb"
-              shell: cmd
+                  7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!docs -xr!assets -xr!.git
+                  mkdir -p dist temp/debug temp/installation_zip
+                  mv ./source.zip temp/debug
+                  cp ./plugins/*.dll temp/installation_zip
+                  mv ./scripts/install.bat temp/installation_zip
+                  mv ./plugins/*.dll temp/debug
+                  mv ./plugins/*.pdb temp/debug
+                  7z a "dist/${{ env.PLUGIN_NAME }}-STT-partial.zip" ./temp/installation_zip/*
+                  7z a dist/debug-STT.zip ./temp/debug/*
 
-            - name: 📦 Upload debugging symbols zip
+            - name: ⬆️ Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: debug-symbols
-                  path: pdb_zip\*
+                  name: artifacts
+                  path: dist/*
 
-            - name: 🤐 Prepare installation zip (with STT)
-              run: |
-                  mkdir installation_zip_w_stt\CustomQuickchat\SpeechToText
-                  copy "${{ github.workspace }}\plugins\*.dll" installation_zip_w_stt\
-                  copy "${{ github.workspace }}\scripts\install.bat" installation_zip_w_stt\
-              shell: cmd
+    bundle-python-script:
+        runs-on: windows-latest
+        needs: check-changelog
+        steps:
+            - name: 📥 Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  submodules: false
 
             - name: 🐍 Set up Python
               uses: actions/setup-python@v5
               with:
                   python-version: "3.13"
 
-            - name: ⬇️ Install required python modules
+            - name: 🤡 Install required python modules
               run: |
                   pip install pyinstaller
                   cd ./speech_to_text_server
                   pip install -r requirements.txt
 
-            - name: 💩 Bundle Python script with PyInstaller
+            - name: 📦 Bundle Python script with PyInstaller
               run: |
                   pyinstaller ./speech_to_text_server/speech-to-text-server.pyw `
                   --noconfirm `
                   --onedir `
                   --console `
                   --name "SpeechToText" `
-                  --distpath installation_zip_w_stt/CustomQuickchat
+                  --distpath dist
 
-            - name: 📦 Upload CustomQuickchat-with-STT installation zip
+            - name: 💾 Zip bundled STT folder
+              shell: bash
+              run: |
+                  mkdir -p dist/zipped
+                  7z a dist/zipped/bundled-STT-script.zip ./dist/SpeechToText
+
+            - name: ⬆️ Upload bundled STT server zip
               uses: actions/upload-artifact@v4
               with:
-                  name: CustomQuickchat-with-STT
-                  path: installation_zip_w_stt\*
+                  name: bundled-STT-script
+                  path: dist/zipped/bundled-STT-script.zip
+
+    release:
+        needs: [check-changelog, build, build-with-stt, bundle-python-script]
+        runs-on: windows-latest
+        steps:
+            - name: ⬇️ Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: ./artifacts
+                  merge-multiple: true # <-- flattens all artifacts into ./artifacts
+
+            - name: 🧪 Check downloaded artifacts
+              shell: bash
+              run: |
+                  echo "Contents of artifacts folder:"
+                  find artifacts -type f
+
+            - name: 🗣️ Combine STT install package
+              shell: bash
+              run: |
+                  mkdir -p combined_stt_package/CustomQuickchat
+                  unzip ./artifacts/${{ env.PLUGIN_NAME }}-STT-partial.zip -d combined_stt_package
+                  unzip ./artifacts/bundled-STT-script.zip -d combined_stt_package/CustomQuickchat
+                  7z a artifacts/${{ env.PLUGIN_NAME }}-with-STT.zip ./combined_stt_package/*
+                  rm -rf ./artifacts/${{ env.PLUGIN_NAME }}-STT-partial.zip ./artifacts/bundled-STT-script.zip
+
+            - name: 🚀 Create release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ env.TAG_NAME }}
+                  body: |
+                      ## Install Steps
+                      1. Close Rocket League
+
+                      2. Click `CustomQuickchat.zip` or `CustomQuickchat-with-STT.zip` below to download it
+                          - `CustomQuickchat-with-STT.zip` has speech-to-text functionality, `CustomQuickchat.zip` does not
+
+                      3. Extract the `.zip` file and run `install.bat`
+
+                      ## Notes
+                      ${{ needs.check-changelog.outputs.changelog }}
+                  files: artifacts/*.zip

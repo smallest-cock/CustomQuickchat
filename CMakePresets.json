@@ -58,12 +58,14 @@
     ],
     "buildPresets": [
         {
-            "name": "build-stt-on",
-            "configurePreset": "windows-x64-msvc-stt-on"
+            "name": "build-no-stt",
+            "displayName": "Build (without STT)",
+            "configurePreset": "windows-x64-msvc-stt-off"
         },
         {
-            "name": "build-stt-off",
-            "configurePreset": "windows-x64-msvc-stt-off"
+            "name": "build-with-stt",
+            "displayName": "Build (with STT)",
+            "configurePreset": "windows-x64-msvc-stt-on"
         }
     ]
 }
