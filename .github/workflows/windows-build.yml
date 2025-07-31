@@ -96,7 +96,7 @@ jobs:
             - name: ⬆️ Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: artifacts
+                  name: artifacts-no-stt
                   path: dist/*
 
     build-with-stt:
@@ -139,7 +139,7 @@ jobs:
             - name: ⬆️ Upload build artifacts
               uses: actions/upload-artifact@v4
               with:
-                  name: artifacts
+                  name: artifacts-with-stt
                   path: dist/*
 
     bundle-python-script:
