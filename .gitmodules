@@ -18,3 +18,9 @@
 	path = external/BMSDK
 	url = https://github.com/bakkesmodorg/BakkesModSDK.git
 	branch = master
+[submodule "external/asio"]
+	path = external/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "external/websocketpp"]
+	path = external/websocketpp
+	url = https://github.com/zaphoyd/websocketpp.git
