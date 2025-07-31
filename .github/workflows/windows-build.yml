@@ -1,11 +1,66 @@
-name: 🧱 Build DLL (Windows)
+name: 🧱 Build DLL & release (Windows)
+
+env:
+    PLUGIN_NAME: CustomQuickchat
+    TAG_NAME: ${{ github.event.inputs.tag || github.ref_name }}
 
 on:
+    push:
+        tags:
+            - "v*.*.*"
     workflow_dispatch:
+        inputs:
+            tag:
+                description: "Release tag (e.g. v1.0.1)"
+                required: true
+permissions:
+    contents: write
 
 jobs:
+    check-changelog:
+        name: Check changelog (main)
+        runs-on: windows-latest
+        outputs:
+            changelog: ${{ steps.changelog.outputs.changelog }}
+        steps:
+            - name: 📥 Checkout repository (main)
+              uses: actions/checkout@v4
+              with:
+                  ref: main
+                  submodules: false
+
+            - name: 📝 Extract changes from changelog
+              id: changelog
+              shell: bash
+              run: |
+                  # Prefer manual input if available
+                  TAG="${{ github.event.inputs.tag || github.ref_name }}"
+
+                  # fail if tag not found in CHANGELOG.md
+                  if ! grep -q "^## $TAG" CHANGELOG.md; then
+                    echo "❌ Tag '$TAG' not found in CHANGELOG.md"
+                    exit 1
+                  fi
+
+                  echo "Using tag: $TAG"
+
+                  NOTES=$(awk "/^## $TAG/{flag=1; next} /^## /{flag=0} flag" CHANGELOG.md)
+
+                  echo "Extracted notes:"
+                  echo "$NOTES"
+
+                  {
+                    echo "changelog<<EOF"
+                    echo "$NOTES"
+                    echo "EOF"
+                  } >> "$GITHUB_OUTPUT"
+
     build:
-        runs-on: windows-latest # uses pwsh (PowerShell Core) as default shell
+        runs-on: windows-latest
+        needs: check-changelog
+        strategy:
+            matrix:
+                speech_to_text: [ON, OFF]
 
         steps:
             - name: 📥 Checkout repository
@@ -16,60 +71,39 @@ jobs:
             - name: 🍆 Initialize submodules
               run: ./scripts/init-submodules.bat
 
-            - name: 🗄️ Cache vcpkg dependencies
-              id: cache-vcpkg
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      ${{ github.workspace }}\vcpkg_installed
-                  key: vcpkg-${{ hashFiles('**/vcpkg.json') }}-${{ runner.os }}
+            - name: 🪟 Set up MSVC
+              uses: ilammy/msvc-dev-cmd@v1
 
-            - name: 📥 Clone vcpkg (if not cached)
-              if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+            - name: ⚙️ Set up CMake
+              uses: jwlawson/actions-setup-cmake@v1
+
+            - name: 🥷 Set up Ninja
+              uses: seanmiddleditch/gha-setup-ninja@v3
+
+            - name: 🧱 Configure project (CMake)
+              run: cmake --preset windows-x64-msvc
+
+            - name: 🔨 Build project (CMake + Ninja)
+              run: cmake --build build
+
+            - name: 🥵 Prepare release files
+              shell: bash
               run: |
-                  git clone https://github.com/microsoft/vcpkg.git "$env:GITHUB_WORKSPACE\vcpkg" --depth 1
-                  Set-Location "$env:GITHUB_WORKSPACE\vcpkg"
-                  git fetch --depth=1 origin efb1e7436979a30c4d3e5ab2375fd8e2e461d541
-                  git checkout efb1e7436979a30c4d3e5ab2375fd8e2e461d541
-                  git submodule update --init --recursive --depth 1
-                  Write-Host "Verify websocketpp port exists:"
-                  Get-ChildItem ports/websocketpp/
+                  7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!assets -xr!.git
+                  mkdir -p dist temp/debug temp/installation_zip
+                  mv ./source.zip temp/debug
+                  cp ./plugins/*.dll temp/installation_zip
+                  mv ./scripts/install.bat temp/installation_zip
+                  mv ./plugins/*.dll temp/debug
+                  mv ./plugins/*.pdb temp/debug
+                  7z a "dist/${{ env.PLUGIN_NAME }}.zip" ./temp/installation_zip/*
+                  7z a dist/debug.zip ./temp/debug/*
 
-            - name: 🛠️ Manual vcpkg setup (if not cached)
-              if: steps.cache-vcpkg.outputs.cache-hit != 'true'
-              run: |
-                  cd vcpkg
-                  ./bootstrap-vcpkg.bat
-                  ./vcpkg integrate install
-
-            - name: 🛠️ Set up MSBuild
-              uses: microsoft/setup-msbuild@v2
-
-              # build without STT
-            - name: 🧩 Comment out USE_SPEECH_TO_TEXT macro
-              run: ./scripts/toggle-macro.ps1 -FilePath "./CustomQuickchat/CustomQuickchat.h" -MacroName "USE_SPEECH_TO_TEXT" -CommentOut 1
-
-            - name: 🔨 Build solution
-              run: msbuild CustomQuickchat.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgEnabled=true /p:VcpkgRoot=${{ github.workspace }}\vcpkg
-
-            - name: 🐞 Prepare .pdb zip
-              run: |
-                  mkdir pdb_zip
-                  copy "${{ github.workspace }}\plugins\CustomQuickchat.pdb" pdb_zip\
-              shell: cmd
-
-            - name: 💼 Prepare installation zip (no STT)
-              run: |
-                  mkdir installation_zip\CustomQuickchat
-                  copy "${{ github.workspace }}\plugins\*.dll" installation_zip\
-                  copy "${{ github.workspace }}\scripts\install.bat" installation_zip\
-              shell: cmd
-
-            - name: 📦 Upload CustomQuickchat installation zip
+            - name: 📦 Upload build artifacts (${{ inputs.artifact_suffix }})
               uses: actions/upload-artifact@v4
               with:
-                  name: CustomQuickchat
-                  path: installation_zip\*
+                  name: artifacts
+                  path: dist/*
 
             # build with STT
             - name: 🧩 Uncomment USE_SPEECH_TO_TEXT macro
