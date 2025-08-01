@@ -48,9 +48,21 @@ Run `./scripts/init-submodules.bat` after cloning the repo to initialize the sub
 
 ### 2. Build with CMake
 1. Install [CMake](https://cmake.org/download) and [Ninja](https://github.com/ninja-build/ninja/releases) (or another build system if you prefer)
-2. Run `cmake --preset windows-x64-msvc` (or create your own preset in a `CMakeUserPresets.json`) to configure
-3. Run `cmake --build build`
-   - The built binaries will be in `./plugins`
+2. Run this to configure:
+   ```
+   cmake --preset windows-x64-msvc-stt-off
+   ```
+   - Use `windows-x64-msvc-stt-on` for the STT version
+3. Run this to build:
+   ```
+   cmake --build --preset build-no-stt
+   ```
+   - Use `build-with-stt` for the STT version
+
+The built binaries will be in `./plugins`
+
+>[!TIP]
+>Create your own presets in a `CMakeUserPresets.json` to set up custom builds
 
 ### 3. Bundle the Python Script
 This project includes `speech-to-text-server.pyw` which is a Python server that must be converted into an executable.
