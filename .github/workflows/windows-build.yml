@@ -86,7 +86,7 @@ jobs:
             - name: 🥵 Prepare release files
               shell: bash
               run: |
-                  7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!assets -xr!.git
+                  7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!docs -xr!assets -xr!.git
                   mkdir -p dist temp/debug temp/installation_zip
                   mv ./source.zip temp/debug
                   cp ./plugins/*.dll temp/installation_zip
