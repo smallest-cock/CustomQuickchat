@@ -77,6 +77,9 @@ jobs:
             - name: 🥷 Set up Ninja
               uses: seanmiddleditch/gha-setup-ninja@v3
 
+            - name: 🧱 Configure project (CMake)
+              run: cmake --preset windows-x64-msvc-stt-off
+
             - name: 🔨 Build project (CMake + Ninja)
               run: cmake --build --preset build-no-stt
 
@@ -119,6 +122,9 @@ jobs:
 
             - name: 🥷 Set up Ninja
               uses: seanmiddleditch/gha-setup-ninja@v3
+
+            - name: 🧱 Configure project (CMake)
+              run: cmake --preset windows-x64-msvc-stt-on
 
             - name: 🔨 Build project (CMake + Ninja)
               run: cmake --build --preset build-with-stt

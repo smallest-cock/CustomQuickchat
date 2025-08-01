@@ -128,11 +128,11 @@ void CustomQuickchat::Event_OnPressChatPreset(ActorWrapper Caller, void* Params,
     if (!overrideDefaultQuickchats_cvar || !overrideDefaultQuickchats_cvar.getBoolValue())
         return;
 
-    auto caller = reinterpret_cast<UGFxData_Chat_TA*>(Caller.memory_address);
+    auto* caller = reinterpret_cast<UGFxData_Chat_TA*>(Caller.memory_address);
     if (!caller)
         return;
 
-    auto params = reinterpret_cast<UGFxData_Chat_TA_execOnPressChatPreset_Params*>(Params);
+    auto* params = reinterpret_cast<UGFxData_Chat_TA_execOnPressChatPreset_Params*>(Params);
     if (!params)
         return;
 
@@ -166,7 +166,7 @@ void CustomQuickchat::Event_GFxHUD_TA_NotifyChatDisabled(ActorWrapper caller, vo
     if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
         return;
 
-    auto hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
+    auto* hud = reinterpret_cast<AGFxHUD_TA*>(caller.memory_address);
     if (!hud)
         return;
 
@@ -186,7 +186,7 @@ void CustomQuickchat::Event_PlayerController_EnterStartState(ActorWrapper Caller
     auto caller = reinterpret_cast<APlayerController*>(Caller.memory_address);
     if (!caller || !caller->myHUD || !caller->myHUD->IsA<AGFxHUD_TA>())
         return;
-    auto hud = static_cast<AGFxHUD_TA*>(caller->myHUD);
+    auto* hud = static_cast<AGFxHUD_TA*>(caller->myHUD);
 
     Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
 }
@@ -198,7 +198,7 @@ void CustomQuickchat::event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* 
     if (!*m_uncensorChats)
         return;
 
-    auto params = reinterpret_cast<AHUDBase_TA_execOnChatMessage_Params*>(Params);
+    auto* params = reinterpret_cast<AHUDBase_TA_execOnChatMessage_Params*>(Params);
     if (!params)
         return;
 
@@ -206,7 +206,7 @@ void CustomQuickchat::event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* 
     if (msg.bPreset)
         return;
 
-    auto caller = reinterpret_cast<AHUDBase_TA*>(Caller.memory_address);
+    auto* caller = reinterpret_cast<AHUDBase_TA*>(Caller.memory_address);
     if (!caller)
         return;
 
@@ -216,7 +216,7 @@ void CustomQuickchat::event_HUDBase_TA_OnChatMessage(ActorWrapper Caller, void* 
 // when censored chat is displayed
 void CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    auto params = reinterpret_cast<UGFxData_Chat_TA_execOnChatMessage_Params*>(Params);
+    auto* params = reinterpret_cast<UGFxData_Chat_TA_execOnChatMessage_Params*>(Params);
     if (!params)
         return;
 
@@ -242,7 +242,7 @@ void CustomQuickchat::event_GFxData_Chat_TA_OnChatMessage(ActorWrapper Caller, v
 
 void CustomQuickchat::Event_PushMenu(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    auto params = reinterpret_cast<UGFxData_MenuStack_TA_execPushMenu_Params*>(Params);
+    auto* params = reinterpret_cast<UGFxData_MenuStack_TA_execPushMenu_Params*>(Params);
     if (!params)
         return;
 
@@ -253,7 +253,7 @@ void CustomQuickchat::Event_PushMenu(ActorWrapper Caller, void* Params, std::str
 
 void CustomQuickchat::Event_PopMenu(ActorWrapper Caller, void* Params, std::string eventName)
 {
-    auto params = reinterpret_cast<UGFxData_MenuStack_TA_execPopMenu_Params*>(Params);
+    auto* params = reinterpret_cast<UGFxData_MenuStack_TA_execPopMenu_Params*>(Params);
     if (!params)
         return;
 
