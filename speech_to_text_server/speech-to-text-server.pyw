@@ -126,21 +126,23 @@ class WebsocketHandler:
         mic_energy_threshold:       float,
         attempt_id:                 str
         ) -> dict:
-        with mic as source:
-            print("Listening for audio...")
             try:
-                await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))    # notify client mic is listening...
+                if mic is None:
+                    return { "success": False, "errorMsg": "Microphone initialization failed. Make sure mic access is enabled" }
+                with mic as source:
+                    print("Listening for audio...")
+                    await self.send_response(self.format_response("notify_mic_listening", {}, attempt_id))    # notify client mic is listening...
 
-                # set mic energy threshold
-                if auto_calibrate_mic:
-                    recognizer.adjust_for_ambient_noise(source)
-                else:
-                    recognizer.energy_threshold = mic_energy_threshold
+                    # set mic energy threshold
+                    if auto_calibrate_mic:
+                        recognizer.adjust_for_ambient_noise(source)
+                    else:
+                        recognizer.energy_threshold = mic_energy_threshold
 
-                audio = recognizer.listen(source, timeout=start_speech_timeout, phrase_time_limit=process_request_timeout)
-                result = recognizer.recognize_google(audio)
-                
-                return { "success": True, "transcription": result }
+                    audio = recognizer.listen(source, timeout=start_speech_timeout, phrase_time_limit=process_request_timeout)
+                    result = recognizer.recognize_google(audio)
+                    
+                    return { "success": True, "transcription": result }
             
             except sr.WaitTimeoutError:
                 return { "success": False, "errorMsg": "Timeout: No speech detected" }
