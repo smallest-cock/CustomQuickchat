@@ -3,16 +3,13 @@
 #include "Macros.hpp"
 #include "components/Instances.hpp"
 
-
 void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool enabled = updatedCvar.getBoolValue();
 
 	std::string msg = "Custom quickchats turned " + std::string(enabled ? "ON" : "OFF");
 
-	GAME_THREAD_EXECUTE_CAPTURE(
-		Instances.SpawnNotification("Custom Quickchat", msg, 3);
-	, msg);
+	GAME_THREAD_EXECUTE({ Instances.SpawnNotification("Custom Quickchat", msg, 3); }, msg);
 }
 
 void CustomQuickchat::changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar)
@@ -63,18 +60,13 @@ void CustomQuickchat::changed_useCustomChatTimeoutMsg(std::string cvarName, CVar
 		auto customChatTimeoutMsg_cvar = getCvar(Cvars::customChatTimeoutMsg);
 		if (!customChatTimeoutMsg_cvar)
 			return;
-	
+
 		chatTimeoutMsg = customChatTimeoutMsg_cvar.getStringValue();
 	}
 	else
-	{
 		ResetChatTimeoutMsg();
-	}
-	
-	GAME_THREAD_EXECUTE(
-		Instances.SetChatTimeoutMsg(chatTimeoutMsg);
-	);
 
+	GAME_THREAD_EXECUTE({ Instances.SetChatTimeoutMsg(chatTimeoutMsg); });
 }
 
 void CustomQuickchat::changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar)
@@ -87,8 +79,6 @@ void CustomQuickchat::changed_customChatTimeoutMsg(std::string cvarName, CVarWra
 	{
 		chatTimeoutMsg = updatedCvar.getStringValue();
 
-		GAME_THREAD_EXECUTE(
-			Instances.SetChatTimeoutMsg(chatTimeoutMsg);
-		);
+		GAME_THREAD_EXECUTE({ Instances.SetChatTimeoutMsg(chatTimeoutMsg); });
 	}
 }

@@ -1,0 +1,34 @@
+# Core indentation behavior
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+
+# Allman style braces
+BreakBeforeBraces: Allman
+
+# Line breaking and alignment preferences
+ColumnLimit: 140
+BinPackArguments: false
+BinPackParameters: false
+AlignAfterOpenBracket: DontAlign
+
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakAssignment: 80
+PenaltyBreakString: 1000
+
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Control statement formatting
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+
+# stop fucking with includes
+SortIncludes: false
+IncludeBlocks: Preserve

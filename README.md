@@ -10,7 +10,7 @@ Send custom quickchats (and more) using Rocket League’s native chat system.
 <img src="./docs/images/cover_pic.png" alt="Plugin Overview" width="600"/>
 
 ## 🔧 Installation
-Download the latest release from the [Releases page](https://github.com/smallest-cock/CustomQuickchat/releases)
+Download the latest release from the [Releases](https://github.com/smallest-cock/CustomQuickchat/releases) page
 
 >[!WARNING]
 > This plugin is currently **incompatible with [BetterChat](https://bakkesplugins.com/plugins/view/416)**. If both plugins are installed, your game **may crash**!

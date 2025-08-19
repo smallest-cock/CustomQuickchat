@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.0.7)
+project(CustomQuickchat VERSION 1.9.4)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -83,6 +83,9 @@ option(USE_SPEECH_TO_TEXT "Enable speech-to-text support" OFF)
 
 if(USE_SPEECH_TO_TEXT)
     add_compile_definitions(USE_SPEECH_TO_TEXT)
+endif()
+if (THROW_ON_DOUBLE_HOOK)
+    add_compile_definitions(THROW_ON_DOUBLE_HOOK)
 endif()
 
 add_compile_options(${compile_options})

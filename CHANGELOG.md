@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.9.4
+- Fixed bug causing disabled quickchats to remain in the RL quickchat UI
+- Added new keywords to get name of the closest player #4
+    |           keyword     | description |
+    |:---------------------:|:-----------:|
+    `[[closestPlayer]]`     | returns the name of the closest player
+    `[[closestOpponent]]`   | returns the name of the closest opponent
+    `[[closestTeammate]]`   | returns the name of the closest teammate 
+    - **Example:** [[closestOpponent]] is an outstanding opponent
+
 ## v1.9.3
 - Updated internal SDK to match latest RL update (v2.54)
 
