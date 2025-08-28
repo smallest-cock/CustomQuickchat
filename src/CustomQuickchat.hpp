@@ -168,7 +168,7 @@ private:
 	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
 
 	// recieving chat stuff
-	ChatMsgData m_mostRecentUncensoredChat;
+	FString m_censoredChatSave;
 
 	// chat timeout stuff
 	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";

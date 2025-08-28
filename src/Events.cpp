@@ -280,28 +280,46 @@ void CustomQuickchat::initHooks()
 		    apply_custom_qc_labels_to_ui(caller, params);
 	    });
 
-	// when uncensored chat is recieved
-	Hooks.hookEvent(Events::HUDBase_TA_OnChatMessage,
+	// https://github.com/ThisIs0xBC/ChatUncensor/blob/83029565049415ac8ef618e28e6eb6c0149fd92a/ChatUncensor/ChatUncensor.cpp#L63
+	// thx fam
+	// ========================================= uncensored chats =========================================
+	using ChatCensorParams = U__GFxData_Chat_TA__AddChatMessage_0x1_exec__GFxData_Chat_TA__AddChatMessage_0x1_Params;
+
+	Hooks.hookEvent(Events::__GFxData_Chat_TA__AddChatMessage_0x1,
 	    HookType::Pre,
 	    [this](ActorWrapper Caller, void* Params, ...)
 	    {
 		    if (!*m_uncensorChats)
 			    return;
 
-		    auto* params = reinterpret_cast<AHUDBase_TA_execOnChatMessage_Params*>(Params);
+		    auto* params = reinterpret_cast<ChatCensorParams*>(Params);
 		    if (!params)
 			    return;
 
-		    FChatMessage& msg = params->NewMsg;
-		    if (msg.bPreset)
-			    return;
+		    m_censoredChatSave = params->Sanitized; // save censored FString (so we can restore it in post hook)
+		    params->Sanitized  = params->instance;  // overwrite censored FString with uncensored FString, aka uncensor it
 
-		    auto* caller = reinterpret_cast<AHUDBase_TA*>(Caller.memory_address);
-		    if (!caller)
-			    return;
-
-		    m_mostRecentUncensoredChat = msg;
+		    if (m_censoredChatSave != params->instance)
+			    LOG("Uncensored chat: \"{}\" --> \"{}\"", m_censoredChatSave.ToString(), params->instance.ToString());
 	    });
+
+	Hooks.hookEvent(Events::__GFxData_Chat_TA__AddChatMessage_0x1,
+	    HookType::Post,
+	    [this](ActorWrapper Caller, void* Params, ...)
+	    {
+		    if (!*m_uncensorChats)
+			    return;
+
+		    auto* params = reinterpret_cast<ChatCensorParams*>(Params);
+		    if (!params)
+			    return;
+
+		    params->Sanitized = m_censoredChatSave; // restore censored FString (prevents crashes)
+
+		    if (m_censoredChatSave.isValid())
+			    memset(&m_censoredChatSave, 0, sizeof(FString)); // clear saved censored FString
+	    });
+	// ====================================================================================================
 
 	// when censored chat is displayed
 	Hooks.hookEvent(Events::GFxData_Chat_TA_OnChatMessage,
@@ -312,22 +330,9 @@ void CustomQuickchat::initHooks()
 		    if (!params)
 			    return;
 
-		    if (*m_uncensorChats)
-		    {
-			    std::string gfxUid      = ChatMsgData::generateUid(params);
-			    std::string censoredMsg = params->Message.ToString();
-			    if (gfxUid == m_mostRecentUncensoredChat.uid && censoredMsg != m_mostRecentUncensoredChat.uncensoredMsg)
-			    {
-				    params->Message = FString::create(m_mostRecentUncensoredChat.uncensoredMsg);
-				    LOG("Uncensored chat: \"{}\" --> \"{}\"",
-				        Format::EscapeBraces(censoredMsg),
-				        Format::EscapeBraces(m_mostRecentUncensoredChat.uncensoredMsg));
-			    }
-		    }
-
 		    if (*m_removeTimestamps)
 		    {
-			    auto timeStampFstr  = reinterpret_cast<FStringBase*>(&params->TimeStamp);
+			    auto* timeStampFstr = reinterpret_cast<FStringBase*>(&params->TimeStamp);
 			    timeStampFstr->size = 0;
 		    }
 	    });

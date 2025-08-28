@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.9.6
+- Improved chat uncensoring implementation 👀
+
 ## v1.9.5
 - Added new `[[rumbleItem]]` keyword to get the name of your rumble item #7
 - Updated internal SDK to match latest version of RL (v2.55)
