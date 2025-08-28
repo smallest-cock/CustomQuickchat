@@ -26,8 +26,9 @@ enum class EKeyword : uint8_t
 	ClosestPlayer       = 13,
 	ClosestOpponent     = 14,
 	ClosestTeammate     = 15,
-	Forfeit             = 16,
-	ExitToMainMenu      = 17
+	RumbleItem          = 16,
+	Forfeit             = 17,
+	ExitToMainMenu      = 18
 };
 
 enum class ETextEffect : uint8_t
@@ -52,6 +53,7 @@ const std::unordered_map<std::string, EKeyword> keywordsMap = {
     {"closestPlayer", EKeyword::ClosestPlayer},
     {"closestOpponent", EKeyword::ClosestOpponent},
     {"closestTeammate", EKeyword::ClosestTeammate},
+    {"rumbleItem", EKeyword::RumbleItem},
     {"forfeit", EKeyword::Forfeit},
     {"menu", EKeyword::ExitToMainMenu},
 };
@@ -196,7 +198,7 @@ enum class SkillTier
 };
 
 // credit to https://github.com/JulienML/BetterChat/ thx fam
-const std::map<std::string, std::string> quickchat_ids_to_text = {
+inline const std::map<std::string, std::string> quickchat_ids_to_text = {
     {"Group1Message1", "I got it!"},       // Je l'ai !
     {"Group1Message2", "Need boost!"},     // Besoin de turbo !
     {"Group1Message3", "Take the shot!"},  // Prends-le !
@@ -373,4 +375,33 @@ struct ChatterRanks
 	static float              calculate_skill_rating(float mu);
 	static FPlayerSkillRating get_skill_rating(const FUniqueNetId& id, int playlist_id, UOnlineGameSkill_X* game_skill);
 	static std::string        get_playlist_str(ERankPlaylists playlist);
+};
+
+/*
+OFFICIAL NAME | CODE NAME
+-----------------------
+Haymaker      | BallSpring
+Boot          | CarSpring
+Magnetizer    | BallMagnet
+Swapper       | EnemySwapper
+Spikes        | BallVelcro
+Grappling Hook| GrapplingHook
+Power Hitter  | PowerHitter
+Plunger       | BallLasso
+Freezer       | BallFreeze
+Disruptor     | EnemyBooster
+Tornado       | Tornado
+*/
+inline const std::unordered_map<std::string, std::string> g_rumbleFriendlyNames = {
+    {"BallSpring", "Haymaker"},
+    {"CarSpring", "Boot"},
+    {"BallMagnet", "Magnetizer"},
+    {"EnemySwapper", "Swapper"},
+    {"BallVelcro", "Spikes"},
+    {"GrapplingHook", "Grappling Hook"},
+    {"Powerhitter", "Power Hitter"},
+    {"BallLasso", "Plunger"},
+    {"BallFreeze", "Freezer"},
+    {"EnemyBooster", "Disruptor"},
+    {"Tornado", "Tornado"},
 };

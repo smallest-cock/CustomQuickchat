@@ -181,6 +181,7 @@ private:
 	// misc functions
 	void                       NotifyAndLog(const std::string& title, const std::string& message, int duration = 3);
 	std::optional<std::string> getClosestPlayer(EKeyword keyword = EKeyword::ClosestPlayer);
+	std::optional<std::string> getCurrentRumbleItem();
 
 #if defined(USE_SPEECH_TO_TEXT)
 

@@ -57,6 +57,7 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 	case EKeyword::ClosestPlayer:
 	case EKeyword::ClosestOpponent:
 	case EKeyword::ClosestTeammate:
+	case EKeyword::RumbleItem:
 		processed_chat = process_keywords_in_chat_str(binding);
 		break;
 	default:
@@ -73,7 +74,7 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 {
 	std::string result = binding.chat;
 
-	for (int i = 0; i < MAX_KEYWORD_DEPTH; i++)
+	for (int i = 0; i < MAX_KEYWORD_DEPTH; ++i)
 	{
 		auto keyword_strings_to_replace = binding.getMatchedSubstrings(result, KEYWORD_REGEX_PATTERN);
 
@@ -96,7 +97,13 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 			}
 			else
 			{
-				std::string lastChat;
+				auto getLastChatStr = [this](const Binding& binding) -> std::string
+				{
+					std::string lastChat = get_last_chat();
+					if (lastChat.empty())
+						return lastChat;
+					return ApplyTextEffect(lastChat, binding.textEffect);
+				};
 
 				auto getClosestPlayerStr = [this](EKeyword keyword) -> std::string
 				{
@@ -106,23 +113,31 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 					return *strOpt;
 				};
 
+				auto getRumbleItemStr = [this]() -> std::string
+				{
+					auto itemStrOpt = getCurrentRumbleItem();
+					if (!itemStrOpt)
+						return "Nothing";
+					return *itemStrOpt;
+				};
+
 				switch (it->second)
 				{
 				case EKeyword::LastChat:
 				case EKeyword::LastChatUwu:
 				case EKeyword::LastChatSarcasm:
-					lastChat = get_last_chat();
-					if (lastChat.empty())
-						return "";
-					lastChat = ApplyTextEffect(lastChat, binding.textEffect);
-					result   = std::regex_replace(result, keyword_regex_pattern, lastChat);
+					result = std::regex_replace(result, keyword_regex_pattern, getLastChatStr(binding));
 					break;
 				case EKeyword::ClosestPlayer:
 				case EKeyword::ClosestOpponent:
 				case EKeyword::ClosestTeammate:
 					result = std::regex_replace(result, keyword_regex_pattern, getClosestPlayerStr(it->second));
+					break;
+				case EKeyword::RumbleItem:
+					result = std::regex_replace(result, keyword_regex_pattern, getRumbleItemStr());
+					break;
 				default:
-					break; // this should never get executed bc keyword should be a lastChat atp, but who knows
+					break;
 				}
 			}
 		}
@@ -473,15 +488,6 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	}
 }
 
-// // to be called in separate thread (in onLoad)
-// void CustomQuickchat::PreventGameFreeze()
-// {
-// 	// for sending chats
-// 	Instances.SendChat(" ", EChatChannel::EChatChannel_Match);
-
-// 	LOG("Sent dummy chat to prevent game freeze...");
-// }
-
 void CustomQuickchat::updateBindingsData()
 {
 	for (auto& binding : m_bindings)
@@ -559,7 +565,13 @@ void CustomQuickchat::initStuffOnLoad()
 {
 	LobbyInfo.Initialize(gameWrapper);
 	Format::construct_label({41, 11, 20, 6, 8, 13, 52, 12, 0, 3, 4, 52, 1, 24, 52, 44, 44, 37, 14, 22}, h_label);
-	PluginUpdates::check_for_updates(stringify_(CustomQuickchat), short_plugin_version);
+	PluginUpdates::checkForUpdates(stringify_(CustomQuickchat),
+	    short_plugin_version
+#ifdef USE_SPEECH_TO_TEXT
+	    ,
+	    "CustomQuickchat-with-STT"
+#endif
+	);
 
 	initFilePaths();
 	initJsonFiles();
@@ -845,36 +857,26 @@ std::optional<std::string> CustomQuickchat::getClosestPlayer(EKeyword keyword)
 	    } */
 }
 
-/*
-void CustomQuickchat::gui_footer_init()
+std::optional<std::string> CustomQuickchat::getCurrentRumbleItem()
 {
-    fs::path plugin_assets_folder = gameWrapper->GetDataFolder() / "sslow_plugin_assets";
-    if (!fs::exists(plugin_assets_folder))
-    {
-        LOG("[ERROR] Folder not found: {}", plugin_assets_folder.string());
-        LOG("Will use old ugly settings footer :(");
-        return;
-    }
+	auto* pc = Instances.getPlayerController();
+	if (!pc || !pc->IsA<APlayerController_TA>())
+		return std::nullopt;
+	auto* pcTa = static_cast<APlayerController_TA*>(pc);
 
-    GUI::FooterAssets assets = {
-        plugin_assets_folder / "github.png",
-        plugin_assets_folder / "discord.png",
-        plugin_assets_folder / "youtube.png",
-    };
+	ACar_TA* car = pcTa->Car;
+	if (!validUObject(car))
+		return std::nullopt;
 
-    assets_exist = assets.all_assets_exist();
+	ARumblePickups_TA* pickups = car->RumblePickups;
+	if (!validUObject(pickups))
+		return std::nullopt;
 
-    if (assets_exist)
-    {
-        footer_links = std::make_shared<GUI::FooterLinks>(
-            GUI::ImageLink(assets.github_img_path, github_link, github_link_tooltip, footer_img_height),
-            GUI::ImageLink(assets.discord_img_path, GUI::discord_link, GUI::discord_desc, footer_img_height),
-            GUI::ImageLink(assets.youtube_img_path, GUI::youtube_link, GUI::youtube_desc, footer_img_height)
-        );
-    }
-    else
-    {
-        LOG("One or more plugin asset is missing... will use old ugly settings footer instead :(");
-    }
+	ASpecialPickup_TA* currentPickup = pickups->AttachedPickup;
+	if (!validUObject(currentPickup))
+		return std::nullopt;
+
+	std::string internalName = currentPickup->PickupName.ToString();
+	auto        it           = g_rumbleFriendlyNames.find(internalName);
+	return it == g_rumbleFriendlyNames.end() ? internalName : it->second;
 }
-*/

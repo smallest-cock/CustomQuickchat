@@ -131,10 +131,6 @@ void CustomQuickchat::initCommands()
 	registerCommand(Commands::test2,
 	    [this](std::vector<std::string> args)
 	    {
-		    auto closestPlayerOpt = getClosestPlayer();
-		    if (!closestPlayerOpt)
-			    return;
-
-		    LOG("Closest player: {}", *closestPlayerOpt);
+		    // ...
 	    });
 }

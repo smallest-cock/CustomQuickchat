@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.9.5
+- Added new `[[rumbleItem]]` keyword to get the name of your rumble item #7
+- Updated internal SDK to match latest version of RL (v2.55)
+- Added an update button in settings to easily update the plugin when there's a new version available
+
 ## v1.9.4
 - Fixed bug causing disabled quickchats to remain in the RL quickchat UI
 - Added new keywords to get name of the closest player #4
