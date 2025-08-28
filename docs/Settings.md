@@ -47,6 +47,7 @@ Similar to variations, you can include these keywords in your chat to trigger sp
 `[[closestPlayer]]`         | returns the name of the closest player
 `[[closestOpponent]]`       | returns the name of the closest opponent
 `[[closestTeammate]]`       | returns the name of the closest teammate
+`[[rumbleItem]]`            | returns the name of your current rumble item
 `[[lastChat]]`              | returns the last chat sent in the lobby (depends on your Lobby Info settings)
 `[[lastChat sarcasm]]`      | returns the last chat iN sArCAsM tExT
 `[[lastChat uwu]]`          | returns the last chat in UωU text ≽^•⩊•^≼ 👉👈 ( ˶ˆ꒳ˆ˵ )
