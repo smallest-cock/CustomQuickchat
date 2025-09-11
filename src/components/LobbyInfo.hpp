@@ -1,52 +1,65 @@
 #pragma once
 #include "Structs.hpp"
+#include "Component.hpp"
+#include <optional>
 
-class LobbyInfoComponent
+class LobbyInfoComponent : Component<LobbyInfoComponent>
 {
 public:
 	LobbyInfoComponent() {}
 	~LobbyInfoComponent() {}
 
-	void Initialize(std::shared_ptr<GameWrapper> gw);
-	void initHooks();
-
-public:
-	static constexpr std::string_view logging_prefix = "[LobbyInfoComponent] ";
-
-	template <typename... Args> static void LOG(std::string_view format_str, Args&&... args)
-	{
-		::LOG(std::string(logging_prefix) + std::string(format_str), std::forward<Args>(args)...);
-	}
-
-	template <typename... Args> static void LOGERROR(std::string_view format_str, Args&&... args)
-	{
-		::LOG(std::string(logging_prefix) + "ERROR: " + std::string(format_str), std::forward<Args>(args)...);
-	}
+	static constexpr std::string_view componentName = "LobbyInfo";
+	void                              init(const std::shared_ptr<GameWrapper>& gw);
 
 private:
-	std::shared_ptr<GameWrapper> gameWrapper;
-	UGFxData_Chat_TA*            m_gfxChatData = nullptr;
+	void initFilepaths();
+	void initHooks();
+	void initCvars();
+
+private:
+	// cvar values
+	std::shared_ptr<bool> m_userChatsInLastChat     = std::make_shared<bool>(false);
+	std::shared_ptr<bool> m_teammateChatsInLastChat = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_quickchatsInLastChat    = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_partyChatsInLastChat    = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_teamChatsInLastChat     = std::make_shared<bool>(true);
+
+private:
+	// Lobby Info filepaths
+	fs::path m_lobbyInfoFolder;
+	fs::path m_chatsJsonPath;
+	fs::path m_ranksJsonPath;
+
+	UGFxData_Chat_TA* m_gfxChatData = nullptr;
 
 	std::vector<ChatData>                         m_matchChats;
 	std::unordered_map<std::string, ChatterRanks> m_matchRanks; // bm ID string --> ChatterRanks struct
 
 public:
-	ChatData           getLastChatData();
-	static std::string uidStrFromNetId(const FUniqueNetId& id);
-	static std::string getPlatformStr(uint8_t platform);
-	static void        logChatData(const ChatData& chat);
-	void               clearStoredChats();
+	// TODO: move these to LobyInfo class
+	std::string getLastChat();
+	std::string getLastChatterRankStr(EKeyword keyword);
+
+	std::optional<ChatData> getLastChatData();
+	static std::string      uidStrFromNetId(const FUniqueNetId& id);
+	static std::string      getPlatformStr(uint8_t platform);
+	static void             logChatData(const ChatData& chat);
+	void                    clearStoredChats();
 
 	inline size_t getMatchChatsSize() { return m_matchChats.size(); }
 	inline size_t getMatchRanksSize() { return m_matchRanks.size(); }
 
 public:
-	ChatterRanks        get_last_chatter_ranks();
-	void                clear_stored_ranks();
-	static inline float get_skill_rating(float mu);
+	std::optional<ChatterRanks> getLastChatterRanks();
+	void                        clearStoredRanks();
+	static float                getSkillRating(float mu);
 
 public:
 	void clearCachedData();
+
+public:
+	void display_settings();
 };
 
 extern class LobbyInfoComponent LobbyInfo;

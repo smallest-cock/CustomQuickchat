@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.9.6)
+project(CustomQuickchat VERSION 1.9.7)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -33,6 +33,7 @@ set(COMPONENTS_SRC
     ${COMPONENTS_DIR}/Instances.cpp
     ${COMPONENTS_DIR}/LobbyInfo.cpp
     ${COMPONENTS_DIR}/WebsocketManager.cpp
+    ${COMPONENTS_DIR}/SpeechToText.cpp
 )
 
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
@@ -97,16 +98,6 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     "Make sure your toolchain is configured to use a 64-bit compiler."
   )
 endif()
-
-# find_package(websocketpp CONFIG REQUIRED)
-# # find_package(minhook CONFIG REQUIRED) # <-- doesn't work, GPT says its due to a broken port
-
-# # so... we do this instead
-# add_library(minhook::minhook UNKNOWN IMPORTED)
-# set_target_properties(minhook::minhook PROPERTIES
-#   IMPORTED_LOCATION "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/lib/minhook.x64.lib"
-#   INTERFACE_INCLUDE_DIRECTORIES "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include"
-# )
 
 add_library(${PROJECT_NAME}
     SHARED

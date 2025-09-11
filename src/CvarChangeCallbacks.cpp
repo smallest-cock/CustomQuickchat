@@ -12,15 +12,6 @@ void CustomQuickchat::changed_enabled(std::string cvarName, CVarWrapper updatedC
 	GAME_THREAD_EXECUTE({ Instances.SpawnNotification("Custom Quickchat", msg, 3); }, msg);
 }
 
-void CustomQuickchat::changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar)
-{
-	bool enableSTTNotifications = updatedCvar.getBoolValue();
-
-	std::string msg = "Speech-To-Text notifications turned " + std::string(enableSTTNotifications ? "ON" : "OFF");
-
-	LOG(msg);
-}
-
 void CustomQuickchat::changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar)
 {
 	bool overrideDefaultQuickchats = updatedCvar.getBoolValue();

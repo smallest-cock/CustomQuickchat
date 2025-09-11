@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.9.7
+### speech-to-text
+- Fixed crashes caused by missing required files
+- Added a button to test the speech-to-text websocket connection
+
 ## v1.9.6
 - Improved chat uncensoring implementation 👀
 

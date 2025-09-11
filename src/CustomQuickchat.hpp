@@ -5,13 +5,7 @@
 #include <bakkesmod/plugin/PluginSettingsWindow.h>
 
 #include "version.h"
-
 #include <ModUtils/util/Utils.hpp>
-
-#ifdef USE_SPEECH_TO_TEXT
-#include "components/WebsocketManager.hpp"
-#endif
-
 #include "Structs.hpp"
 #include "Cvars.hpp"
 
@@ -19,37 +13,11 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
     VERSION_BUILD);
 constexpr auto short_plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
-#if !defined(USE_SPEECH_TO_TEXT)
-constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
-#else
-constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(
-    VERSION_PATCH) "\t(with speech-to-text)";
-#endif
-
+constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH)
 #ifdef USE_SPEECH_TO_TEXT
-
-struct ActiveSTTAttempt
-{
-	std::string attemptID;
-	Binding     binding;
-};
-
-struct SpeechToTextResult
-{
-	bool        success = false;
-	bool        error   = false;
-	std::string outputStr;
-};
-
-struct MicCalibrationResult
-{
-	bool        success         = false;
-	bool        error           = false;
-	int         energyThreshold = 420;
-	std::string errorMsg;
-};
-
+    "\t(with speech-to-text)"
 #endif
+    ;
 
 class CustomQuickchat : public BakkesMod::Plugin::BakkesModPlugin, public SettingsWindowBase, public PluginWindowBase
 {
@@ -92,6 +60,23 @@ private:
 	    const CvarData& autoRunBool, const CvarData& command, int numIntervals, float delaySeconds, bool delayFirstCommand = false);
 
 private:
+	// cvar values
+	std::shared_ptr<bool> m_enabled                    = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_overrideDefaultQuickchats  = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_blockDefaultQuickchats     = std::make_shared<bool>(false);
+	std::shared_ptr<bool> m_disablePostMatchQuickchats = std::make_shared<bool>(false);
+	std::shared_ptr<bool> m_disableChatTimeout         = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_useCustomChatTimeoutMsg    = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_removeTimestamps           = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_randomizeSarcasm           = std::make_shared<bool>(true);
+	std::shared_ptr<bool> m_uncensorChats              = std::make_shared<bool>(true);
+
+	std::shared_ptr<float> m_sequenceTimeWindow = std::make_shared<float>(2.0f);
+	std::shared_ptr<float> m_minBindingDelay    = std::make_shared<float>(0.05f);
+
+	std::shared_ptr<std::string> m_customChatTimeoutMsg = std::make_shared<std::string>("Wait [Time] seconds lil bro");
+
+private:
 	std::string h_label;
 
 	// constants
@@ -105,18 +90,10 @@ private:
 	bool m_inGameEvent    = false;
 	bool m_chatboxOpen    = false;
 
-	std::shared_ptr<bool> m_removeTimestamps = std::make_shared<bool>(true);
-	std::shared_ptr<bool> m_uncensorChats    = std::make_shared<bool>(true);
-
-	// Custom Quickchat filepaths
+	// filepaths
 	fs::path m_pluginFolder;
 	fs::path m_bindingsJsonPath;
 	fs::path m_variationsJsonPath;
-
-	// Lobby Info filepaths
-	fs::path m_lobbyInfoFolder;
-	fs::path m_lobbyInfoChatsJsonPath;
-	fs::path m_lobbyInfoRanksJsonPath;
 
 	// bindings & variations stuff
 	std::vector<Binding>       m_bindings;
@@ -159,18 +136,10 @@ private:
 	void        performBindingAction(const Binding& binding);
 	std::string process_keywords_in_chat_str(const Binding& binding);
 
-	// Lobby Info stuff (last chat & blast ranks)
-	std::string get_last_chat();
-	std::string get_last_chatter_rank_str(EKeyword keyword);
-
-	// sending chat stuff
-	void        SendChat(const std::string& chat, EChatChannel chatMode);
-	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
-
-	// recieving chat stuff
+	// recieving chats
 	FString m_censoredChatSave;
 
-	// chat timeout stuff
+	// chat timeout
 	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
 	void        ResetChatTimeoutMsg();
 
@@ -183,75 +152,28 @@ private:
 	std::optional<std::string> getClosestPlayer(EKeyword keyword = EKeyword::ClosestPlayer);
 	std::optional<std::string> getCurrentRumbleItem();
 
-#if defined(USE_SPEECH_TO_TEXT)
-
-	// constants
-	static constexpr float PROBE_JSON_FREQUENCY = 0.2f; // in seconds
-
-	// thread-safe flags
-	std::atomic<bool> attemptingSTT       = false;
-	std::atomic<bool> calibratingMicLevel = false;
-
-	// filepaths
-	fs::path speechToTextExePath;
-	fs::path speechToTextJsonPath;
-	fs::path speechToTextErrorLogPath;
-
-	// mutable values
-	ActiveSTTAttempt Active_STT_Attempt;
-
-	// websocket stuff
-	static constexpr float START_WS_CLIENT_DELAY = 5.0f; // in seconds
-
-	std::atomic<bool>                       connecting_to_ws_server{false};
-	std::shared_ptr<WebsocketClientManager> Websocket = nullptr;
-	Process::ProcessHandles                 stt_python_server_process;
-
-	void start_websocket_stuff(bool onLoad = false);
-	bool start_websocket_server();
-	void stop_websocket_server();
-	void process_ws_response(const json& response);
-
-	// speech-to-text
-	void StartSpeechToText(const Binding& binding);
-	json generate_data_for_STT_attempt();
-	void process_STT_result(const json& response_data);
-
-	// mic calibration
-	void CalibrateMicrophone();
-	json generate_data_for_mic_calibration_attempt();
-	void process_mic_calibration_result(const json& response_data);
-
-	// misc
-	std::string generate_STT_attempt_id();
-	void        ClearSttErrorLog();
-
-	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
-	void        STTLog(const std::string& message);
-
-#else
-
 	void no_speech_to_text_warning();
-
-#endif
 
 	// cvar change callbacks
 	void changed_enabled(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_enableSTTNotifications(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_useCustomChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
 	void changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
 
 public:
-	// GUI
+	// sending chats
+	void        SendChat(const std::string& chat, EChatChannel chatMode);
+	std::string ApplyTextEffect(const std::string& originalText, ETextEffect effect);
+
+	// gui
+public:
 	void RenderSettings() override;
 	void RenderWindow() override;
 
+private:
 	void display_generalSettings();
 	void display_chatTimeoutSettings();
-	void display_speechToTextSettings();
-	void display_lastChatSettings();
 
 	void display_bindingsList();
 	void display_bindingDetails();

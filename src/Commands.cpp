@@ -3,6 +3,7 @@
 #include "CustomQuickchat.hpp"
 #include "Cvars.hpp"
 #include "components/Instances.hpp"
+#include "components/SpeechToText.hpp"
 
 void CustomQuickchat::initCommands()
 {
@@ -39,7 +40,7 @@ void CustomQuickchat::initCommands()
 			    LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
 	    });
 
-	registerCommand(Commands::list_custom_chat_labels,
+	registerCommand(Commands::listCustomChatLabels,
 	    [this](std::vector<std::string> args)
 	    {
 		    determineQuickchatLabels(nullptr, true);
@@ -66,7 +67,7 @@ void CustomQuickchat::initCommands()
 		    }
 	    });
 
-	registerCommand(Commands::list_playlist_info,
+	registerCommand(Commands::listPlaylistInfo,
 	    [this](std::vector<std::string> args)
 	    {
 		    auto* playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
@@ -122,7 +123,7 @@ void CustomQuickchat::initCommands()
 	    [this](std::vector<std::string> args)
 	    {
 #ifdef USE_SPEECH_TO_TEXT
-		    Websocket->SendEvent("test", {{"data", "test"}});
+		    SpeechToText.test();
 #endif
 
 		    LOG("did the test");

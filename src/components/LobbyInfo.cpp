@@ -1,16 +1,40 @@
 #include "pch.h"
+#include "ModUtils/gui/GuiTools.hpp"
 #include "LobbyInfo.hpp"
 #include "bakkesmod/wrappers/Engine/ActorWrapper.h"
 #include "Events.hpp"
 #include "Cvars.hpp"
+#include "Macros.hpp"
 #include "Instances.hpp"
 #include "HookManager.hpp"
+#include <optional>
 
-void LobbyInfoComponent::Initialize(std::shared_ptr<GameWrapper> gw)
+void LobbyInfoComponent::init(const std::shared_ptr<GameWrapper>& gw)
 {
 	gameWrapper = gw;
 
+	initFilepaths();
+	initCvars();
 	initHooks();
+}
+
+void LobbyInfoComponent::initFilepaths()
+{
+	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
+	fs::path pluginFolder         = bmDataFolderFilePath / "CustomQuickchat";
+
+	m_lobbyInfoFolder = bmDataFolderFilePath / "Lobby Info";
+	m_chatsJsonPath   = m_lobbyInfoFolder / "Chats.json";
+	m_ranksJsonPath   = m_lobbyInfoFolder / "Ranks.json";
+}
+
+void LobbyInfoComponent::initCvars()
+{
+	registerCvar_bool(Cvars::userChatsInLastChat, false).bindTo(m_userChatsInLastChat);
+	registerCvar_bool(Cvars::teammateChatsInLastChat, true).bindTo(m_teammateChatsInLastChat);
+	registerCvar_bool(Cvars::quickchatsInLastChat, true).bindTo(m_quickchatsInLastChat);
+	registerCvar_bool(Cvars::partyChatsInLastChat, true).bindTo(m_partyChatsInLastChat);
+	registerCvar_bool(Cvars::teamChatsInLastChat, true).bindTo(m_teamChatsInLastChat);
 }
 
 void LobbyInfoComponent::initHooks()
@@ -63,10 +87,58 @@ void LobbyInfoComponent::initHooks()
 	    });
 }
 
+std::string LobbyInfoComponent::getLastChat()
+{
+	auto chat = getLastChatData();
+	if (!chat)
+	{
+		LOGERROR("Unable to get last chat data");
+		return "";
+	}
+	if (chat->Message.empty())
+	{
+		LOG("[ERROR] Message is empty string from last chat data");
+		return "";
+	}
+
+	return chat->Message;
+}
+
+std::string LobbyInfoComponent::getLastChatterRankStr(EKeyword keyword)
+{
+	auto chatterRanks = getLastChatterRanks();
+	if (!chatterRanks)
+	{
+		LOGERROR("Unable to get last chatter's ranks");
+		return "";
+	}
+	if (chatterRanks->playerName.empty())
+	{
+		LOGERROR("ChatterRanks::playerName is empty string");
+		return std::string();
+	}
+
+	switch (keyword)
+	{
+	case EKeyword::BlastAll:
+		return chatterRanks->get_all_ranks_str();
+	case EKeyword::BlastCasual:
+		return chatterRanks->get_playlist_rank_str(ERankPlaylists::Casual);
+	case EKeyword::Blast1v1:
+		return chatterRanks->get_playlist_rank_str(ERankPlaylists::Ones);
+	case EKeyword::Blast2v2:
+		return chatterRanks->get_playlist_rank_str(ERankPlaylists::Twos);
+	case EKeyword::Blast3v3:
+		return chatterRanks->get_playlist_rank_str(ERankPlaylists::Threes);
+	default:
+		return "";
+	}
+}
+
 void LobbyInfoComponent::clearCachedData()
 {
 	clearStoredChats();
-	clear_stored_ranks();
+	clearStoredRanks();
 }
 
 void LobbyInfoComponent::clearStoredChats()
@@ -75,7 +147,7 @@ void LobbyInfoComponent::clearStoredChats()
 	LOG("Cleared stored match chats");
 }
 
-void LobbyInfoComponent::clear_stored_ranks()
+void LobbyInfoComponent::clearStoredRanks()
 {
 	m_matchRanks.clear();
 	LOG("Cleared stored player ranks");
@@ -97,7 +169,7 @@ void LobbyInfoComponent::logChatData(const ChatData& chat)
 	LOG("TimeStamp: {}", chat.TimeStamp);
 }
 
-ChatData LobbyInfoComponent::getLastChatData()
+std::optional<ChatData> LobbyInfoComponent::getLastChatData()
 {
 	/*
 	    NOTE:
@@ -109,22 +181,10 @@ ChatData LobbyInfoComponent::getLastChatData()
 	*/
 
 	if (m_matchChats.empty())
-		return FGFxChatMessage{};
+		return std::nullopt;
 
-	auto user_chats_in_last_chat_cvar     = _globalCvarManager->getCvar(Cvars::user_chats_in_last_chat.name);
-	auto teammate_chats_in_last_chat_cvar = _globalCvarManager->getCvar(Cvars::teammate_chats_in_last_chat.name);
-	auto quickchats_in_last_chat_cvar     = _globalCvarManager->getCvar(Cvars::quickchats_in_last_chat.name);
-	auto party_chats_in_last_chat_cvar    = _globalCvarManager->getCvar(Cvars::party_chats_in_last_chat.name);
-	auto team_chats_in_last_chat_cvar     = _globalCvarManager->getCvar(Cvars::team_chats_in_last_chat.name);
-
-	if (!user_chats_in_last_chat_cvar)
-		return FGFxChatMessage{};
-
-	const LastChatPreferences chatPreferences = {quickchats_in_last_chat_cvar.getBoolValue(),
-	    user_chats_in_last_chat_cvar.getBoolValue(),
-	    team_chats_in_last_chat_cvar.getBoolValue(),
-	    party_chats_in_last_chat_cvar.getBoolValue(),
-	    teammate_chats_in_last_chat_cvar.getBoolValue()};
+	const LastChatPreferences chatPreferences = {
+	    *m_quickchatsInLastChat, *m_userChatsInLastChat, *m_teamChatsInLastChat, *m_partyChatsInLastChat, *m_teammateChatsInLastChat};
 
 	const uint8_t hopefullyCorrectUserTeam = gameWrapper->GetPlayerController().GetTeamNum2();
 
@@ -147,27 +207,32 @@ ChatData LobbyInfoComponent::getLastChatData()
 	}
 
 	LOG("We didn't find a suitable last chat. Returning a blank FGFxChatMessage...");
-	return FGFxChatMessage{};
+	return std::nullopt;
 }
 
-ChatterRanks LobbyInfoComponent::get_last_chatter_ranks()
+std::optional<ChatterRanks> LobbyInfoComponent::getLastChatterRanks()
 {
 	// TODO: make this UOnlineGameSkill_X* a member and update current instance using hooks (like how we do with UGFxData_Chat_TA*)
-	auto skill = Instances.GetInstanceOf<UOnlineGameSkill_X>();
+	auto* skill = Instances.GetInstanceOf<UOnlineGameSkill_X>();
 	if (!skill)
 	{
 		LOG("[ERROR] UOnlineGameSkill_X* is null");
-		return ChatterRanks{};
+		return std::nullopt;
 	}
 
-	auto chat_data = getLastChatData();
+	auto chatData = getLastChatData();
+	if (!chatData)
+	{
+		LOGERROR("Unable to get last chat data");
+		return std::nullopt;
+	}
 
-	auto it = m_matchRanks.find(chat_data.IdString);
+	auto it = m_matchRanks.find(chatData->IdString);
 	if (it == m_matchRanks.end())
 	{
-		ChatterRanks ranks{chat_data, skill};
-		m_matchRanks[chat_data.IdString] = ranks;
-		LOG("Stored ranks for {}", chat_data.PlayerName);
+		ChatterRanks ranks{*chatData, skill};
+		m_matchRanks[chatData->IdString] = ranks;
+		LOG("Stored ranks for {}", chatData->PlayerName);
 		LOG("Stored ranks size: {}", m_matchRanks.size());
 		return ranks;
 	}
@@ -178,14 +243,13 @@ ChatterRanks LobbyInfoComponent::get_last_chatter_ranks()
 // NOTE: This formula is what's used for RL leaderboards and is what people refer to as "MMR"
 // ... but it's not what's used internally to determine matchmaking. Apparently that would be the Microsoft TrueSkill formula: Mu - (3 *
 // Sigma)
-float LobbyInfoComponent::get_skill_rating(float mu) { return (mu * 20) + 100; }
+float LobbyInfoComponent::getSkillRating(float mu) { return (mu * 20) + 100; }
 
-// Returns the id string in the following format: platform|accountId|splitScreenId
+// Returns an ID string in the following format: platform|accountId|splitScreenId
 std::string LobbyInfoComponent::uidStrFromNetId(const FUniqueNetId& id)
 {
-	std::string account_id = id.EpicAccountId.empty() ? std::to_string(id.Uid) : id.EpicAccountId.ToString();
-
-	return getPlatformStr(id.Platform) + "|" + account_id + "|" + std::to_string(id.SplitscreenID);
+	std::string acctId = id.EpicAccountId.empty() ? std::to_string(id.Uid) : id.EpicAccountId.ToString();
+	return std::format("{}|{}|{}", getPlatformStr(id.Platform), acctId, id.SplitscreenID);
 }
 
 std::string LobbyInfoComponent::getPlatformStr(uint8_t platform)
@@ -213,6 +277,72 @@ std::string LobbyInfoComponent::getPlatformStr(uint8_t platform)
 	default:
 		return "Unknown";
 	}
+}
+
+// ##############################################################################################################
+// ##########################################   DISPLAY FUNCTIONS    ############################################
+// ##############################################################################################################
+
+void LobbyInfoComponent::display_settings()
+{
+	auto userChatsInLastChat_cvar     = getCvar(Cvars::userChatsInLastChat);
+	auto quickchatsInLastChat_cvar    = getCvar(Cvars::quickchatsInLastChat);
+	auto teammateChatsInLastChat_cvar = getCvar(Cvars::teammateChatsInLastChat);
+	auto partyChatsInLastChat_cvar    = getCvar(Cvars::partyChatsInLastChat);
+	auto teamChatsInLastChat_cvar     = getCvar(Cvars::teamChatsInLastChat);
+	if (!userChatsInLastChat_cvar)
+		return;
+
+	bool userChatsInLastChat     = userChatsInLastChat_cvar.getBoolValue();
+	bool quickchatsInLastChat    = quickchatsInLastChat_cvar.getBoolValue();
+	bool teammateChatsInLastChat = teammateChatsInLastChat_cvar.getBoolValue();
+	bool partyChatsInLastChat    = partyChatsInLastChat_cvar.getBoolValue();
+	bool teamChatsInLastChat     = teamChatsInLastChat_cvar.getBoolValue();
+
+	GUI::Spacing(2);
+
+	GUI::ClickableLink("Keywords guide",
+	    "https://github.com/smallest-cock/CustomQuickchat/blob/main/docs/Settings.md#special-effects",
+	    GUI::Colors::BlueGreen);
+
+	GUI::Spacing(2);
+
+	ImGui::TextColored(GUI::Colors::Yellow, "Chats to be included when searching for the last chat:");
+	GUI::ToolTip("Searching for last chat sent happens for [[lastChat]] and [[blast ...]]\n\nMore info can be found in the "
+	             "keywords guide above");
+
+	GUI::Spacing(2);
+
+	if (ImGui::Checkbox("User chats", &userChatsInLastChat))
+		userChatsInLastChat_cvar.setValue(userChatsInLastChat);
+
+	if (ImGui::Checkbox("Quickchats", &quickchatsInLastChat))
+		quickchatsInLastChat_cvar.setValue(quickchatsInLastChat);
+
+	if (ImGui::Checkbox("Teammate chats", &teammateChatsInLastChat))
+		teammateChatsInLastChat_cvar.setValue(teammateChatsInLastChat);
+
+	if (ImGui::Checkbox("Party chats", &partyChatsInLastChat))
+		partyChatsInLastChat_cvar.setValue(partyChatsInLastChat);
+
+	if (ImGui::Checkbox("Team chats", &teamChatsInLastChat))
+		teamChatsInLastChat_cvar.setValue(teamChatsInLastChat);
+
+	GUI::Spacing(4);
+
+	ImGui::Text("Cached chats: %zu", getMatchChatsSize());
+
+	GUI::SameLineSpacing_absolute(150);
+
+	if (ImGui::Button("Clear##chatLog"))
+		GAME_THREAD_EXECUTE({ clearStoredChats(); });
+
+	ImGui::Text("Cached player ranks: %zu", getMatchRanksSize());
+
+	GUI::SameLineSpacing_absolute(150);
+
+	if (ImGui::Button("Clear##playerRanks"))
+		GAME_THREAD_EXECUTE({ clearStoredRanks(); });
 }
 
 class LobbyInfoComponent LobbyInfo{};

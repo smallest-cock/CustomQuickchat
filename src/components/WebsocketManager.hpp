@@ -5,7 +5,6 @@
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
-
 using websocketpp::connection_hdl;
 
 class WebsocketClientManager
@@ -13,40 +12,39 @@ class WebsocketClientManager
 	using PluginClient = websocketpp::client<websocketpp::config::asio_client>;
 
 public:
-	WebsocketClientManager(std::function<void(json serverResponse)> response_callback, std::atomic<bool>& connecting_to_ws_server);
+	WebsocketClientManager(std::function<void(json serverResponse)> serverResponseCallback, std::atomic<bool>& connectingToWsServerBool);
+	WebsocketClientManager() = delete;
+	~WebsocketClientManager() { stopClient(); };
 
-	bool StartClient(int port);				// Connect to the WebSocket server
-	bool StopClient();						// Disconnect from the WebSocket server
+public:
+	bool startClient(int port); // Connect to the WebSocket server
+	bool stopClient();          // Disconnect from the WebSocket server
 
-	void SendEvent(const std::string& eventName, const json& dataJson);
-	void SetbUseBase64(bool bNewValue) { bUseBase64 = bNewValue; }
-	bool IsConnectedToServer() { return is_connected.load(); }
+	void        sendEvent(const std::string& eventName, const json& dataJson);
+	inline void setbUseBase64(bool val) { m_bUseBase64 = val; }
+	inline bool isConnectedToServer() { return m_isConnected.load(); }
 
-	std::string get_port_str() const;
-
-	void set_connected_status(bool connected);
+	inline std::string getPortStr() const { return m_portNumStr; }
+	inline void        setConnectedStatus(bool val) { m_isConnected = val; }
 
 private:
-	WebsocketClientManager() = delete;
-	//~WebsocketClientManager() { StopClient(); };
+	int         m_portNum    = 42069;
+	std::string m_portNumStr = std::to_string(m_portNum);
+	std::string m_serverURI  = "ws://localhost:" + m_portNumStr; // WebSocket server URI
+	bool        m_bUseBase64 = false;
 
-	int port_number = 42069;
-	std::string port_num_str = std::to_string(port_number);
-	std::string server_uri = "ws://localhost:" + port_num_str;		// WebSocket server URI
-	bool bUseBase64 = false;
+	PluginClient   m_wsClient;           // The WebSocket client instance
+	connection_hdl m_wsConnectionHandle; // Handle for the active connection
+	std::thread    m_wsClientThread;     // Thread for the WebSocket client
 
-	PluginClient ws_client;					// The WebSocket client instance
-	connection_hdl ws_connection_handle;	// Handle for the active connection
-	std::thread ws_client_thread;			// Thread for the WebSocket client
+	std::mutex         m_connectionMutex;
+	std::atomic<bool>& m_connectingToWsServer;
+	std::atomic<bool>  m_isConnected = false;
+	std::atomic<bool>  m_shouldStop  = false;
 
-	std::mutex connection_mutex;
-	std::atomic<bool>& connecting_to_server;
-	std::atomic<bool> is_connected{false};
-	std::atomic<bool> should_stop{false};
+	std::function<void(json serverResponse)> m_serverResponseCallback;
 
-	std::function<void(json serverResponse)> handle_server_response;
-
-	void OnWsOpen(connection_hdl hdl);
-	void OnWsClose(connection_hdl hdl);
-	void OnWsMessage(connection_hdl hdl, PluginClient::message_ptr msg);
+	void onWsOpen(connection_hdl hdl);
+	void onWsClose(connection_hdl hdl);
+	void onWsMessage(connection_hdl hdl, PluginClient::message_ptr msg);
 };

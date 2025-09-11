@@ -1,10 +1,12 @@
 #include "pch.h"
+#include "Cvars.hpp"
 #include "CustomQuickchat.hpp"
 #include "Macros.hpp"
 #include "Keys.hpp"
 #include <ModUtils/gui/GuiTools.hpp>
 #include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
+#include "components/SpeechToText.hpp"
 
 // ##############################################################################################################
 // #############################################  PLUGIN SETTINGS  ##############################################
@@ -42,11 +44,11 @@ void CustomQuickchat::RenderSettings()
 
 			// speech-to-text
 			if (ImGui::CollapsingHeader("speech-to-text settings", ImGuiTreeNodeFlags_None))
-				display_speechToTextSettings();
+				SpeechToText.display_settings();
 
 			// last chat
 			if (ImGui::CollapsingHeader("Last chat settings", ImGuiTreeNodeFlags_None))
-				display_lastChatSettings();
+				LobbyInfo.display_settings();
 
 			GUI::Spacing(8);
 
@@ -84,7 +86,7 @@ void CustomQuickchat::display_generalSettings()
 	auto blockDefaultQuickchats_cvar     = getCvar(Cvars::blockDefaultQuickchats);
 	auto disablePostMatchQuickchats_cvar = getCvar(Cvars::disablePostMatchQuickchats);
 	auto removeTimestamps_cvar           = getCvar(Cvars::removeTimestamps);
-	auto randomize_sarcasm_cvar          = getCvar(Cvars::randomize_sarcasm);
+	auto randomizeSarcasm_cvar           = getCvar(Cvars::randomizeSarcasm);
 	auto uncensorChats_cvar              = getCvar(Cvars::uncensorChats);
 
 	GUI::Spacing(2);
@@ -107,9 +109,9 @@ void CustomQuickchat::display_generalSettings()
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("Prevents your custom chats from overriding default post-match chats like 'gg'");
 
-	bool randomize_sarcasm = randomize_sarcasm_cvar.getBoolValue();
-	if (ImGui::Checkbox("Randomize sarcasm effect", &randomize_sarcasm))
-		randomize_sarcasm_cvar.setValue(randomize_sarcasm);
+	bool randomizeSarcasm = randomizeSarcasm_cvar.getBoolValue();
+	if (ImGui::Checkbox("Randomize sarcasm effect", &randomizeSarcasm))
+		randomizeSarcasm_cvar.setValue(randomizeSarcasm);
 
 	bool removeTimestamps = removeTimestamps_cvar.getBoolValue();
 	if (ImGui::Checkbox("Remove chat timestamps", &removeTimestamps))
@@ -178,250 +180,6 @@ void CustomQuickchat::display_chatTimeoutSettings()
 	}
 
 	GUI::Spacing(2);
-}
-
-void CustomQuickchat::display_speechToTextSettings()
-{
-#if !defined(USE_SPEECH_TO_TEXT)
-
-	GUI::Spacing(4);
-
-	ImGui::Text("This version of the plugin doesnt support speech-to-text. You can find that version on the github Releases page:");
-
-	GUI::Spacing(2);
-
-	GUI::ClickableLink("Releases", "https://github.com/smallest-cock/CustomQuickchat/releases/latest", ImVec4(1, 1, 0, 1));
-
-#else
-
-	auto enableSTTNotifications_cvar  = getCvar(Cvars::enableSTTNotifications);
-	auto speechProcessingTimeout_cvar = getCvar(Cvars::speechProcessingTimeout);
-	auto beginSpeechTimeout_cvar      = getCvar(Cvars::beginSpeechTimeout);
-	auto notificationDuration_cvar    = getCvar(Cvars::notificationDuration);
-	auto autoCalibrateMic_cvar        = getCvar(Cvars::autoCalibrateMic);
-	auto micCalibrationTimeout_cvar   = getCvar(Cvars::micCalibrationTimeout);
-	auto micEnergyThreshold_cvar      = getCvar(Cvars::micEnergyThreshold);
-	auto websocket_port_cvar          = getCvar(Cvars::websocket_port);
-
-	if (!micEnergyThreshold_cvar)
-		return;
-
-	GUI::Spacing(2);
-
-	// display websocket connection status
-	bool ws_is_connected_to_server = Websocket ? Websocket->IsConnectedToServer() : false;
-
-	std::string connection_status;
-	if (!connecting_to_ws_server.load())
-		connection_status = ws_is_connected_to_server ? ("Connected (port " + Websocket->get_port_str() + ")") : "Not connected";
-	else
-		connection_status = "Connecting....";
-
-	std::string ws_status_str = "Websocket status:\t" + connection_status;
-	ImGui::Text("%s", ws_status_str.c_str());
-
-	GUI::Spacing();
-
-	ImGui::SetNextItemWidth(100);
-	int websocket_port = websocket_port_cvar.getIntValue();
-	if (ImGui::InputInt("Port number", &websocket_port))
-		websocket_port_cvar.setValue(websocket_port);
-
-	GUI::Spacing();
-
-	if (!ws_is_connected_to_server && !connecting_to_ws_server.load())
-	{
-		if (ImGui::Button("Start##websocket"))
-		{
-			LOG("'Start' button has been clicked...");
-
-			GAME_THREAD_EXECUTE({
-				if (Websocket && Websocket->IsConnectedToServer())
-				{
-					LOG("Failed to start websocket connection... it's already active!");
-					return;
-				}
-
-				start_websocket_stuff();
-			});
-		}
-	}
-	else
-	{
-		if (ImGui::Button("Stop##websocket"))
-		{
-			LOG("'Stop' button has been clicked...");
-
-			GAME_THREAD_EXECUTE({
-				stop_websocket_server();
-				connecting_to_ws_server.store(false);
-
-				if (!Websocket)
-				{
-					LOG("[ERROR] Websocket object is null... cant stop client");
-					return;
-				}
-
-				bool success = Websocket->StopClient();
-				LOG(success ? "Stopping websocket client was successful" : "Stopping websocket client was unsuccessful");
-
-				Websocket->set_connected_status(false);
-			});
-		}
-	}
-
-	GUI::Spacing(2);
-
-	bool autoCalibrateMic = autoCalibrateMic_cvar.getBoolValue();
-	int  radioButtonVal   = autoCalibrateMic ? 0 : 1;
-
-	if (ImGui::RadioButton("Auto calibrate microphone on every listen", &radioButtonVal, 0))
-		autoCalibrateMic_cvar.setValue(true);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Briefly calibrates mic energy level before you start speaking (reliable)");
-
-	if (ImGui::RadioButton("Manually calibrate microphone", &radioButtonVal, 1))
-		autoCalibrateMic_cvar.setValue(false);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Uses a stored calibration value, eliminating the need to calibrate mic before every attempt (can be faster)");
-
-	if (!autoCalibrateMic)
-	{
-		GUI::Spacing(4);
-
-		std::string thresholdStr = "Mic energy threshold: ";
-		thresholdStr += calibratingMicLevel ? "calibrating....." : std::to_string(micEnergyThreshold_cvar.getIntValue());
-		ImGui::Text("%s", thresholdStr.c_str());
-
-		GUI::Spacing(2);
-
-		// calibrate mic button
-		if (ImGui::Button("Calibrate Microphone"))
-			GAME_THREAD_EXECUTE({ CalibrateMicrophone(); });
-		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("calibrate microphone sensitivity level (for the plugin) based on a sample of background noise");
-
-		GUI::Spacing(2);
-
-		int micCalibrationTimeout = micCalibrationTimeout_cvar.getIntValue();
-		if (ImGui::SliderInt("mic calibration timeout", &micCalibrationTimeout, 1.0f, 20.0f, "%.0f seconds"))
-			micCalibrationTimeout_cvar.setValue(micCalibrationTimeout);
-		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("max amount of time to spend on a calibration attempt before aborting");
-	}
-
-	GUI::Spacing(4);
-
-	// chat notifications
-	bool speechToTextNotificationsOn = enableSTTNotifications_cvar.getBoolValue();
-	if (ImGui::Checkbox("Enable speech-to-text notifications", &speechToTextNotificationsOn))
-		enableSTTNotifications_cvar.setValue(speechToTextNotificationsOn);
-
-	if (speechToTextNotificationsOn)
-	{
-		GUI::Spacing(2);
-
-		// popup notification duration
-		float notificationDuration = notificationDuration_cvar.getFloatValue();
-		if (ImGui::SliderFloat("notification duration", &notificationDuration, 1.5f, 10.0f, "%.1f seconds"))
-			notificationDuration_cvar.setValue(notificationDuration);
-
-		GUI::SameLineSpacing_relative(10);
-
-		// test popup notifications
-		if (ImGui::Button("Test"))
-		{
-			GAME_THREAD_EXECUTE(
-			    {
-				    Instances.SpawnNotification("Terry A Davis",
-				        "You can see 'em if you're driving. You just run them over. That's what you do.",
-				        notificationDuration);
-			    },
-			    notificationDuration);
-		}
-	}
-
-	// start speech timeout
-	float waitForSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue();
-	if (ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds"))
-		beginSpeechTimeout_cvar.setValue(waitForSpeechTimeout);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("max time to wait for start of speech");
-
-	// processing timeout
-	int processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
-	if (ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 30.0f, "%.0f seconds"))
-		speechProcessingTimeout_cvar.setValue(processSpeechTimeout);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");
-
-#endif // defined(USE_SPEECH_TO_TEXT)
-
-	GUI::Spacing(2);
-}
-
-void CustomQuickchat::display_lastChatSettings()
-{
-	auto user_chats_in_last_chat_cvar     = getCvar(Cvars::user_chats_in_last_chat);
-	auto teammate_chats_in_last_chat_cvar = getCvar(Cvars::teammate_chats_in_last_chat);
-	auto quickchats_in_last_chat_cvar     = getCvar(Cvars::quickchats_in_last_chat);
-	auto party_chats_in_last_chat_cvar    = getCvar(Cvars::party_chats_in_last_chat);
-	auto team_chats_in_last_chat_cvar     = getCvar(Cvars::team_chats_in_last_chat);
-
-	if (!user_chats_in_last_chat_cvar)
-		return;
-
-	bool user_chats_in_last_chat     = user_chats_in_last_chat_cvar.getBoolValue();
-	bool quickchats_in_last_chat     = quickchats_in_last_chat_cvar.getBoolValue();
-	bool teammate_chats_in_last_chat = teammate_chats_in_last_chat_cvar.getBoolValue();
-	bool party_chats_in_last_chat    = party_chats_in_last_chat_cvar.getBoolValue();
-	bool team_chats_in_last_chat     = team_chats_in_last_chat_cvar.getBoolValue();
-
-	GUI::Spacing(2);
-
-	GUI::ClickableLink("Keywords guide",
-	    "https://github.com/smallest-cock/CustomQuickchat/blob/main/docs/Settings.md#special-effects",
-	    GUI::Colors::BlueGreen);
-
-	GUI::Spacing(2);
-
-	ImGui::TextColored(GUI::Colors::Yellow, "Chats to be included when searching for the last chat:");
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Searching for last chat sent happens for [[lastChat]] and [[blast ...]]\n\nMore info can be found in the "
-		                  "keywords guide above");
-
-	GUI::Spacing(2);
-
-	if (ImGui::Checkbox("User chats", &user_chats_in_last_chat))
-		user_chats_in_last_chat_cvar.setValue(user_chats_in_last_chat);
-
-	if (ImGui::Checkbox("Quickchats", &quickchats_in_last_chat))
-		quickchats_in_last_chat_cvar.setValue(quickchats_in_last_chat);
-
-	if (ImGui::Checkbox("Teammate chats", &teammate_chats_in_last_chat))
-		teammate_chats_in_last_chat_cvar.setValue(teammate_chats_in_last_chat);
-
-	if (ImGui::Checkbox("Party chats", &party_chats_in_last_chat))
-		party_chats_in_last_chat_cvar.setValue(party_chats_in_last_chat);
-
-	if (ImGui::Checkbox("Team chats", &team_chats_in_last_chat))
-		team_chats_in_last_chat_cvar.setValue(team_chats_in_last_chat);
-
-	GUI::Spacing(4);
-
-	ImGui::Text("Cached chats: %zu", LobbyInfo.getMatchChatsSize());
-
-	GUI::SameLineSpacing_absolute(150);
-
-	if (ImGui::Button("Clear##chatLog"))
-		GAME_THREAD_EXECUTE({ LobbyInfo.clearStoredChats(); });
-
-	ImGui::Text("Cached player ranks: %zu", LobbyInfo.getMatchRanksSize());
-
-	GUI::SameLineSpacing_absolute(150);
-
-	if (ImGui::Button("Clear##playerRanks"))
-		GAME_THREAD_EXECUTE({ LobbyInfo.clear_stored_ranks(); });
 }
 
 // ##############################################################################################################

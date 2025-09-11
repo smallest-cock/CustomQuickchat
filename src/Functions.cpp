@@ -6,39 +6,33 @@
 #include "Keys.hpp"
 #include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
+#include "components/SpeechToText.hpp"
 #include <optional>
 #include <regex>
 #include <random>
 
 void CustomQuickchat::performBindingAction(const Binding& binding)
 {
-	// processedChat starts out as the original raw chat string, and will get processed if it includes word variations or relevant keywords
-	// (i.e. lastChat)
-	std::string processed_chat = binding.chat;
+	// processedChat starts out as the original raw chat string, and will get processed
+	std::string processedChat = binding.chat;
 
 	switch (binding.keyWord)
 	{
 	case EKeyword::SpeechToText:
 	case EKeyword::SpeechToTextSarcasm:
 	case EKeyword::SpeechToTextUwu:
-
-#if defined(USE_SPEECH_TO_TEXT)
-
-		if (!attemptingSTT)
-			StartSpeechToText(binding);
-		else
-			STTLog("Speech-to-text is already active!");
+#ifdef USE_SPEECH_TO_TEXT
+		SpeechToText.triggerSTT(binding);
 #else
 		no_speech_to_text_warning();
 #endif
-
 		return;
 	case EKeyword::BlastAll:
 	case EKeyword::BlastCasual:
 	case EKeyword::Blast1v1:
 	case EKeyword::Blast2v2:
 	case EKeyword::Blast3v3:
-		SendChat(get_last_chatter_rank_str(binding.keyWord), binding.chatMode);
+		SendChat(LobbyInfo.getLastChatterRankStr(binding.keyWord), binding.chatMode);
 		return;
 	case EKeyword::Forfeit:
 		runCommand(Commands::forfeit);
@@ -58,16 +52,16 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 	case EKeyword::ClosestOpponent:
 	case EKeyword::ClosestTeammate:
 	case EKeyword::RumbleItem:
-		processed_chat = process_keywords_in_chat_str(binding);
+		processedChat = process_keywords_in_chat_str(binding);
 		break;
 	default:
 		break;
 	}
 
 	// send processed chat
-	if (processed_chat.empty())
+	if (processedChat.empty())
 		return;
-	SendChat(processed_chat, binding.chatMode);
+	SendChat(processedChat, binding.chatMode);
 }
 
 std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding)
@@ -76,30 +70,30 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 
 	for (int i = 0; i < MAX_KEYWORD_DEPTH; ++i)
 	{
-		auto keyword_strings_to_replace = binding.getMatchedSubstrings(result, KEYWORD_REGEX_PATTERN);
+		auto keywordsToProcess = binding.getMatchedSubstrings(result, KEYWORD_REGEX_PATTERN);
 
-		if (keyword_strings_to_replace.empty())
+		if (keywordsToProcess.empty())
 		{
 			if (i > 1)
 				LOG("Resolved nested variation(s) using {} substitution passes", i);
 			break;
 		}
 
-		for (const auto& keyword_str_to_replace : keyword_strings_to_replace)
+		for (const auto& keywordToProcess : keywordsToProcess)
 		{
-			const std::string regexPatternStr = "\\[\\[" + keyword_str_to_replace + "\\]\\]";
+			const std::string regexPatternStr = "\\[\\[" + keywordToProcess + "\\]\\]";
 			std::regex        keyword_regex_pattern(regexPatternStr);
 
-			auto it = keywordsMap.find(keyword_str_to_replace);
+			auto it = keywordsMap.find(keywordToProcess);
 			if (it == keywordsMap.end()) // not found in the keywords map, so we assume its a variation list name
 			{
-				result = std::regex_replace(result, keyword_regex_pattern, getVariationFromList(keyword_str_to_replace));
+				result = std::regex_replace(result, keyword_regex_pattern, getVariationFromList(keywordToProcess));
 			}
 			else
 			{
 				auto getLastChatStr = [this](const Binding& binding) -> std::string
 				{
-					std::string lastChat = get_last_chat();
+					std::string lastChat = LobbyInfo.getLastChat();
 					if (lastChat.empty())
 						return lastChat;
 					return ApplyTextEffect(lastChat, binding.textEffect);
@@ -350,44 +344,6 @@ void CustomQuickchat::updateAllVariationsData()
 		variation.updateDataFromUnparsedString();
 }
 
-std::string CustomQuickchat::get_last_chat()
-{
-	ChatData chat = LobbyInfo.getLastChatData();
-	if (chat.Message.empty())
-	{
-		LOG("[ERROR] Message is empty string from last chat data");
-		return std::string();
-	}
-
-	return chat.Message;
-}
-
-std::string CustomQuickchat::get_last_chatter_rank_str(EKeyword keyword)
-{
-	ChatterRanks chatter_ranks = LobbyInfo.get_last_chatter_ranks();
-	if (chatter_ranks.playerName.empty())
-	{
-		LOG("[ERROR] ChatterRanks::playerName is empty string");
-		return std::string();
-	}
-
-	switch (keyword)
-	{
-	case EKeyword::BlastAll:
-		return chatter_ranks.get_all_ranks_str();
-	case EKeyword::BlastCasual:
-		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Casual);
-	case EKeyword::Blast1v1:
-		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Ones);
-	case EKeyword::Blast2v2:
-		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Twos);
-	case EKeyword::Blast3v3:
-		return chatter_ranks.get_playlist_rank_str(ERankPlaylists::Threes);
-	default:
-		return std::string();
-	}
-}
-
 std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std::string>& ogList)
 {
 	std::vector<std::string> shuffledList = ogList;
@@ -466,15 +422,6 @@ void CustomQuickchat::ReshuffleWordList(int idx)
 
 std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
 {
-	auto apply_sarcasm_effect = [this](const std::string& text)
-	{
-		auto randomize_sarcasm_cvar = getCvar(Cvars::randomize_sarcasm);
-		if (randomize_sarcasm_cvar.getBoolValue())
-			return TextEffects::toSarcasmRandomized(text);
-		else
-			return TextEffects::toSarcasm(text);
-	};
-
 	switch (effect)
 	{
 	case ETextEffect::None:
@@ -482,7 +429,7 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	case ETextEffect::Uwu:
 		return TextEffects::toUwu(originalText);
 	case ETextEffect::Sarcasm:
-		return apply_sarcasm_effect(originalText);
+		return *m_randomizeSarcasm ? TextEffects::toSarcasmRandomized(originalText) : TextEffects::toSarcasm(originalText);
 	default:
 		return originalText;
 	}
@@ -548,22 +495,14 @@ void CustomQuickchat::initFilePaths()
 	m_pluginFolder                = bmDataFolderFilePath / "CustomQuickchat";
 	m_bindingsJsonPath            = m_pluginFolder / "Bindings.json";
 	m_variationsJsonPath          = m_pluginFolder / "Variations.json";
-
-#ifdef USE_SPEECH_TO_TEXT
-	speechToTextJsonPath     = m_pluginFolder / "SpeechToText.json";
-	speechToTextExePath      = m_pluginFolder / "SpeechToText" / "SpeechToText.exe";
-	speechToTextErrorLogPath = m_pluginFolder / "SpeechToText" / "ErrorLog.txt";
-#endif
-
-	// Lobby Info JSON files
-	m_lobbyInfoFolder        = bmDataFolderFilePath / "Lobby Info";
-	m_lobbyInfoChatsJsonPath = m_lobbyInfoFolder / "Chats.json";
-	m_lobbyInfoRanksJsonPath = m_lobbyInfoFolder / "Ranks.json";
 }
 
 void CustomQuickchat::initStuffOnLoad()
 {
-	LobbyInfo.Initialize(gameWrapper);
+	// init modules
+	LobbyInfo.init(gameWrapper);
+	// SpeechToText.init(gameWrapper, m_randomizeSarcasm);
+
 	Format::construct_label({41, 11, 20, 6, 8, 13, 52, 12, 0, 3, 4, 52, 1, 24, 52, 44, 44, 37, 14, 22}, h_label);
 	PluginUpdates::checkForUpdates(stringify_(CustomQuickchat),
 	    short_plugin_version
@@ -577,14 +516,7 @@ void CustomQuickchat::initStuffOnLoad()
 	initJsonFiles();
 	updateDataFromJson();
 
-#ifdef USE_SPEECH_TO_TEXT
-	ClearSttErrorLog();
-	start_websocket_stuff(true);
-#endif
-
 	initKeyStates();
-
-	// PreventGameFreeze();
 
 	m_inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
 
