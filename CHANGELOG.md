@@ -1,9 +1,9 @@
 # Changelog
 
 ## v1.9.7
-### speech-to-text
-- Fixed crashes caused by missing required files
+- Fixed crashes if user is missing the `SpeechToText.exe` file
 - Added a button to test the speech-to-text websocket connection
+- Improved websocket functionality
 
 ## v1.9.6
 - Improved chat uncensoring implementation 👀

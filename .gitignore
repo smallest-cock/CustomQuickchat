@@ -1,7 +1,9 @@
 .vs
 .vscode
 .cache
+*.spec
 build
+dist
 plugins
 vcpkg_installed
 

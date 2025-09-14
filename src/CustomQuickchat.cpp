@@ -32,6 +32,7 @@ void CustomQuickchat::onUnload()
 	writeBindingsToJson(); // just to make sure any unsaved changes are saved before exiting
 
 	SpeechToText.onUnload();
+	Hooks.unhookAllEvents(); // shouldn't be necessary but who cares about life
 }
 
 void CustomQuickchat::initCvars()

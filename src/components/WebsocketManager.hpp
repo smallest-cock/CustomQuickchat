@@ -7,44 +7,88 @@
 
 using websocketpp::connection_hdl;
 
-class WebsocketClientManager
+// TODO: maybe use this ConnectionMetadata?
+class ConnectionMetadata
 {
-	using PluginClient = websocketpp::client<websocketpp::config::asio_client>;
+	using client = websocketpp::client<websocketpp::config::asio_client>;
 
 public:
-	WebsocketClientManager(std::function<void(json serverResponse)> serverResponseCallback, std::atomic<bool>& connectingToWsServerBool);
-	WebsocketClientManager() = delete;
-	~WebsocketClientManager() { stopClient(); };
+	typedef websocketpp::lib::shared_ptr<ConnectionMetadata> ptr;
 
-public:
-	bool startClient(int port); // Connect to the WebSocket server
-	bool stopClient();          // Disconnect from the WebSocket server
+	ConnectionMetadata(int id, websocketpp::connection_hdl hdl, std::string uri)
+	    : m_id(id), m_hdl(hdl), m_status("Connecting"), m_uri(uri), m_server("N/A")
+	{
+	}
 
-	void        sendEvent(const std::string& eventName, const json& dataJson);
-	inline void setbUseBase64(bool val) { m_bUseBase64 = val; }
-	inline bool isConnectedToServer() { return m_isConnected.load(); }
+	void on_open(client* c, websocketpp::connection_hdl hdl)
+	{
+		m_status = "Open";
 
-	inline std::string getPortStr() const { return m_portNumStr; }
-	inline void        setConnectedStatus(bool val) { m_isConnected = val; }
+		client::connection_ptr con = c->get_con_from_hdl(hdl);
+		m_server                   = con->get_response_header("Server");
+	}
+
+	void on_fail(client* c, websocketpp::connection_hdl hdl)
+	{
+		m_status = "Failed";
+
+		client::connection_ptr con = c->get_con_from_hdl(hdl);
+		m_server                   = con->get_response_header("Server");
+		m_error_reason             = con->get_ec().message();
+	}
+
+	friend std::ostream& operator<<(std::ostream& out, ConnectionMetadata const& data);
 
 private:
-	int         m_portNum    = 42069;
-	std::string m_portNumStr = std::to_string(m_portNum);
-	std::string m_serverURI  = "ws://localhost:" + m_portNumStr; // WebSocket server URI
-	bool        m_bUseBase64 = false;
+	int                         m_id;
+	websocketpp::connection_hdl m_hdl;
+	std::string                 m_status;
+	std::string                 m_uri;
+	std::string                 m_server;
+	std::string                 m_error_reason;
+};
 
-	PluginClient   m_wsClient;           // The WebSocket client instance
-	connection_hdl m_wsConnectionHandle; // Handle for the active connection
-	std::thread    m_wsClientThread;     // Thread for the WebSocket client
+class WebsocketClientManager
+{
+	using WebsocketClient = websocketpp::client<websocketpp::config::asio_client>;
+	using JsonMsgHandler  = std::function<void(json)>;
 
-	std::mutex         m_connectionMutex;
-	std::atomic<bool>& m_connectingToWsServer;
+public:
+	WebsocketClientManager() = delete;
+	WebsocketClientManager(std::atomic<bool>& bConnecting);
+	~WebsocketClientManager();
+
+public:
+	bool connect(const std::string& uri, JsonMsgHandler msgHandler);
+	bool disconnect();
+
+	void sendMessage(const std::string& eventName, const json& dataJson); // custom params for this plugin's specific usecase
+	void sendMessage(const std::string& msg); // generic, reusable, just send some text (any serialization should've alr happened)
+
+	inline bool        isConnected() const { return m_isConnected.load(); }
+	inline std::string getCurrentURI() const { return m_uri; }
+
+private:
+	WebsocketClient m_endpoint;
+	std::thread     m_runThread;
+
+	JsonMsgHandler m_serverResponseHandler; // from main plugin class
+
+	// connection metadata (maybe use metadata class like tutorial)
+	connection_hdl     m_connectionHandle; // handle for the active connection
+	std::string        m_uri;
 	std::atomic<bool>  m_isConnected = false;
-	std::atomic<bool>  m_shouldStop  = false;
+	std::atomic<bool>& m_isConnecting;
 
-	std::function<void(json serverResponse)> m_serverResponseCallback;
+private:
+	// LOG overloads
+	template <typename... Args> static void LOG(std::string_view format_str, Args&&... args)
+	{
+		::LOG("[WebsocketClient] " + std::string(format_str), std::forward<Args>(args)...);
+	}
 
-	void onWsOpen(connection_hdl hdl);
-	void onWsClose(connection_hdl hdl);
-	void onWsMessage(connection_hdl hdl, PluginClient::message_ptr msg);
+	template <typename... Args> static void LOGERROR(std::string_view format_str, Args&&... args)
+	{
+		::LOG("[WebsocketClient] ERROR: " + std::string(format_str), std::forward<Args>(args)...);
+	}
 };

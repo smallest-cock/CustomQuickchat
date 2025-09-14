@@ -1,9 +1,9 @@
 #include "pch.h"
+#include "WebsocketManager.hpp"
 #include "ModUtils/gui/GuiTools.hpp"
 #include "SpeechToText.hpp"
 #include "Macros.hpp"
 #include "components/Instances.hpp"
-#include <filesystem>
 
 // ##############################################################################################################
 // ###############################################    INIT    ###################################################
@@ -18,8 +18,21 @@ void STTComponent::init(const std::shared_ptr<CustomQuickchat>& mainPluginClass,
 	initCvars();
 	initHooks();
 
-	ClearSttErrorLog();
-	startWebsocketStuff(true);
+	clearSttErrorLog();
+
+	m_websocketClient = std::make_unique<WebsocketClientManager>(m_connectingToWsServer);
+
+	// startWebsocketStuff(true);
+
+	bool success = startWebsocketServer();
+	if (success)
+	{
+		LOG("Started websocket server");
+
+		DELAY(START_WS_CLIENT_DELAY, { connectClientToServer(); });
+	}
+	else
+		LOGERROR("Unable to start websocket python server");
 }
 
 void STTComponent::initFilepaths()
@@ -32,21 +45,9 @@ void STTComponent::initFilepaths()
 	m_errorLogPath = pluginFolder / "SpeechToText" / "ErrorLog.txt";
 
 	bool missingFile = false;
-	/*
-	if (!fs::exists(m_jsonPath))
-	{
-	    sttLog("ERROR: SpeechToText.json not found");
-	    missingFile = true;
-	}
-	*/
 	if (!fs::exists(m_exePath))
 	{
 		sttLog("ERROR: SpeechToText.exe not found");
-		missingFile = true;
-	}
-	if (!fs::exists(m_errorLogPath))
-	{
-		sttLog("ERROR: ErrorLog.txt not found");
 		missingFile = true;
 	}
 
@@ -74,8 +75,11 @@ void STTComponent::initHooks() {}
 
 void STTComponent::onUnload()
 {
-	m_websocketClient->stopClient();
 	stopWebsocketServer();
+
+	// explicitly release resource here (in BM's dedicated onUnload, as opposed to leaving it up to RAII destructor)
+	// to prevent weird behavior where m_websocketClient state persists across plugin reloads, fricking stuff up
+	m_websocketClient.reset();
 }
 
 // ##############################################################################################################
@@ -109,67 +113,43 @@ void STTComponent::startSTT(const Binding& binding)
 		return;
 	}
 
-	m_websocketClient->sendEvent("start_speech_to_text", data);
+	m_websocketClient->sendMessage("start_speech_to_text", data);
 	m_attemptingSTT.store(true);
 }
 
-// this function is pure ass... needs refactor/redesign
-void STTComponent::startWebsocketStuff(bool fromOnLoad)
+void STTComponent::connectClientToServer()
 {
-	if (!m_allFilesExist)
+	if (!m_startedWebsocketServer)
 	{
-		sttLog("ERROR: Missing required files. Check your installation");
+		LOGERROR("Unable to connect client. Websocket server hasn't been started!");
+		return;
+	}
+	if (m_websocketClient->isConnected())
+	{
+		sttLog("Websocket client is already connected to server!");
 		return;
 	}
 
-	if (!fromOnLoad && m_websocketClient && m_websocketClient->isConnectedToServer())
+	std::function<void(json)> jsonResponseHandler = std::bind(&STTComponent::processWsResponse, this, std::placeholders::_1);
+	bool                      success             = m_websocketClient->connect(buildServerUri(), jsonResponseHandler);
+	LOG("Connecting websocket client was {}", success ? "successful" : "unsuccessful");
+}
+
+void STTComponent::disconnectClientFromServer()
+{
+	if (!m_startedWebsocketServer)
 	{
-		LOG("[ERROR] Failed to start websocket stuff... we're already connected on port {}!", m_websocketClient->getPortStr());
+		LOGERROR("Unable to disconnect client. Websocket server hasn't been started!");
+		return;
+	}
+	if (!m_websocketClient->isConnected())
+	{
+		sttLog("Websocket client is already disconnected from server!");
 		return;
 	}
 
-	auto wsClientSetup = [this, fromOnLoad]()
-	{
-		if (fromOnLoad)
-		{
-			// create websocket object
-			std::function<void(json serverResponse)> ws_response_callback = std::bind(
-			    &STTComponent::processWsResponse, this, std::placeholders::_1);
-
-			m_websocketClient = std::make_shared<WebsocketClientManager>(ws_response_callback, m_connectingToWsServer);
-		}
-
-		// wait x seconds after python websocket server has started to start client
-		DELAY(START_WS_CLIENT_DELAY, {
-			bool success = m_websocketClient->startClient(*m_websocketPort);
-			LOG(success ? "Starting websocket client was successful" : "Starting websocket client was unsuccessful");
-
-			if (!success)
-				m_connectingToWsServer.store(false);
-		});
-	};
-
-	auto start_server_then_client = [this, wsClientSetup]()
-	{
-		// start websocket sever (spawn python process)
-		bool success = startWebsocketServer();
-		LOG("[onLoad] Ran startWebsocketServer()");
-		if (!success)
-		{
-			LOGERROR("Unable to start websocket python server");
-			return;
-		}
-
-		wsClientSetup(); // start websocket client (includes delay)
-	};
-
-	if (fromOnLoad)
-	{
-		// if called from onload, wait 1 second before starting websocket stuff (so stored websocket_port cvar value gets a chance to load)
-		DELAY(1.0f, { start_server_then_client(); }, start_server_then_client);
-	}
-	else
-		start_server_then_client();
+	bool success = m_websocketClient->disconnect();
+	LOG("Connecting websocket client was {}", success ? "successful" : "unsuccessful");
 }
 
 bool STTComponent::startWebsocketServer()
@@ -177,6 +157,11 @@ bool STTComponent::startWebsocketServer()
 	if (!m_allFilesExist)
 	{
 		sttLog("ERROR: Missing required files. Check your installation");
+		return false;
+	}
+	if (m_startedWebsocketServer)
+	{
+		sttLog("Websocket server has already started!");
 		return false;
 	}
 
@@ -196,12 +181,13 @@ bool STTComponent::startWebsocketServer()
 	if (process_info.status_code == 0)
 	{
 		LOG("Created process using command: {}", command);
-		m_pythonServerProcess = process_info.handles; // save handle to created process, so we can close it later
+		m_pythonServerProcess    = process_info.handles; // save handle to created process, so we can close it later
+		m_startedWebsocketServer = true;
 		return true;
 	}
 	else
 	{
-		LOG("[ERROR] Unable to create process using command: {}", command);
+		LOGERROR("Unable to create process using command: {}", command);
 		m_connectingToWsServer.store(false);
 		return false;
 	}
@@ -311,14 +297,14 @@ void STTComponent::processWsResponse(const json& res)
 
 		sttLog("listening......");
 	}
-	else if (event == "shutdown_response")
-	{
-		std::string message = res["data"]["message"];
+	// else if (event == "shutdown_response")
+	// {
+	// 	std::string message = res["data"]["message"];
 
-		sttLog(message);
+	// 	sttLog(message);
 
-		m_websocketClient->setConnectedStatus(false);
-	}
+	// 	m_websocketClient->setConnectedStatus(false); // wtf is this?
+	// }
 	else if (event == "error_response")
 	{
 		if (!res.contains("data"))
@@ -458,7 +444,7 @@ void STTComponent::calibrateMicrophone()
 		return;
 	}
 
-	m_websocketClient->sendEvent("calibrate_microphone", data);
+	m_websocketClient->sendMessage("calibrate_microphone", data);
 	LOG("Sent calibrate_microphone event");
 
 	m_calibratingMicLevel.store(true);
@@ -485,7 +471,7 @@ std::string STTComponent::CreateCommandString(const fs::path& executablePath, co
 	return commandStr;
 }
 
-void STTComponent::ClearSttErrorLog()
+void STTComponent::clearSttErrorLog()
 {
 	// Open file in write mode to clear its contents
 	std::ofstream ofs(m_errorLogPath, std::ofstream::out | std::ofstream::trunc);
@@ -518,7 +504,7 @@ void STTComponent::test()
 		return;
 	}
 
-	m_websocketClient->sendEvent("test", {{"data", "test"}});
+	m_websocketClient->sendMessage("test", {{"data", "test"}});
 }
 
 // ##############################################################################################################
@@ -547,11 +533,11 @@ void STTComponent::display_settings()
 	GUI::Spacing(2);
 
 	// display websocket connection status
-	bool bConnectedToWsServer = m_websocketClient ? m_websocketClient->isConnectedToServer() : false;
+	bool bConnectedToWsServer = m_websocketClient ? m_websocketClient->isConnected() : false;
 
 	std::string connectionStatusStr;
 	if (!m_connectingToWsServer)
-		connectionStatusStr = bConnectedToWsServer ? ("Connected (port " + m_websocketClient->getPortStr() + ")") : "Not connected";
+		connectionStatusStr = bConnectedToWsServer ? std::format("Connected ({})", m_websocketClient->getCurrentURI()) : "Not connected";
 	else
 		connectionStatusStr = "Connecting....";
 
@@ -563,9 +549,7 @@ void STTComponent::display_settings()
 	if (!m_connectingToWsServer && bConnectedToWsServer)
 	{
 		if (ImGui::Button("Test##websocketConnection"))
-		{
 			GAME_THREAD_EXECUTE({ test(); });
-		}
 		GUI::ToolTip("Send a test message to check the websocket connection");
 	}
 
@@ -580,42 +564,50 @@ void STTComponent::display_settings()
 
 	if (!bConnectedToWsServer && !m_connectingToWsServer)
 	{
-		if (ImGui::Button("Start##websocket"))
+		if (ImGui::Button("Connect##websocket"))
 		{
+			GAME_THREAD_EXECUTE({ connectClientToServer(); });
+
+			/*
 			LOG("'Start' button has been clicked...");
 
 			GAME_THREAD_EXECUTE({
-				if (m_websocketClient && m_websocketClient->isConnectedToServer())
-				{
-					LOG("Failed to start websocket connection... it's already active!");
-					return;
-				}
+			    if (m_websocketClient && m_websocketClient->isConnectedToServer())
+			    {
+			        LOG("Failed to start websocket connection... it's already active!");
+			        return;
+			    }
 
-				startWebsocketStuff();
+			    startWebsocketStuff();
 			});
+			*/
 		}
 	}
 	else
 	{
-		if (ImGui::Button("Stop##websocket"))
+		if (ImGui::Button("Disconnect##websocket"))
 		{
+			GAME_THREAD_EXECUTE({ disconnectClientFromServer(); });
+
+			/*
 			LOG("'Stop' button has been clicked...");
 
 			GAME_THREAD_EXECUTE({
-				stopWebsocketServer();
-				m_connectingToWsServer.store(false);
+			    stopWebsocketServer();
+			    m_connectingToWsServer.store(false);
 
-				if (!m_websocketClient)
-				{
-					LOG("[ERROR] Websocket object is null... cant stop client");
-					return;
-				}
+			    if (!m_websocketClient)
+			    {
+			        LOG("[ERROR] Websocket object is null... cant stop client");
+			        return;
+			    }
 
-				bool success = m_websocketClient->stopClient();
-				LOG(success ? "Stopping websocket client was successful" : "Stopping websocket client was unsuccessful");
+			    bool success = m_websocketClient->stopClient();
+			    LOG(success ? "Stopping websocket client was successful" : "Stopping websocket client was unsuccessful");
 
-				m_websocketClient->setConnectedStatus(false);
+			    m_websocketClient->setConnectedStatus(false);
 			});
+			*/
 		}
 	}
 
@@ -690,16 +682,14 @@ void STTComponent::display_settings()
 	float waitForSpeechTimeout = beginSpeechTimeout_cvar.getFloatValue();
 	if (ImGui::SliderFloat("timeout to start speaking", &waitForSpeechTimeout, 1.5f, 10.0f, "%.1f seconds"))
 		beginSpeechTimeout_cvar.setValue(waitForSpeechTimeout);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("max time to wait for start of speech");
+	GUI::ToolTip("max time to wait for start of speech");
 
 	// processing timeout
 	int processSpeechTimeout = speechProcessingTimeout_cvar.getFloatValue();
 	if (ImGui::SliderInt("timeout for processing speech", &processSpeechTimeout, 3.0f, 30.0f, "%.0f seconds"))
 		speechProcessingTimeout_cvar.setValue(processSpeechTimeout);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");
-#endif // defined(USE_SPEECH_TO_TEXT)
+	GUI::ToolTip("max time to spend processing speech\t(will abort speech-to-text attempt if exceeded)");
+#endif // USE_SPEECH_TO_TEXT
 
 	GUI::Spacing(2);
 }

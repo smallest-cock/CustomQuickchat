@@ -61,10 +61,11 @@ private:
 	static constexpr float PROBE_JSON_FREQUENCY  = 0.2f; // in seconds
 	static constexpr float START_WS_CLIENT_DELAY = 5.0f; // in seconds
 
-	// thread-safe flags
-	std::atomic<bool> m_attemptingSTT        = false;
-	std::atomic<bool> m_calibratingMicLevel  = false;
-	std::atomic<bool> m_connectingToWsServer = false;
+	// flags
+	bool              m_startedWebsocketServer = false;
+	std::atomic<bool> m_attemptingSTT          = false;
+	std::atomic<bool> m_calibratingMicLevel    = false;
+	std::atomic<bool> m_connectingToWsServer   = false;
 
 	// filepaths
 	bool     m_allFilesExist = false;
@@ -73,13 +74,17 @@ private:
 	fs::path m_errorLogPath;
 
 	ActiveSTTAttempt m_activeAtempt;
+	std::string      m_serverUriPrefix = "ws://localhost:";
 
-	std::shared_ptr<WebsocketClientManager> m_websocketClient = nullptr;
+	std::unique_ptr<WebsocketClientManager> m_websocketClient;
 	Process::ProcessHandles                 m_pythonServerProcess;
 
-	void startWebsocketStuff(bool onLoad = false); // starts server then client
+	void connectClientToServer();
+	void disconnectClientFromServer();
 	bool startWebsocketServer();
 	void stopWebsocketServer();
+
+	void startWebsocketStuff(bool onLoad = false); // starts server then client
 	void processWsResponse(const json& res);
 
 	// speech-to-text
@@ -94,11 +99,13 @@ private:
 
 	// misc
 	std::string generateAttemptId();
-	void        ClearSttErrorLog();
+	void        clearSttErrorLog();
 
 	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
 	void        sttLog(const std::string& message);
 	void        notifyAndLog(const std::string& title, const std::string& message, int duration = 3);
+
+	inline std::string buildServerUri() const { return m_serverUriPrefix + std::to_string(*m_websocketPort); }
 
 public:
 	void triggerSTT(const Binding& binding);
