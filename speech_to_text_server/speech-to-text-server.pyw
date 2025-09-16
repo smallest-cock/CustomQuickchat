@@ -37,9 +37,9 @@ def port_in_use(port: int) -> bool:
 
 
 class WebsocketHandler:
-    # def __init__(self, websocket: websockets.server.ServerConnection):    # <-- websockets.server.ServerConnection isn't defined when ran?
-    def __init__(self, websocket):
+    def __init__(self, websocket, port_num):
         self.websocket = websocket
+        self.portNum = port_num
 
     # --------------------- sending/formatting responses ---------------------
 
@@ -88,7 +88,7 @@ class WebsocketHandler:
             response = await self.process_calibration_request(request_data)
 
         elif event == "test":
-            response = self.format_response("test_response", {"message": "This is a message from the python websocket server :)"})
+            response = self.format_response("test_response", {"message": f"This is a response from the websocket server listening on port {self.portNum} :)"})
 
         return response
 
@@ -179,8 +179,8 @@ class WebsocketHandler:
 
 
 # handle incoming websocket connections
-async def handle_client(websocket, stop_event):
-    ws_connection = WebsocketHandler(websocket)
+async def handle_client(websocket, stop_event, port_num):
+    ws_connection = WebsocketHandler(websocket, port_num)
     logging.info("Client connected")
 
     try:
@@ -203,7 +203,7 @@ async def start_server(port: int):
     stop_event = asyncio.Event()
 
     async def client_wrapper(websocket):
-        await handle_client(websocket, stop_event)
+        await handle_client(websocket, stop_event, port)
 
     logging.info(f"Starting WebSocket server on port {port} ...")
 

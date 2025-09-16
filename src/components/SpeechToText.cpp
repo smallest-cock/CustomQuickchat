@@ -20,7 +20,9 @@ void STTComponent::init(const std::shared_ptr<CustomQuickchat>& mainPluginClass,
 
 	clearSttErrorLog();
 	m_websocketClient = std::make_unique<WebsocketClientManager>(m_connectingToWsServer);
-	startConnection();
+
+	// small delay to allow cvar values to load from config.cfg (websocket port num) before starting connection
+	DELAY(1.0f, { startConnection(); });
 }
 
 void STTComponent::initFilepaths()
