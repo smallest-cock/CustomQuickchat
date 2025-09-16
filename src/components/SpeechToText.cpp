@@ -19,20 +19,8 @@ void STTComponent::init(const std::shared_ptr<CustomQuickchat>& mainPluginClass,
 	initHooks();
 
 	clearSttErrorLog();
-
 	m_websocketClient = std::make_unique<WebsocketClientManager>(m_connectingToWsServer);
-
-	// startWebsocketStuff(true);
-
-	bool success = startWebsocketServer();
-	if (success)
-	{
-		LOG("Started websocket server");
-
-		DELAY(START_WS_CLIENT_DELAY, { connectClientToServer(); });
-	}
-	else
-		LOGERROR("Unable to start websocket python server");
+	startConnection();
 }
 
 void STTComponent::initFilepaths()
@@ -78,7 +66,7 @@ void STTComponent::onUnload()
 	stopWebsocketServer();
 
 	// explicitly release resource here (in BM's dedicated onUnload, as opposed to leaving it up to RAII destructor)
-	// to prevent weird behavior where m_websocketClient state persists across plugin reloads, fricking stuff up
+	// to prevent weird behavior where m_websocketClient state persists across plugin reloads, fricking many things up
 	m_websocketClient.reset();
 }
 
@@ -115,6 +103,43 @@ void STTComponent::startSTT(const Binding& binding)
 
 	m_websocketClient->sendMessage("start_speech_to_text", data);
 	m_attemptingSTT.store(true);
+}
+
+void STTComponent::startConnection()
+{
+	if (*m_websocketPort != m_lastUsedServerPort)
+		startServerThenConnectClient();
+	else
+	{
+		if (m_startedWebsocketServer)
+			connectClientToServer();
+		else
+			startServerThenConnectClient();
+	}
+}
+
+void STTComponent::endConnection()
+{
+	disconnectClientFromServer();
+
+	DELAY(0.5f, {
+		// terminate existing websocket server process (if necessary)
+		if (m_pythonServerProcess.is_active())
+			Process::terminate_created_process(m_pythonServerProcess);
+
+		m_startedWebsocketServer = false;
+	});
+}
+
+void STTComponent::startServerThenConnectClient()
+{
+	if (startWebsocketServer())
+	{
+		LOG("Started websocket server");
+		DELAY(START_WS_CLIENT_DELAY, { connectClientToServer(); });
+	}
+	else
+		sttLog("ERROR: Unable to start python websocket server");
 }
 
 void STTComponent::connectClientToServer()
@@ -178,19 +203,18 @@ bool STTComponent::startWebsocketServer()
 	auto process_info = Process::create_process_from_command(command);
 	LOG("Status code after attempting to create process (0 is good): {}", process_info.status_code);
 
-	if (process_info.status_code == 0)
+	if (process_info.status_code != 0)
 	{
-		LOG("Created process using command: {}", command);
-		m_pythonServerProcess    = process_info.handles; // save handle to created process, so we can close it later
-		m_startedWebsocketServer = true;
-		return true;
-	}
-	else
-	{
-		LOGERROR("Unable to create process using command: {}", command);
+		LOGERROR("Unable to create process using command (status code: {}): {}", process_info.status_code, command);
 		m_connectingToWsServer.store(false);
 		return false;
 	}
+
+	LOG("Created process using command: {}", command);
+	m_pythonServerProcess    = process_info.handles; // save handle to created process, so we can close it later
+	m_startedWebsocketServer = true;
+	m_lastUsedServerPort     = *m_websocketPort;
+	return true;
 }
 
 void STTComponent::stopWebsocketServer()
@@ -230,7 +254,7 @@ std::string STTComponent::generateAttemptId()
 	return id;
 }
 
-// large nasty function... can prolly benefit from a redesign
+// large gross function, may benefit from a redesign
 void STTComponent::processWsResponse(const json& res)
 {
 	if (!res.contains("event"))
@@ -315,7 +339,7 @@ void STTComponent::processWsResponse(const json& res)
 
 		auto error_data = res["data"];
 
-		// TODO: check for attempt ID, and do specific things based on if it matches the active attempt ID
+		// IDEA: maybe check for attempt ID, and do specific things here if it matches the active attempt ID
 
 		if (error_data.contains("errorMsg"))
 			sttLog(std::format("[ERROR] {}", error_data["errorMsg"].get<std::string>()));
@@ -565,50 +589,12 @@ void STTComponent::display_settings()
 	if (!bConnectedToWsServer && !m_connectingToWsServer)
 	{
 		if (ImGui::Button("Connect##websocket"))
-		{
-			GAME_THREAD_EXECUTE({ connectClientToServer(); });
-
-			/*
-			LOG("'Start' button has been clicked...");
-
-			GAME_THREAD_EXECUTE({
-			    if (m_websocketClient && m_websocketClient->isConnectedToServer())
-			    {
-			        LOG("Failed to start websocket connection... it's already active!");
-			        return;
-			    }
-
-			    startWebsocketStuff();
-			});
-			*/
-		}
+			GAME_THREAD_EXECUTE({ startConnection(); });
 	}
 	else
 	{
 		if (ImGui::Button("Disconnect##websocket"))
-		{
-			GAME_THREAD_EXECUTE({ disconnectClientFromServer(); });
-
-			/*
-			LOG("'Stop' button has been clicked...");
-
-			GAME_THREAD_EXECUTE({
-			    stopWebsocketServer();
-			    m_connectingToWsServer.store(false);
-
-			    if (!m_websocketClient)
-			    {
-			        LOG("[ERROR] Websocket object is null... cant stop client");
-			        return;
-			    }
-
-			    bool success = m_websocketClient->stopClient();
-			    LOG(success ? "Stopping websocket client was successful" : "Stopping websocket client was unsuccessful");
-
-			    m_websocketClient->setConnectedStatus(false);
-			});
-			*/
-		}
+			GAME_THREAD_EXECUTE({ endConnection(); });
 	}
 
 	GUI::Spacing(2);

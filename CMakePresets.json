@@ -14,9 +14,10 @@
             "binaryDir": "${sourceDir}/build"
         },
         {
-            "name": "windows-x64-msvc-stt-on",
+            "name": "x64-ninja-msvc",
             "displayName": "Windows (x64): Ninja + cl.exe (with STT)",
             "inherits": "default",
+            "hidden": true,
             "description": "Sets x64 architecture, compiler/linker, and build type",
             "architecture": {
                 "value": "x64",
@@ -27,7 +28,8 @@
                 "THROW_ON_DOUBLE_HOOK": "OFF",
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_CXX_COMPILER": "cl",
-                "CMAKE_LINKER": "link"
+                "CMAKE_LINKER": "link",
+                "CMAKE_RC_COMPILER": "rc"
             },
             "condition": {
                 "type": "equals",
@@ -36,38 +38,36 @@
             }
         },
         {
-            "name": "windows-x64-msvc-stt-off",
-            "displayName": "Windows (x64): Ninja + cl.exe (without STT)",
-            "inherits": "default",
-            "description": "Sets x64 architecture, compiler/linker, and build type",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
+            "name": "stt-off",
+            "displayName": "Without STT",
+            "inherits": "x64-ninja-msvc",
+            "description": "speech-to-text enabled",
             "cacheVariables": {
                 "USE_SPEECH_TO_TEXT": "OFF",
-                "THROW_ON_DOUBLE_HOOK": "OFF",
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "CMAKE_CXX_COMPILER": "cl",
-                "CMAKE_LINKER": "link"
-            },
-            "condition": {
-                "type": "equals",
-                "lhs": "${hostSystemName}",
-                "rhs": "Windows"
+                "THROW_ON_DOUBLE_HOOK": "OFF"
+            }
+        },
+        {
+            "name": "stt-on",
+            "displayName": "With STT",
+            "inherits": "x64-ninja-msvc",
+            "description": "speech-to-text enabled",
+            "cacheVariables": {
+                "USE_SPEECH_TO_TEXT": "ON",
+                "THROW_ON_DOUBLE_HOOK": "OFF"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "build-no-stt",
+            "name": "build",
             "displayName": "Build (without STT)",
-            "configurePreset": "windows-x64-msvc-stt-off"
+            "configurePreset": "stt-off"
         },
         {
-            "name": "build-with-stt",
-            "displayName": "Build (with STT)",
-            "configurePreset": "windows-x64-msvc-stt-on"
+            "name": "build-stt",
+            "displayName": "Build with STT",
+            "configurePreset": "stt-on"
         }
     ]
 }

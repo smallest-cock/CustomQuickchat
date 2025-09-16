@@ -36,9 +36,6 @@ public:
 	void init(const std::shared_ptr<CustomQuickchat>& mainPluginClass, const std::shared_ptr<GameWrapper>& gw);
 
 private:
-	std::shared_ptr<CustomQuickchat> m_pluginClass;
-
-private:
 	void initFilepaths();
 	void initHooks();
 	void initCvars();
@@ -61,6 +58,9 @@ private:
 	static constexpr float PROBE_JSON_FREQUENCY  = 0.2f; // in seconds
 	static constexpr float START_WS_CLIENT_DELAY = 5.0f; // in seconds
 
+	// main plugin class (CustomQuickchat)
+	std::shared_ptr<CustomQuickchat> m_pluginClass;
+
 	// flags
 	bool              m_startedWebsocketServer = false;
 	std::atomic<bool> m_attemptingSTT          = false;
@@ -73,23 +73,30 @@ private:
 	fs::path m_jsonPath;
 	fs::path m_errorLogPath;
 
+	int              m_lastUsedServerPort = 0;
+	std::string      m_serverUriPrefix    = "ws://localhost:";
 	ActiveSTTAttempt m_activeAtempt;
-	std::string      m_serverUriPrefix = "ws://localhost:";
 
 	std::unique_ptr<WebsocketClientManager> m_websocketClient;
 	Process::ProcessHandles                 m_pythonServerProcess;
 
+private:
+	// managing websocket connection
+	void startConnection();
+	void endConnection();
+
+	void startServerThenConnectClient();
+
 	void connectClientToServer();
 	void disconnectClientFromServer();
+
 	bool startWebsocketServer();
 	void stopWebsocketServer();
-
-	void startWebsocketStuff(bool onLoad = false); // starts server then client
-	void processWsResponse(const json& res);
 
 	// speech-to-text
 	void startSTT(const Binding& binding);
 	json generateDataForSTTAttempt();
+	void processWsResponse(const json& res);
 	void processSTTResult(const json& res);
 
 	// mic calibration
@@ -108,11 +115,10 @@ private:
 	inline std::string buildServerUri() const { return m_serverUriPrefix + std::to_string(*m_websocketPort); }
 
 public:
+	void onUnload();
+
 	void triggerSTT(const Binding& binding);
 	void test();
-
-public:
-	void onUnload();
 
 public:
 	void display_settings();

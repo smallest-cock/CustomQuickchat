@@ -88,7 +88,7 @@ class WebsocketHandler:
             response = await self.process_calibration_request(request_data)
 
         elif event == "test":
-            response = self.format_response("test_response", {"message": "this is a message from the other side"})
+            response = self.format_response("test_response", {"message": "This is a message from the python websocket server :)"})
 
         return response
 

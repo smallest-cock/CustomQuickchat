@@ -133,5 +133,6 @@ void CustomQuickchat::initCommands()
 	    [this](std::vector<std::string> args)
 	    {
 		    // ...
+        LOG("This is kinda gay");
 	    });
 }
