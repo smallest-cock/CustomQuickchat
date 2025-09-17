@@ -3,7 +3,9 @@
 #include "CustomQuickchat.hpp"
 #include "Cvars.hpp"
 #include "components/Instances.hpp"
+#ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
+#endif
 
 void CustomQuickchat::initCommands()
 {
@@ -133,6 +135,6 @@ void CustomQuickchat::initCommands()
 	    [this](std::vector<std::string> args)
 	    {
 		    // ...
-        LOG("This is kinda gay");
+		    LOG("This is kinda gay");
 	    });
 }

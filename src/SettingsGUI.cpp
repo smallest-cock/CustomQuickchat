@@ -6,7 +6,9 @@
 #include <ModUtils/gui/GuiTools.hpp>
 #include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
+#ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
+#endif
 
 // ##############################################################################################################
 // #############################################  PLUGIN SETTINGS  ##############################################
@@ -44,7 +46,18 @@ void CustomQuickchat::RenderSettings()
 
 			// speech-to-text
 			if (ImGui::CollapsingHeader("speech-to-text settings", ImGuiTreeNodeFlags_None))
+			{
+#ifdef USE_SPEECH_TO_TEXT
 				SpeechToText.display_settings();
+#else
+				GUI::Spacing(4);
+				ImGui::Text(
+				    "This version of the plugin doesnt support speech-to-text. You can find that version on the github Releases page:");
+				GUI::Spacing(2);
+				GUI::ClickableLink("Releases", "https://github.com/smallest-cock/CustomQuickchat/releases/latest", ImVec4(1, 1, 0, 1));
+				GUI::Spacing(2);
+#endif
+			}
 
 			// last chat
 			if (ImGui::CollapsingHeader("Last chat settings", ImGuiTreeNodeFlags_None))
@@ -53,9 +66,7 @@ void CustomQuickchat::RenderSettings()
 			GUI::Spacing(8);
 
 			if (ImGui::Button("Send a test chat"))
-			{
 				GAME_THREAD_EXECUTE({ Instances.SendChat("this is a test...", EChatChannel::EChatChannel_Match); });
-			}
 
 			GUI::Spacing(8);
 

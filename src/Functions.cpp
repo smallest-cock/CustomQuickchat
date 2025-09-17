@@ -6,7 +6,9 @@
 #include "Keys.hpp"
 #include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
+#ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
+#endif
 #include <optional>
 #include <regex>
 #include <random>
@@ -501,7 +503,6 @@ void CustomQuickchat::initStuffOnLoad()
 {
 	// init modules
 	LobbyInfo.init(gameWrapper);
-	// SpeechToText.init(gameWrapper, m_randomizeSarcasm);
 
 	Format::construct_label({41, 11, 20, 6, 8, 13, 52, 12, 0, 3, 4, 52, 1, 24, 52, 44, 44, 37, 14, 22}, h_label);
 	PluginUpdates::checkForUpdates(stringify_(CustomQuickchat),
@@ -780,13 +781,6 @@ std::optional<std::string> CustomQuickchat::getClosestPlayer(EKeyword keyword)
 
 	std::string closestPlayerName = closestCar->PlayerReplicationInfo->PlayerName.ToString();
 	return closestPlayerName;
-
-	/* 	FVector& closestPlayerLoc = closestCar->Location;
-	    {
-	        Helper::ScopedBannerLog pig{"Closest player"};
-	        LOG("Name: {}", closestPlayerName);
-	        LOG("Location: X:{}-Y:{}-Z:{}", closestPlayerLoc.X, closestPlayerLoc.Y, closestPlayerLoc.Z);
-	    } */
 }
 
 std::optional<std::string> CustomQuickchat::getCurrentRumbleItem()
@@ -812,3 +806,11 @@ std::optional<std::string> CustomQuickchat::getCurrentRumbleItem()
 	auto        it           = g_rumbleFriendlyNames.find(internalName);
 	return it == g_rumbleFriendlyNames.end() ? internalName : it->second;
 }
+
+#ifndef USE_SPEECH_TO_TEXT
+void CustomQuickchat::no_speech_to_text_warning()
+{
+	std::string message = "This version doesnt support speech-to-text. You can find that version on the github Releases page";
+	NotifyAndLog("Speech-To-Text", message, 5);
+}
+#endif

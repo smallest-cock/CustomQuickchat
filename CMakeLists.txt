@@ -32,9 +32,13 @@ set(COMPONENTS_DIR "${SRC_DIR}/components")
 set(COMPONENTS_SRC
     ${COMPONENTS_DIR}/Instances.cpp
     ${COMPONENTS_DIR}/LobbyInfo.cpp
-    ${COMPONENTS_DIR}/WebsocketManager.cpp
-    ${COMPONENTS_DIR}/SpeechToText.cpp
 )
+if(USE_SPEECH_TO_TEXT)
+    list(APPEND COMPONENTS_SRC
+        ${COMPONENTS_DIR}/WebsocketManager.cpp
+        ${COMPONENTS_DIR}/SpeechToText.cpp
+    )
+endif()
 
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 set(BMSDK_DIR "${EXTERNAL_DIR}/BMSDK")
@@ -109,7 +113,6 @@ add_library(${PROJECT_NAME}
     ${SRC_DIR}/HelperFuncs.cpp
     ${SRC_DIR}/CvarChangeCallbacks.cpp
     ${SRC_DIR}/SettingsGUI.cpp
-    ${SRC_DIR}/SpeechToText.cpp
     ${SRC_DIR}/Functions.cpp
     ${SRC_DIR}/Events.cpp
     ${SRC_DIR}/Commands.cpp
@@ -130,13 +133,16 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE ${CMAKE_SOURCE_DIR}/src
     PRIVATE ${CMAKE_SOURCE_DIR}/external
     PRIVATE ${CMAKE_SOURCE_DIR}/external/BMSDK/include
-    PRIVATE ${CMAKE_SOURCE_DIR}/external/asio/asio/include
-    PRIVATE ${CMAKE_SOURCE_DIR}/external/websocketpp/
 )
+if(USE_SPEECH_TO_TEXT)
+    target_include_directories(${PROJECT_NAME}
+        PRIVATE ${CMAKE_SOURCE_DIR}/external/asio/asio/include
+        PRIVATE ${CMAKE_SOURCE_DIR}/external/websocketpp
+    )
+endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${CMAKE_SOURCE_DIR}/external/BMSDK/lib/pluginsdk.lib
-    # websocketpp::websocketpp
 )
 
 # use selective export handling instead of exporting all symbols

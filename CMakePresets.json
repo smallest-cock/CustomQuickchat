@@ -24,8 +24,6 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-                "USE_SPEECH_TO_TEXT": "ON",
-                "THROW_ON_DOUBLE_HOOK": "OFF",
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
                 "CMAKE_CXX_COMPILER": "cl",
                 "CMAKE_LINKER": "link",
@@ -41,7 +39,7 @@
             "name": "stt-off",
             "displayName": "Without STT",
             "inherits": "x64-ninja-msvc",
-            "description": "speech-to-text enabled",
+            "description": "speech-to-text disabled",
             "cacheVariables": {
                 "USE_SPEECH_TO_TEXT": "OFF",
                 "THROW_ON_DOUBLE_HOOK": "OFF"

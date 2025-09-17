@@ -2,8 +2,10 @@
 #include "Cvars.hpp"
 #include "CustomQuickchat.hpp"
 #include "components/Instances.hpp"
-#include "components/SpeechToText.hpp"
 #include "HookManager.hpp"
+#ifdef USE_SPEECH_TO_TEXT
+#include "components/SpeechToText.hpp"
+#endif
 
 BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
 
@@ -21,8 +23,10 @@ void CustomQuickchat::onLoad()
 	initCommands();
 	initHooks();
 
+#ifdef USE_SPEECH_TO_TEXT
 	SpeechToText.init(singleton, gameWrapper); // needs access to singleton
-	initStuffOnLoad();                         // other init
+#endif
+	initStuffOnLoad(); // other init
 
 	LOG("CustomQuickchat loaded! :)");
 }
@@ -31,7 +35,9 @@ void CustomQuickchat::onUnload()
 {
 	writeBindingsToJson(); // just to make sure any unsaved changes are saved before exiting
 
+#ifdef USE_SPEECH_TO_TEXT
 	SpeechToText.onUnload();
+#endif
 	Hooks.unhookAllEvents(); // shouldn't be necessary but who cares about life
 }
 
