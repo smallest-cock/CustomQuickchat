@@ -47,17 +47,23 @@ Run `./scripts/init-submodules.bat` after cloning the repo to initialize the sub
 </details>
 
 ### 2. Build with CMake
+>[!NOTE]
+>If not using the [CMake Tools](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cmake-tools) extension in VS Code, you probably need to run this script before configuring/building with cmake, which will set the proper environment variables:
+>```
+>C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat
+>```
+
 1. Install [CMake](https://cmake.org/download) and [Ninja](https://github.com/ninja-build/ninja/releases) (or another build system if you prefer)
 2. Run this to configure:
    ```
-   cmake --preset windows-x64-msvc-stt-off
+   cmake --preset stt-off
    ```
-   - Use `windows-x64-msvc-stt-on` for the STT version
+   - Use `stt-on` for the STT version
 3. Run this to build:
    ```
-   cmake --build --preset build-no-stt
+   cmake --build --preset build
    ```
-   - Use `build-with-stt` for the STT version
+   - Use `build-stt` for the STT version
 
 The built binaries will be in `./plugins`
 
