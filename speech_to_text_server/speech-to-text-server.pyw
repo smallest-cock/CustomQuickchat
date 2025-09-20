@@ -198,7 +198,7 @@ async def handle_client(websocket, stop_event, port_num):
 async def start_server(port: int):
     if port_in_use(port):
         logging.error(f"Unable to start WebSocket server on port {port}! It's already in use")
-        return
+        sys.exit(1)
 
     stop_event = asyncio.Event()
 
@@ -207,7 +207,18 @@ async def start_server(port: int):
 
     logging.info(f"Starting WebSocket server on port {port} ...")
 
-    server = await websockets.serve(client_wrapper, "localhost", port)
+    # server = await websockets.serve(client_wrapper, "localhost", port, reuse_address=True)
+
+    try:
+        server = await websockets.serve(
+            client_wrapper,
+            "localhost",
+            port,
+            reuse_address=True,  # allow immediate reuse after disconnect
+        )
+    except OSError as e:
+        logging.error(f"Failed to bind WebSocket server on port {port}: {e}")
+        sys.exit(1)  # bail out cleanly
 
     await stop_event.wait()     # Wait until stop_event is set by handle_client()
 

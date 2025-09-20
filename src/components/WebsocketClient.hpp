@@ -55,18 +55,17 @@ class WebsocketClientManager
 
 public:
 	WebsocketClientManager() = delete;
-	WebsocketClientManager(std::atomic<bool>& bConnecting);
+	WebsocketClientManager(std::atomic<bool>& bConnecting, std::atomic<bool>& bPyServerRunning);
 	~WebsocketClientManager();
 
 public:
 	bool connect(const std::string& uri, JsonMsgHandler msgHandler);
 	bool disconnect();
 
-	void sendMessage(const std::string& eventName, const json& dataJson); // custom params for this plugin's specific usecase
-	void sendMessage(const std::string& msg); // generic, reusable, just send some text (any serialization should've alr happened)
-
 	inline bool        isConnected() const { return m_isConnected.load(); }
 	inline std::string getCurrentURI() const { return m_uri; }
+
+	void sendMessage(const std::string& msg); // generic, reusable, just send some text (any serialization should've alr happened)
 
 private:
 	WebsocketClient m_endpoint;
@@ -79,6 +78,7 @@ private:
 	std::string        m_uri;
 	std::atomic<bool>  m_isConnected = false;
 	std::atomic<bool>& m_isConnecting;
+	std::atomic<bool>& m_pyServerRunning;
 
 private:
 	// LOG overloads

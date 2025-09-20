@@ -35,8 +35,9 @@ set(COMPONENTS_SRC
 )
 if(USE_SPEECH_TO_TEXT)
     list(APPEND COMPONENTS_SRC
-        ${COMPONENTS_DIR}/WebsocketManager.cpp
         ${COMPONENTS_DIR}/SpeechToText.cpp
+        ${COMPONENTS_DIR}/WebsocketClient.cpp
+        ${COMPONENTS_DIR}/WebsocketConnection.cpp
     )
 endif()
 

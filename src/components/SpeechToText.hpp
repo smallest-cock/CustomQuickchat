@@ -1,8 +1,8 @@
 #pragma once
 #include "Component.hpp"
+#include "components/WebsocketConnection.hpp"
 #include "CustomQuickchat.hpp"
 #include "Structs.hpp"
-#include "components/WebsocketManager.hpp"
 
 struct ActiveSTTAttempt
 {
@@ -68,30 +68,22 @@ private:
 	std::atomic<bool> m_connectingToWsServer   = false;
 
 	// filepaths
-	bool     m_allFilesExist = false;
 	fs::path m_exePath;
 	fs::path m_jsonPath;
 	fs::path m_errorLogPath;
 
 	int              m_lastUsedServerPort = 0;
-	std::string      m_serverUriPrefix    = "ws://localhost:";
 	ActiveSTTAttempt m_activeAtempt;
 
-	std::unique_ptr<WebsocketClientManager> m_websocketClient;
-	Process::ProcessHandles                 m_pythonServerProcess;
+	JsonResCallback            m_jsonResponseCallback;
+	WebsocketConnectionManager m_wsConnection{m_connectingToWsServer};
 
 private:
+	void notifyWsError(EWebsocketError err);
+
 	// managing websocket connection
 	void startConnection();
 	void endConnection();
-
-	void startServerThenConnectClient();
-
-	void connectClientToServer();
-	void disconnectClientFromServer();
-
-	bool startWebsocketServer();
-	void stopWebsocketServer();
 
 	// speech-to-text
 	void startSTT(const Binding& binding);
@@ -112,13 +104,14 @@ private:
 	void        sttLog(const std::string& message);
 	void        notifyAndLog(const std::string& title, const std::string& message, int duration = 3);
 
-	inline std::string buildServerUri() const { return m_serverUriPrefix + std::to_string(*m_websocketPort); }
-
 public:
 	void onUnload();
 
 	void triggerSTT(const Binding& binding);
 	void test();
+
+private:
+	GUI::WordColor display_getWsConnectionColoredStr(bool bConnecting);
 
 public:
 	void display_settings();
