@@ -4,6 +4,8 @@
 - Fixed crashes if user is missing the `SpeechToText.exe` file
 - Added a button to test the speech-to-text websocket connection
 - Improved internal websockets functionality
+- Updated internal SDK to match latest version of RL (v2.56)
+    - Should fix in-game crashes #14 
 
 ## v1.9.6
 - Improved chat uncensoring implementation 👀
