@@ -1,5 +1,7 @@
 #pragma once
+#include <optional>
 #include <string>
+#include <unordered_map>
 
 // ==================================== for imgui ====================================
 
@@ -71,19 +73,22 @@ struct ButtonPress
 	std::string                           buttonName;
 	std::chrono::steady_clock::time_point pressedTime;
 
-	ButtonPress()
-	    : buttonName(std::string()), pressedTime(std::chrono::steady_clock::time_point()) {} // default (empty) (idk if this is needed)
-	ButtonPress(const std::string& button, const std::chrono::steady_clock::time_point& time) : buttonName(button), pressedTime(time) {}
+	// ButtonPress() = default;
+	// ButtonPress(const std::string& button, const std::chrono::steady_clock::time_point& time) : buttonName(button), pressedTime(time) {}
 
-	void Reset(const std::chrono::steady_clock::time_point& epochTime);
+	void reset(const std::chrono::steady_clock::time_point& epochTime);
 };
 
 struct BindingKey
 {
 	std::string action;
-	std::string pc_key;
-	std::string gamepad_key;
+	std::string pcKey;
+	std::string gamepadKey;
 };
+
+// ######################################################################################################
+// ######################################################################################################
+// ######################################################################################################
 
 struct Binding
 {
@@ -94,7 +99,9 @@ struct Binding
 	ETextEffect              textEffect  = ETextEffect::None;
 	bool                     enabled     = true;
 	std::vector<std::string> buttons;
-	ButtonPress              firstButtonState;
+
+	// --------------------------- this shit is gay -----------------------------
+	ButtonPress firstButtonState;
 
 	bool shouldBeTriggered(const ButtonPress&        buttonEvent,
 	    const std::unordered_map<std::string, bool>& keyStates,
@@ -112,12 +119,70 @@ struct Binding
 	    const std::chrono::duration<double>&         minDelayBetweenBindings,
 	    const std::chrono::duration<double>&         maxTimeWindow);
 
+	// --------------------------------------------------------------------------
+
 	// determine if chat contains any special keyword or text effect (once, at the time of binding creation, rather than every time binding
 	// is triggered)
 	void                            updateKeywordAndTextEffect(const std::string& regexPatternStr);
 	static ETextEffect              getTextEffect(EKeyword keyword);
 	static std::vector<std::string> getMatchedSubstrings(const std::string& str, const std::string& regexPatternStr);
 };
+
+struct SequenceTrieNode
+{
+	std::unordered_map<std::string, std::unique_ptr<SequenceTrieNode>> children;
+	std::weak_ptr<Binding>                                             binding;
+};
+
+class SequenceBindingManager
+{
+	std::unique_ptr<SequenceTrieNode> m_rootNode;
+	SequenceTrieNode*                 m_currentNode;
+
+	// time window state
+	std::chrono::steady_clock::time_point m_sequenceStart{};
+	std::chrono::duration<double>         m_maxTimeWindow;
+
+public:
+	SequenceBindingManager() : m_rootNode(std::make_unique<SequenceTrieNode>()), m_currentNode(m_rootNode.get()) {}
+
+	bool           registerBinding(const Binding& b);
+	bool           removeBinding(const Binding& b);
+	const Binding* processKeyPress(const ButtonPress& keyPress);
+	void           resetState();
+
+	inline void setMaxTimeWindow(const std::chrono::duration<double>& duration) { m_maxTimeWindow = duration; }
+};
+
+class CombinationBindingManager
+{
+	std::unordered_map<std::string, bool> m_keyStates;
+	std::vector<std::weak_ptr<Binding>>   m_bindings;
+
+public:
+	bool           registerBinding(const Binding& b);
+	bool           removeBinding(const Binding& b);
+	const Binding* processKeyPress(const ButtonPress& keyPress);
+	void           resetState();
+};
+
+class BindingDetectionManager
+{
+	CombinationBindingManager m_combinationManager;
+	SequenceBindingManager    m_sequenceManager;
+
+public:
+	bool           registerBinding(const Binding& b);
+	bool           removeBinding(const Binding& b);
+	const Binding* processKeyPress(const ButtonPress& keyPress);
+	void           resetState();
+
+	inline void setSequenceMaxTimeWindow(const std::chrono::duration<double>& duration) { m_sequenceManager.setMaxTimeWindow(duration); }
+};
+
+// ######################################################################################################
+// ######################################################################################################
+// ######################################################################################################
 
 struct VariationList
 {

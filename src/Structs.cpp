@@ -4,167 +4,298 @@
 #include <random>
 #include <ModUtils/util/Utils.hpp>
 
-
 // ##############################################################################################################
 // ##############################################    Binding    #################################################
 // ##############################################################################################################
 
-bool Binding::shouldBeTriggered(
-    const ButtonPress& buttonEvent,
-    const std::unordered_map<std::string, bool>& keyStates,
-    const std::chrono::steady_clock::time_point& lastChatSent,
-    const std::chrono::steady_clock::time_point& epochTime,
-    const std::chrono::duration<double>& minDelayBetweenBindings,
-    const std::chrono::duration<double>& maxTimeWindow)
+bool Binding::shouldBeTriggered(const ButtonPress& buttonEvent,
+    const std::unordered_map<std::string, bool>&   keyStates,
+    const std::chrono::steady_clock::time_point&   lastChatSent,
+    const std::chrono::steady_clock::time_point&   epochTime,
+    const std::chrono::duration<double>&           minDelayBetweenBindings,
+    const std::chrono::duration<double>&           maxTimeWindow)
 {
-    switch (bindingType)
-    {
-    case EBindingType::Combination:
-        return checkCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
-    case EBindingType::Sequence:
-        return checkSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
-    default:
-        return false;   // if there's no valid binding type for some reason
-    }
+	switch (bindingType)
+	{
+	case EBindingType::Combination:
+		return checkCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
+	case EBindingType::Sequence:
+		return checkSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
+	default:
+		return false; // if there's no valid binding type for some reason
+	}
 }
 
-bool Binding::checkCombination(
-    const ButtonPress& buttonEvent,
-    const std::unordered_map<std::string, bool>& keyStates,
-    const std::chrono::steady_clock::time_point& lastBindingActivated,
-    const std::chrono::duration<double>& minDelayBetweenBindings)
+bool Binding::checkCombination(const ButtonPress& buttonEvent,
+    const std::unordered_map<std::string, bool>&  keyStates,
+    const std::chrono::steady_clock::time_point&  lastBindingActivated,
+    const std::chrono::duration<double>&          minDelayBetweenBindings)
 {
-    if (buttons.empty())
-        return false;
+	if (buttons.empty())
+		return false;
 
-    for (const std::string& button : buttons)
-    {
-        if (keyStates.contains(button))
-        {
-            if (!keyStates.at(button))
-                return false;
-        }
-    }
+	for (const std::string& button : buttons)
+	{
+		if (keyStates.contains(button))
+		{
+			if (!keyStates.at(button))
+				return false;
+		}
+	}
 
-    // check if event happened AFTER minBindingDelay
-    return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
+	// check if event happened AFTER minBindingDelay
+	return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
 }
 
-bool Binding::checkSequence(
-    const ButtonPress& buttonEvent,
+// TODO: this function is gay, replace with cleaner trie system.. maybe take a global trie object as params
+bool Binding::checkSequence(const ButtonPress&   buttonEvent,
     const std::chrono::steady_clock::time_point& lastChatSent,
     const std::chrono::steady_clock::time_point& epochTime,
-    const std::chrono::duration<double>& minDelayBetweenBindings,
-    const std::chrono::duration<double>& maxTimeWindow)
+    const std::chrono::duration<double>&         minDelayBetweenBindings,
+    const std::chrono::duration<double>&         maxTimeWindow)
 {
-    if (buttons.size() < 2)
-        return false;   // exit if there's not at least 2 buttons in binding
+	if (buttons.size() < 2)
+		return false; // exit if there's not at least 2 buttons in binding
 
-    bool button1Pressed = buttonEvent.buttonName == buttons[0];
-    bool button2Pressed = buttonEvent.buttonName == buttons[1];
+	bool button1Pressed = buttonEvent.buttonName == buttons[0];
+	bool button2Pressed = buttonEvent.buttonName == buttons[1];
 
-    if (!button1Pressed && !button2Pressed)
-        return false;   // early exit if no buttons from binding have been pressed
+	if (!button1Pressed && !button2Pressed)
+		return false; // early exit if no buttons from binding have been pressed
 
-    // if first button press data is empty...
-    if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
-    {
-        if (button1Pressed)
-            firstButtonState = buttonEvent;     // update first button press data then exit
-        return false;
-    }
+	// if first button press data is empty...
+	if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
+	{
+		if (button1Pressed)
+			firstButtonState = buttonEvent; // update first button press data then exit
+		return false;
+	}
 
-    // if first button press data exists.......
+	// if first button press data exists.......
 
-    // if first button press data is too old... reset or update it, then exit
-    if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
-    {
-        if (button1Pressed)
-            firstButtonState = buttonEvent;     // update first button press data
-        else
-            firstButtonState.Reset(epochTime);  // reset info bc 1st button doesn't match
-        return false;
-    }
+	// if first button press data is too old... reset or update it, then exit
+	if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
+	{
+		if (button1Pressed)
+			firstButtonState = buttonEvent; // update first button press data
+		else
+			firstButtonState.reset(epochTime); // reset info bc 1st button doesn't match
+		return false;
+	}
 
-    // if first button press data is still valid.......
+	// if first button press data is still valid.......
 
-    if (!button2Pressed)
-        return false;
+	if (!button2Pressed)
+		return false;
 
-    // make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
-    bool correct1stButtonPressed = firstButtonState.buttonName == buttons[0];
-    bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
+	// make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
+	bool correct1stButtonPressed  = firstButtonState.buttonName == buttons[0];
+	bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
 
-    if (correct1stButtonPressed)
-    {
-        if (button2PressedLateEnough)
-        {
-            firstButtonState.Reset(epochTime);
-            return true;
-        }
+	if (correct1stButtonPressed)
+	{
+		if (button2PressedLateEnough)
+		{
+			firstButtonState.reset(epochTime);
+			return true;
+		}
 
-        firstButtonState.Reset(epochTime);  // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
-    }
+		firstButtonState.reset(epochTime); // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
+	}
 
-    return false;
+	return false;
 }
 
 void Binding::updateKeywordAndTextEffect(const std::string& regexPatternStr)
 {
-    std::vector<std::string> matchedSubstrings = getMatchedSubstrings(chat, regexPatternStr);
+	std::vector<std::string> matchedSubstrings = getMatchedSubstrings(chat, regexPatternStr);
 
-    // handle any words in double brackets, like special keywords or word variations
-    for (const std::string& stringFoundInBrackets : matchedSubstrings)
-    {
-        auto it = keywordsMap.find(stringFoundInBrackets);
+	// handle any words in double brackets, like special keywords or word variations
+	for (const std::string& stringFoundInBrackets : matchedSubstrings)
+	{
+		auto it = keywordsMap.find(stringFoundInBrackets);
 
-        // if a special keyword was found
-        if (it != keywordsMap.end())
-        {
-            keyWord = it->second;                   // update binding's keyword
-            textEffect = getTextEffect(keyWord);    // update binding's text effect (if any)
-        }
-        // if something else was found in double brackets (aka a word variation)
-        else if (keyWord == EKeyword::None)
-        {
-            keyWord = EKeyword::WordVariation;
-        }
-    }
+		// if a special keyword was found
+		if (it != keywordsMap.end())
+		{
+			keyWord    = it->second;             // update binding's keyword
+			textEffect = getTextEffect(keyWord); // update binding's text effect (if any)
+		}
+		// if something else was found in double brackets (aka a word variation)
+		else if (keyWord == EKeyword::None)
+		{
+			keyWord = EKeyword::WordVariation;
+		}
+	}
 }
 
 ETextEffect Binding::getTextEffect(EKeyword keyword)
 {
-    switch (keyword)
-    {
-    case EKeyword::LastChatUwu:
-    case EKeyword::SpeechToTextUwu:
-        return ETextEffect::Uwu;
-    case EKeyword::LastChatSarcasm:
-    case EKeyword::SpeechToTextSarcasm:
-        return ETextEffect::Sarcasm;
-    default:
-        return ETextEffect::None;
-    }
+	switch (keyword)
+	{
+	case EKeyword::LastChatUwu:
+	case EKeyword::SpeechToTextUwu:
+		return ETextEffect::Uwu;
+	case EKeyword::LastChatSarcasm:
+	case EKeyword::SpeechToTextSarcasm:
+		return ETextEffect::Sarcasm;
+	default:
+		return ETextEffect::None;
+	}
 }
 
 std::vector<std::string> Binding::getMatchedSubstrings(const std::string& str, const std::string& regexPatternStr)
 {
-    std::regex regexPattern(regexPatternStr);
+	std::regex regexPattern(regexPatternStr);
 
-    std::vector<std::string> matchedSubstrings;
-    std::sregex_iterator it(str.begin(), str.end(), regexPattern);
-    std::sregex_iterator end;
+	std::vector<std::string> matchedSubstrings;
+	std::sregex_iterator     it(str.begin(), str.end(), regexPattern);
+	std::sregex_iterator     end;
 
-    while (it != end)
-    {
-        std::string matchedSubstring = (*it)[1].str();
-        matchedSubstrings.push_back(matchedSubstring);
-        ++it;
-    }
+	while (it != end)
+	{
+		std::string matchedSubstring = (*it)[1].str();
+		matchedSubstrings.push_back(matchedSubstring);
+		++it;
+	}
 
-    return matchedSubstrings;
+	return matchedSubstrings;
 }
 
+// ##############################################################################################################
+// ########################################    BindingDetectionManager    #######################################
+// ##############################################################################################################
+
+bool           BindingDetectionManager::registerBinding(const Binding& b) {}
+bool           BindingDetectionManager::removeBinding(const Binding& b) {}
+const Binding* BindingDetectionManager::processKeyPress(const ButtonPress& keyPress) {}
+void           BindingDetectionManager::resetState() {}
+
+// ##############################################################################################################
+// ########################################    SequenceBindingManager    ########################################
+// ##############################################################################################################
+
+bool SequenceBindingManager::registerBinding(const Binding& b)
+{
+	if (b.bindingType != EBindingType::Sequence)
+		return false;
+
+	SequenceTrieNode* node = m_rootNode.get();
+	for (const auto& buttonStr : b.buttons)
+	{
+		auto it = node->children.find(buttonStr);
+		if (it != node->children.end())
+		{
+			if (it->second && it->second->binding)
+				return false; // sequence alr exists (either exact sequence or a prefix of this one)
+			node = it->second.get();
+		}
+		else
+		{
+			node->children[buttonStr] = std::make_unique<SequenceTrieNode>();
+			node                      = node->children[buttonStr].get();
+		}
+	}
+
+	if (!node->children.empty())
+		return false; // longer sequence alr exists (using same prefix)
+
+	node->binding = b; // copy binding in
+	return true;
+}
+
+bool SequenceBindingManager::removeBinding(const Binding& b)
+{
+	if (b.bindingType != EBindingType::Sequence)
+		return false;
+
+	std::vector<std::pair<SequenceTrieNode*, std::string>> path;
+	SequenceTrieNode*                                      node = m_rootNode.get();
+
+	for (const auto& key : b.buttons)
+	{
+		auto it = node->children.find(key);
+		if (it == node->children.end())
+			return false; // sequence doesn't exist
+
+		path.emplace_back(node, key);
+		node = it->second.get();
+	}
+
+	if (!node->binding)
+		return false; // sequence doesn't exist as a binding
+
+	// Clear the binding
+	node->binding.reset();
+
+	// Prune empty nodes bottom-up
+	for (auto it = path.rbegin(); it != path.rend(); ++it)
+	{
+		SequenceTrieNode*  parent  = it->first;
+		const std::string& key     = it->second;
+		auto               childIt = parent->children.find(key);
+
+		if (childIt != parent->children.end())
+		{
+			SequenceTrieNode* child = childIt->second.get();
+
+			if (child->binding || !child->children.empty())
+				break; // stop pruning, still in use
+
+			// otherwise remove it
+			parent->children.erase(childIt);
+		}
+	}
+
+	return true;
+}
+
+// Process a single button press. Returns a pointer to the binding if its button sequence has been completed within the time window
+const Binding* SequenceBindingManager::processKeyPress(const ButtonPress& keyPress)
+{
+	auto it = m_currentNode->children.find(keyPress.buttonName);
+	if (it == m_currentNode->children.end())
+	{
+		resetState(); // no match found -> reset
+		return nullptr;
+	}
+
+	// update start time if we’re at root
+	if (m_currentNode == m_rootNode.get())
+		m_sequenceStart = keyPress.pressedTime;
+
+	// check if we're within time window before advancing the node
+	if (keyPress.pressedTime - m_sequenceStart > m_maxTimeWindow)
+	{
+		resetState();
+		return nullptr;
+	}
+
+	// advance the node
+	m_currentNode = it->second.get();
+
+	// check if binding exists at node
+	if (!m_currentNode->binding)
+		return nullptr;
+	else
+	{
+		// binding exists -> reset state and return binding ptr
+		const Binding* triggered = &(*m_currentNode->binding);
+		resetState();
+		return triggered;
+	}
+}
+
+void SequenceBindingManager::resetState() { m_currentNode = m_rootNode.get(); }
+
+// ##############################################################################################################
+// #######################################    CombinationBindingManager    ######################################
+// ##############################################################################################################
+
+bool           CombinationBindingManager::registerBinding(const Binding& b) {}
+bool           CombinationBindingManager::removeBinding(const Binding& b) {}
+const Binding* CombinationBindingManager::processKeyPress(const ButtonPress& keyPress) {}
+void           CombinationBindingManager::resetState() {}
 
 // ##############################################################################################################
 // ############################################    VariationList    #############################################
@@ -172,349 +303,340 @@ std::vector<std::string> Binding::getMatchedSubstrings(const std::string& str, c
 
 std::vector<std::string> VariationList::generateShuffledWordList() const
 {
-    static std::mt19937 rng(std::random_device{}()); // seeded once, reused across calls.. for efficiency and better randomization
+	static std::mt19937 rng(std::random_device{}()); // seeded once, reused across calls.. for efficiency and better randomization
 
-    std::vector<std::string> shuffledList = wordList;
-    std::shuffle(shuffledList.begin(), shuffledList.end(), rng);
-    return shuffledList;
+	std::vector<std::string> shuffledList = wordList;
+	std::shuffle(shuffledList.begin(), shuffledList.end(), rng);
+	return shuffledList;
 }
 
 std::string VariationList::getNextVariation()
 {
-    std::string nextVariation;
-    if (wordList.empty())
-        return nextVariation;
+	std::string nextVariation;
+	if (wordList.empty())
+		return nextVariation;
 
-    if (shuffleWordList)
-    {
-        if (wordList.size() < 3)
-        {
-            LOG("ERROR: \"{}\" variation list has less than 3 items and cannot be used", listName);
-            return listName;
-        }
+	if (shuffleWordList)
+	{
+		if (wordList.size() < 3)
+		{
+			LOG("ERROR: \"{}\" variation list has less than 3 items and cannot be used", listName);
+			return listName;
+		}
 
-        nextVariation = shuffledWordList[nextUsableIndex];
+		nextVariation = shuffledWordList[nextUsableIndex];
 
-        if (nextUsableIndex != (shuffledWordList.size() - 1))
-            nextUsableIndex++;
-        else
-            reshuffleWordList();
-    }
-    else
-    {
-        nextVariation = wordList[nextUsableIndex];
-        nextUsableIndex = (nextUsableIndex == wordList.size() - 1) ? 0 : nextUsableIndex + 1; // loop the index
-    }
+		if (nextUsableIndex != (shuffledWordList.size() - 1))
+			nextUsableIndex++;
+		else
+			reshuffleWordList();
+	}
+	else
+	{
+		nextVariation   = wordList[nextUsableIndex];
+		nextUsableIndex = (nextUsableIndex == wordList.size() - 1) ? 0 : nextUsableIndex + 1; // loop the index
+	}
 
-    return nextVariation;
+	return nextVariation;
 }
 
 void VariationList::reshuffleWordList()
 {
-    // skip the non-repetition stuff if word list has less than 4 items
-    if (shuffledWordList.size() < 4)
-    {
-        shuffledWordList = generateShuffledWordList();
-        nextUsableIndex = 0;
-        return;
-    }
+	// skip the non-repetition stuff if word list has less than 4 items
+	if (shuffledWordList.size() < 4)
+	{
+		shuffledWordList = generateShuffledWordList();
+		nextUsableIndex  = 0;
+		return;
+	}
 
-    // save last two words from previous shuffled list
-    std::vector<std::string> lastTwoWords;
-    lastTwoWords.push_back(shuffledWordList[shuffledWordList.size() - 1]);
-    lastTwoWords.push_back(shuffledWordList[shuffledWordList.size() - 2]);
+	// save last two words from previous shuffled list
+	std::vector<std::string> lastTwoWords;
+	lastTwoWords.push_back(shuffledWordList[shuffledWordList.size() - 1]);
+	lastTwoWords.push_back(shuffledWordList[shuffledWordList.size() - 2]);
 
-    // create new shuffled list
-    std::vector<std::string> newShuffledList = generateShuffledWordList();
+	// create new shuffled list
+	std::vector<std::string> newShuffledList = generateShuffledWordList();
 
-    std::string newShuffled1st = "";
-    std::string newShuffled2nd = "";
+	std::string newShuffled1st = "";
+	std::string newShuffled2nd = "";
 
+	// find 1st different variation
+	for (int i = 0; i < newShuffledList.size(); ++i)
+	{
+		auto word = newShuffledList[i];
 
-    // find 1st different variation
-    for (int i = 0; i < newShuffledList.size(); ++i)
-    {
-        auto word = newShuffledList[i];
+		auto it = std::find(lastTwoWords.begin(), lastTwoWords.end(), word);
+		if (it == lastTwoWords.end() && newShuffled1st == "")
+		{
+			newShuffled1st = word;
+			newShuffledList.erase(newShuffledList.begin() + i);
+			break;
+		}
+	}
 
-        auto it = std::find(lastTwoWords.begin(), lastTwoWords.end(), word);
-        if (it == lastTwoWords.end() && newShuffled1st == "")
-        {
-            newShuffled1st = word;
-            newShuffledList.erase(newShuffledList.begin() + i);
-            break;
-        }
-    }
+	// find 2nd different variation
+	for (int i = 0; i < newShuffledList.size(); ++i)
+	{
+		auto word = newShuffledList[i];
 
-    // find 2nd different variation
-    for (int i = 0; i < newShuffledList.size(); ++i)
-    {
-        auto word = newShuffledList[i];
+		auto it = std::find(lastTwoWords.begin(), lastTwoWords.end(), word);
+		if (it == lastTwoWords.end() && newShuffled2nd == "")
+		{
+			newShuffled2nd = word;
+			newShuffledList.erase(newShuffledList.begin() + i);
+			break;
+		}
+	}
 
-        auto it = std::find(lastTwoWords.begin(), lastTwoWords.end(), word);
-        if (it == lastTwoWords.end() && newShuffled2nd == "")
-        {
-            newShuffled2nd = word;
-            newShuffledList.erase(newShuffledList.begin() + i);
-            break;
-        }
-    }
+	// insert selected words (that are diff than prev last two) at beginning of new shuffled vector
+	newShuffledList.insert(newShuffledList.begin(), newShuffled1st);
+	newShuffledList.insert(newShuffledList.begin() + 1, newShuffled2nd);
 
-    // insert selected words (that are diff than prev last two) at beginning of new shuffled vector
-    newShuffledList.insert(newShuffledList.begin(), newShuffled1st);
-    newShuffledList.insert(newShuffledList.begin() + 1, newShuffled2nd);
-
-    // update actual variation list info
-    shuffledWordList = newShuffledList;
-    nextUsableIndex = 0;
+	// update actual variation list info
+	shuffledWordList = newShuffledList;
+	nextUsableIndex  = 0;
 }
 
 void VariationList::updateDataFromUnparsedString()
 {
-    wordList = Format::SplitStrByNewline(unparsedString); // update word list
-    nextUsableIndex = 0; // reset index
-    shuffledWordList = generateShuffledWordList();
+	wordList         = Format::SplitStrByNewline(unparsedString); // update word list
+	nextUsableIndex  = 0;                                         // reset index
+	shuffledWordList = generateShuffledWordList();
 }
-
-
 
 // ##############################################################################################################
 // ###############################################    ...    ####################################################
 // ##############################################################################################################
 
-void ButtonPress::Reset(const std::chrono::steady_clock::time_point& epochTime)
+void ButtonPress::reset(const std::chrono::steady_clock::time_point& epochTime)
 {
-    buttonName.clear();
-    pressedTime = epochTime;
+	buttonName.clear();
+	pressedTime = epochTime;
 }
 
 FUniqueNetId NetId::to_unreal_id() const
 {
-    FUniqueNetId id;
-    id.Uid =                Uid;
-    id.NpId =               NpId;
-    id.EpicAccountId =      FString::create(EpicAccountId);
-    id.Platform =           Platform;
-    id.SplitscreenID =      SplitscreenID;
-    
-    return id;
-}
+	FUniqueNetId id;
+	id.Uid           = Uid;
+	id.NpId          = NpId;
+	id.EpicAccountId = FString::create(EpicAccountId);
+	id.Platform      = Platform;
+	id.SplitscreenID = SplitscreenID;
 
+	return id;
+}
 
 // ChatData
 ChatData::ChatData(const FGFxChatMessage& msg)
 {
-    // parse quickchat message if necessary
-    std::string chat_text = msg.Message.ToString();
-    if (msg.bPreset)
-    {
-        auto it = quickchat_ids_to_text.find(chat_text);
-        if (it != quickchat_ids_to_text.end())
-            chat_text = it->second;
-    }
+	// parse quickchat message if necessary
+	std::string chat_text = msg.Message.ToString();
+	if (msg.bPreset)
+	{
+		auto it = quickchat_ids_to_text.find(chat_text);
+		if (it != quickchat_ids_to_text.end())
+			chat_text = it->second;
+	}
 
-    PlayerName =        msg.PlayerName.ToString();
-    Message =           chat_text;
-    TimeStamp =         msg.TimeStamp.ToString();
-    Team =              msg.Team;
-    ChatChannel =       static_cast<EChatChannel>(msg.ChatChannel);
-    SenderId =          msg.SenderId;
-    IsUser =            msg.bLocalPlayer;
-    IsQuickchat =       msg.bPreset;
+	PlayerName  = msg.PlayerName.ToString();
+	Message     = chat_text;
+	TimeStamp   = msg.TimeStamp.ToString();
+	Team        = msg.Team;
+	ChatChannel = static_cast<EChatChannel>(msg.ChatChannel);
+	SenderId    = msg.SenderId;
+	IsUser      = msg.bLocalPlayer;
+	IsQuickchat = msg.bPreset;
 
-    IdString = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
+	IdString = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
 }
 
 bool ChatData::is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const
 {
-    // filter in order of precedence...
-    if (IsUser)
-    {
-        if(!prefs.UserChats)
-            return false;
-        if (IsQuickchat && !prefs.Quickchats)
-            return false;
-    }
-    else
-    {
-        if (IsQuickchat && !prefs.Quickchats)
-            return false;
-        if (ChatChannel == EChatChannel::EChatChannel_Party && !prefs.PartyChats)
-            return false;
-        if (ChatChannel == EChatChannel::EChatChannel_Team && !prefs.TeamChats)
-            return false;
-        
-        // NOTE:
-        // If a party chat was sent (aka ChatChannel == 2), Team will show up as 255 (uint8_t version of -1) even if the player's actual team number is 0 or 1
-        // ... which is one of the reasons why party chats are checked before teammate chats
-        if (Team == user_team && !prefs.TeammateChats)
-            return false;
-    }
+	// filter in order of precedence...
+	if (IsUser)
+	{
+		if (!prefs.UserChats)
+			return false;
+		if (IsQuickchat && !prefs.Quickchats)
+			return false;
+	}
+	else
+	{
+		if (IsQuickchat && !prefs.Quickchats)
+			return false;
+		if (ChatChannel == EChatChannel::EChatChannel_Party && !prefs.PartyChats)
+			return false;
+		if (ChatChannel == EChatChannel::EChatChannel_Team && !prefs.TeamChats)
+			return false;
 
-    return true;
+		// NOTE:
+		// If a party chat was sent (aka ChatChannel == 2), Team will show up as 255 (uint8_t version of -1) even if the player's actual
+		// team number is 0 or 1
+		// ... which is one of the reasons why party chats are checked before teammate chats
+		if (Team == user_team && !prefs.TeammateChats)
+			return false;
+	}
+
+	return true;
 }
-
 
 // ChatMsgData
 ChatMsgData::ChatMsgData(const FChatMessage& chat)
 {
-    uncensoredMsg = chat.Message.ToString();
-    uid = generateUid(chat);
+	uncensoredMsg = chat.Message.ToString();
+	uid           = generateUid(chat);
 }
 
 std::string ChatMsgData::generateUid(const FChatMessage& data)
 {
-    return std::format("{}|{}|{}|{}",
-        data.PlayerName.ToString(), data.TimeStamp.ToString(), data.Message.size(), data.ChatChannel);
+	return std::format("{}|{}|{}|{}", data.PlayerName.ToString(), data.TimeStamp.ToString(), data.Message.size(), data.ChatChannel);
 }
 
 std::string ChatMsgData::generateUid(UGFxData_Chat_TA_execOnChatMessage_Params* data)
 {
-    if (!data)
-        return std::string();
+	if (!data)
+		return std::string();
 
-    return std::format("{}|{}|{}|{}",
-        data->PlayerName.ToString(), data->TimeStamp.ToString(), data->Message.size(), data->ChatChannel);
+	return std::format("{}|{}|{}|{}", data->PlayerName.ToString(), data->TimeStamp.ToString(), data->Message.size(), data->ChatChannel);
 }
-
 
 // RankData
 void RankData::assign(const FPlayerSkillRating& skill)
 {
-    skill_data = skill;
-    
-    // update tier string
-    auto it = skill_tier_to_label.find(skill.Tier);
-    if (it != skill_tier_to_label.end())
-    {
-        tier = it->second;
-    }
+	skill_data = skill;
 
-    // update div string
-    div = std::to_string(skill.Division + 1);
+	// update tier string
+	auto it = skill_tier_to_label.find(skill.Tier);
+	if (it != skill_tier_to_label.end())
+	{
+		tier = it->second;
+	}
+
+	// update div string
+	div = std::to_string(skill.Division + 1);
 }
 
 std::string RankData::get_rank_str() const
 {
-    if (skill_data.Tier == 0 || skill_data.MatchesPlayed == 0)
-    {
-        return "--";
-    }
-    return tier + "..div" + div;
+	if (skill_data.Tier == 0 || skill_data.MatchesPlayed == 0)
+	{
+		return "--";
+	}
+	return tier + "..div" + div;
 }
-
 
 // ChatterRanks
 void ChatterRanks::assign(const ChatData& chat, UOnlineGameSkill_X* game_skill)
 {
-    if (!game_skill)
-    {
-        LOG("Unable to get chatter ranks... UOnlineGameSkill_X* is null");
-        return;
-    }
+	if (!game_skill)
+	{
+		LOG("Unable to get chatter ranks... UOnlineGameSkill_X* is null");
+		return;
+	}
 
-    playerName = chat.PlayerName;
+	playerName = chat.PlayerName;
 
-    ones =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedSoloDuel),       game_skill);
-    twos =      get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedTeamDoubles),    game_skill);
-    threes =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedStandard),       game_skill);
-    casual =    get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::Casual),               game_skill);
+	ones   = get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedSoloDuel), game_skill);
+	twos   = get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedTeamDoubles), game_skill);
+	threes = get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::RankedStandard), game_skill);
+	casual = get_skill_rating(chat.SenderId.to_unreal_id(), static_cast<int>(PlaylistIds::Casual), game_skill);
 }
 
 RankData ChatterRanks::get_rank(ERankPlaylists playlist)
 {
-    switch (playlist)
-    {
-    case ERankPlaylists::Ones:
-        return ones;
-    case ERankPlaylists::Twos:
-        return twos;
-    case ERankPlaylists::Threes:
-        return threes;
-    case ERankPlaylists::Casual:
-        return casual;
-    default:
-        return RankData();
-    }
+	switch (playlist)
+	{
+	case ERankPlaylists::Ones:
+		return ones;
+	case ERankPlaylists::Twos:
+		return twos;
+	case ERankPlaylists::Threes:
+		return threes;
+	case ERankPlaylists::Casual:
+		return casual;
+	default:
+		return RankData();
+	}
 }
 
 std::string ChatterRanks::get_all_ranks_str() const
 {
-    // to make return line readable
-    std::string ones_str =      ones.get_rank_str();
-    std::string twos_str =      twos.get_rank_str();
-    std::string threes_str =    threes.get_rank_str();
+	// to make return line readable
+	std::string ones_str   = ones.get_rank_str();
+	std::string twos_str   = twos.get_rank_str();
+	std::string threes_str = threes.get_rank_str();
 
-    return playerName + ": [1s] " + ones_str + " [2s] " + twos_str + " [3s] " + threes_str;
+	return playerName + ": [1s] " + ones_str + " [2s] " + twos_str + " [3s] " + threes_str;
 }
 
 std::string ChatterRanks::get_playlist_rank_str(ERankPlaylists playlist)
 {
-    std::string rank_str;
+	std::string rank_str;
 
-    RankData specificRank = get_rank(playlist);
+	RankData specificRank = get_rank(playlist);
 
-    rank_str = playerName + " [" + ChatterRanks::get_playlist_str(playlist) + "] ";
+	rank_str = playerName + " [" + ChatterRanks::get_playlist_str(playlist) + "] ";
 
-    if (playlist == ERankPlaylists::Casual)
-    {
-        rank_str += std::to_string(std::lround(specificRank.skill_data.MMR)) + " mmr (" + std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
-    }
-    else if (specificRank.skill_data.Tier != 0 )
-    {
-        rank_str += specificRank.tier + "..div" + specificRank.div;
+	if (playlist == ERankPlaylists::Casual)
+	{
+		rank_str += std::to_string(std::lround(specificRank.skill_data.MMR)) + " mmr (" +
+		            std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
+	}
+	else if (specificRank.skill_data.Tier != 0)
+	{
+		rank_str += specificRank.tier + "..div" + specificRank.div;
 
-        if (specificRank.skill_data.MatchesPlayed != 0)
-        {
-            rank_str += " (" + std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
-        }
-        else if (specificRank.skill_data.PlacementMatchesPlayed != 0)
-        {
-            rank_str += " (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
-        }
-        else
-        {
-            rank_str += " (prev season)";
-        }
-    }
-    else
-    {
-        rank_str += "** doesnt play ** (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
-    }
+		if (specificRank.skill_data.MatchesPlayed != 0)
+		{
+			rank_str += " (" + std::to_string(specificRank.skill_data.MatchesPlayed) + " matches)";
+		}
+		else if (specificRank.skill_data.PlacementMatchesPlayed != 0)
+		{
+			rank_str += " (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
+		}
+		else
+		{
+			rank_str += " (prev season)";
+		}
+	}
+	else
+	{
+		rank_str += "** doesnt play ** (" + std::to_string(specificRank.skill_data.PlacementMatchesPlayed) + " placement matches)";
+	}
 
-    return rank_str;
+	return rank_str;
 }
 
 FPlayerSkillRating ChatterRanks::get_skill_rating(const FUniqueNetId& id, int playlist_id, UOnlineGameSkill_X* game_skill)
 {
-    if (!game_skill)
-        return FPlayerSkillRating{};
+	if (!game_skill)
+		return FPlayerSkillRating{};
 
-    FPlayerSkillRating rank_data = game_skill->GetPlayerRating(id, playlist_id);
-    rank_data.MMR = calculate_skill_rating(rank_data.Mu);       // <--- change to be the value that everyone refers to as "MMR"
+	FPlayerSkillRating rank_data = game_skill->GetPlayerRating(id, playlist_id);
+	rank_data.MMR                = calculate_skill_rating(rank_data.Mu); // <--- change to be the value that everyone refers to as "MMR"
 
-    return rank_data;
+	return rank_data;
 }
 
 // NOTE: This formula is what's used for RL leaderboards and is what people refer to as "MMR"
-// ... but it's not what is used internally to determine matchmaking. Apparently that would be the Microsoft TrueSkill formula: Mu - (3 * Sigma) 
-float ChatterRanks::calculate_skill_rating(float mu)
-{
-    return (mu * 20) + 100;
-}
+// ... but it's not what is used internally to determine matchmaking. Apparently that would be the Microsoft TrueSkill formula: Mu - (3 *
+// Sigma)
+float ChatterRanks::calculate_skill_rating(float mu) { return (mu * 20) + 100; }
 
 std::string ChatterRanks::get_playlist_str(ERankPlaylists playlist)
 {
-    switch (playlist)
-    {
-    case ERankPlaylists::Ones:
-        return "1s";
-    case ERankPlaylists::Twos:
-        return "2s";
-    case ERankPlaylists::Threes:
-        return "3s";
-    case ERankPlaylists::Casual:
-        return "casual";
-    default:
-        return "";
-    }
+	switch (playlist)
+	{
+	case ERankPlaylists::Ones:
+		return "1s";
+	case ERankPlaylists::Twos:
+		return "2s";
+	case ERankPlaylists::Threes:
+		return "3s";
+	case ERankPlaylists::Casual:
+		return "casual";
+	default:
+		return "";
+	}
 }

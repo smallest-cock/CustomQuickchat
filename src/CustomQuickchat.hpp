@@ -6,6 +6,7 @@
 
 #include "version.h"
 #include <ModUtils/util/Utils.hpp>
+#include <memory>
 #include "Structs.hpp"
 #include "Cvars.hpp"
 
@@ -96,13 +97,15 @@ private:
 	fs::path m_variationsJsonPath;
 
 	// bindings & variations stuff
-	std::vector<Binding>       m_bindings;
-	std::vector<VariationList> m_variations;
+	std::vector<std::shared_ptr<Binding>> m_bindings;
+	std::vector<VariationList>            m_variations;
 
 	int m_selectedBindingIndex   = 0;
 	int m_selectedVariationIndex = 0;
 
-	std::unordered_map<std::string, bool> m_keyStates;
+	BindingDetectionManager m_bindingManager;
+
+	// std::unordered_map<std::string, bool> m_keyStates;
 
 	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
 	std::chrono::steady_clock::time_point lastBindingActivated;

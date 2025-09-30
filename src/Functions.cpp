@@ -560,7 +560,7 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 				continue;
 
 			preset_group_bindings[i].action = action_name;
-			preset_group_bindings[i].pc_key = binding.Key.ToString();
+			preset_group_bindings[i].pcKey  = binding.Key.ToString();
 			break;
 		}
 
@@ -583,7 +583,7 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 		{
 			LOG("========== preset_group_bindings[{}] ==========", i);
 			LOG("action: {}", preset_group_bindings[i].action);
-			LOG("pc_key: {}", preset_group_bindings[i].pc_key);
+			LOG("pc_key: {}", preset_group_bindings[i].pcKey);
 			LOG("gamepad_key: {}", preset_group_bindings[i].gamepad_key);
 		}
 
@@ -604,13 +604,13 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 			const BindingKey& group_key = preset_group_bindings[group_index];
 
 			// check if matches a pc binding
-			if (first_button == group_key.pc_key)
+			if (first_button == group_key.pcKey)
 			{
 				for (int chat_index = 0; chat_index < 4; chat_index++)
 				{
 					const BindingKey& chat_key = preset_group_bindings[chat_index];
 
-					if (second_button != chat_key.pc_key)
+					if (second_button != chat_key.pcKey)
 						continue;
 
 					pc_qc_labels[group_index][chat_index] = FString::create(binding.chat);
