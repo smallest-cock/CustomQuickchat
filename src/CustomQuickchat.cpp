@@ -1,3 +1,4 @@
+#include "bakkesmod/wrappers/cvarwrapper.h"
 #include "pch.h"
 #include "Cvars.hpp"
 #include "CustomQuickchat.hpp"
@@ -78,6 +79,9 @@ void CustomQuickchat::initCvars()
 	customChatTimeoutMsg_cvar.bindTo(m_customChatTimeoutMsg);
 
 	// === cvar change callbacks ===
+	sequenceTimeWindow_cvar.addOnValueChanged(
+	    [this](std::string oldVal, CVarWrapper updatedCvar) { m_bindingManager.setSequenceMaxTimeWindow(updatedCvar.getFloatValue()); });
+
 	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enabled, this, std::placeholders::_1, std::placeholders::_2));
 
 	overrideDefaultQuickchats_cvar.addOnValueChanged(

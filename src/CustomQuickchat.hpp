@@ -8,6 +8,7 @@
 #include <ModUtils/util/Utils.hpp>
 #include <memory>
 #include "Structs.hpp"
+#include "Bindings.hpp"
 #include "Cvars.hpp"
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(
@@ -32,7 +33,7 @@ private:
 	void initCvars();
 	void initCommands();
 	void initHooks();
-	void initKeyStates();
+	// void initKeyStates();
 	void initJsonFiles();
 	void initFilePaths();
 	void updateVariationsFromJson();
@@ -104,22 +105,21 @@ private:
 	int m_selectedVariationIndex = 0;
 
 	BindingDetectionManager m_bindingManager;
-
 	// std::unordered_map<std::string, bool> m_keyStates;
 
-	std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
-	std::chrono::steady_clock::time_point lastBindingActivated;
-	static constexpr int                  MAX_KEYWORD_DEPTH = 10;
+	// std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
+	// std::chrono::steady_clock::time_point lastBindingActivated;
+	static constexpr int MAX_KEYWORD_DEPTH = 10;
 
 	// modify quickchat UI stuff
 	static constexpr std::array<const char*, 4> PRESET_GROUP_NAMES = {"ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4"};
-	std::array<std::array<FString, 4>, 4>       pc_qc_labels;
-	std::array<std::array<FString, 4>, 4>       gp_qc_labels;
-	bool                                        using_gamepad = false;
+	std::array<std::array<FString, 4>, 4>       m_pcQcLabels;
+	std::array<std::array<FString, 4>, 4>       m_gamepadQcLabels;
+	bool                                        m_usingGamepad = false;
 
 private:
-	void ResetAllFirstButtonStates();
-	int  FindButtonIndex(const std::string& buttonName);
+	// void ResetAllFirstButtonStates();
+	// int findButtonIndex(const std::string& buttonName);
 
 	void updateBindingsData();
 	bool writeBindingsToJson();
@@ -128,7 +128,7 @@ private:
 	void addEmptyBinding();
 	void addEmptyVariationList();
 
-	void DeleteBinding(int idx);
+	void deleteBinding(int idx);
 	void DeleteVariationList(int idx);
 	void updateAllVariationsData();
 
@@ -180,8 +180,8 @@ private:
 
 	void display_bindingsList();
 	void display_bindingDetails();
-	void display_bindingChatDetails(Binding& selectedBinding);
-	void display_bindingTriggerDetails(Binding& selectedBinding);
+	void display_bindingChatDetails(const std::shared_ptr<Binding>& selectedBinding);
+	void display_bindingTriggerDetails(const std::shared_ptr<Binding>& selectedBinding);
 
 	void display_variationListList();
 	void display_variationListDetails();

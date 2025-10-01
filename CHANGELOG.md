@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.10.0
+- Added support for arbitrary length button sequence bindings
+  - Button sequences can now be longer than 2 buttons! e.g. `6` -> `7` -> `Ctrl` -> `8`
+
 ## v1.9.7
 - Fixed crashes if user is missing the `SpeechToText.exe` file
 - Added a button to test the speech-to-text websocket connection

@@ -8,6 +8,7 @@
 // ##############################################    Binding    #################################################
 // ##############################################################################################################
 
+/*
 bool Binding::shouldBeTriggered(const ButtonPress& buttonEvent,
     const std::unordered_map<std::string, bool>&   keyStates,
     const std::chrono::steady_clock::time_point&   lastChatSent,
@@ -15,15 +16,15 @@ bool Binding::shouldBeTriggered(const ButtonPress& buttonEvent,
     const std::chrono::duration<double>&           minDelayBetweenBindings,
     const std::chrono::duration<double>&           maxTimeWindow)
 {
-	switch (bindingType)
-	{
-	case EBindingType::Combination:
-		return checkCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
-	case EBindingType::Sequence:
-		return checkSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
-	default:
-		return false; // if there's no valid binding type for some reason
-	}
+    switch (bindingType)
+    {
+    case EBindingType::Combination:
+        return checkCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
+    case EBindingType::Sequence:
+        return checkSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
+    default:
+        return false; // if there's no valid binding type for some reason
+    }
 }
 
 bool Binding::checkCombination(const ButtonPress& buttonEvent,
@@ -31,20 +32,20 @@ bool Binding::checkCombination(const ButtonPress& buttonEvent,
     const std::chrono::steady_clock::time_point&  lastBindingActivated,
     const std::chrono::duration<double>&          minDelayBetweenBindings)
 {
-	if (buttons.empty())
-		return false;
+    if (buttons.empty())
+        return false;
 
-	for (const std::string& button : buttons)
-	{
-		if (keyStates.contains(button))
-		{
-			if (!keyStates.at(button))
-				return false;
-		}
-	}
+    for (const std::string& button : buttons)
+    {
+        if (keyStates.contains(button))
+        {
+            if (!keyStates.at(button))
+                return false;
+        }
+    }
 
-	// check if event happened AFTER minBindingDelay
-	return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
+    // check if event happened AFTER minBindingDelay
+    return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
 }
 
 // TODO: this function is gay, replace with cleaner trie system.. maybe take a global trie object as params
@@ -54,57 +55,58 @@ bool Binding::checkSequence(const ButtonPress&   buttonEvent,
     const std::chrono::duration<double>&         minDelayBetweenBindings,
     const std::chrono::duration<double>&         maxTimeWindow)
 {
-	if (buttons.size() < 2)
-		return false; // exit if there's not at least 2 buttons in binding
+    if (buttons.size() < 2)
+        return false; // exit if there's not at least 2 buttons in binding
 
-	bool button1Pressed = buttonEvent.buttonName == buttons[0];
-	bool button2Pressed = buttonEvent.buttonName == buttons[1];
+    bool button1Pressed = buttonEvent.buttonName == buttons[0];
+    bool button2Pressed = buttonEvent.buttonName == buttons[1];
 
-	if (!button1Pressed && !button2Pressed)
-		return false; // early exit if no buttons from binding have been pressed
+    if (!button1Pressed && !button2Pressed)
+        return false; // early exit if no buttons from binding have been pressed
 
-	// if first button press data is empty...
-	if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
-	{
-		if (button1Pressed)
-			firstButtonState = buttonEvent; // update first button press data then exit
-		return false;
-	}
+    // if first button press data is empty...
+    if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
+    {
+        if (button1Pressed)
+            firstButtonState = buttonEvent; // update first button press data then exit
+        return false;
+    }
 
-	// if first button press data exists.......
+    // if first button press data exists.......
 
-	// if first button press data is too old... reset or update it, then exit
-	if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
-	{
-		if (button1Pressed)
-			firstButtonState = buttonEvent; // update first button press data
-		else
-			firstButtonState.reset(epochTime); // reset info bc 1st button doesn't match
-		return false;
-	}
+    // if first button press data is too old... reset or update it, then exit
+    if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
+    {
+        if (button1Pressed)
+            firstButtonState = buttonEvent; // update first button press data
+        else
+            firstButtonState.reset(epochTime); // reset info bc 1st button doesn't match
+        return false;
+    }
 
-	// if first button press data is still valid.......
+    // if first button press data is still valid.......
 
-	if (!button2Pressed)
-		return false;
+    if (!button2Pressed)
+        return false;
 
-	// make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
-	bool correct1stButtonPressed  = firstButtonState.buttonName == buttons[0];
-	bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
+    // make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
+    bool correct1stButtonPressed  = firstButtonState.buttonName == buttons[0];
+    bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
 
-	if (correct1stButtonPressed)
-	{
-		if (button2PressedLateEnough)
-		{
-			firstButtonState.reset(epochTime);
-			return true;
-		}
+    if (correct1stButtonPressed)
+    {
+        if (button2PressedLateEnough)
+        {
+            firstButtonState.reset(epochTime);
+            return true;
+        }
 
-		firstButtonState.reset(epochTime); // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
-	}
+        firstButtonState.reset(epochTime); // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
+    }
 
-	return false;
+    return false;
 }
+*/
 
 void Binding::updateKeywordAndTextEffect(const std::string& regexPatternStr)
 {
@@ -161,141 +163,6 @@ std::vector<std::string> Binding::getMatchedSubstrings(const std::string& str, c
 
 	return matchedSubstrings;
 }
-
-// ##############################################################################################################
-// ########################################    BindingDetectionManager    #######################################
-// ##############################################################################################################
-
-bool           BindingDetectionManager::registerBinding(const Binding& b) {}
-bool           BindingDetectionManager::removeBinding(const Binding& b) {}
-const Binding* BindingDetectionManager::processKeyPress(const ButtonPress& keyPress) {}
-void           BindingDetectionManager::resetState() {}
-
-// ##############################################################################################################
-// ########################################    SequenceBindingManager    ########################################
-// ##############################################################################################################
-
-bool SequenceBindingManager::registerBinding(const Binding& b)
-{
-	if (b.bindingType != EBindingType::Sequence)
-		return false;
-
-	SequenceTrieNode* node = m_rootNode.get();
-	for (const auto& buttonStr : b.buttons)
-	{
-		auto it = node->children.find(buttonStr);
-		if (it != node->children.end())
-		{
-			if (it->second && it->second->binding)
-				return false; // sequence alr exists (either exact sequence or a prefix of this one)
-			node = it->second.get();
-		}
-		else
-		{
-			node->children[buttonStr] = std::make_unique<SequenceTrieNode>();
-			node                      = node->children[buttonStr].get();
-		}
-	}
-
-	if (!node->children.empty())
-		return false; // longer sequence alr exists (using same prefix)
-
-	node->binding = b; // copy binding in
-	return true;
-}
-
-bool SequenceBindingManager::removeBinding(const Binding& b)
-{
-	if (b.bindingType != EBindingType::Sequence)
-		return false;
-
-	std::vector<std::pair<SequenceTrieNode*, std::string>> path;
-	SequenceTrieNode*                                      node = m_rootNode.get();
-
-	for (const auto& key : b.buttons)
-	{
-		auto it = node->children.find(key);
-		if (it == node->children.end())
-			return false; // sequence doesn't exist
-
-		path.emplace_back(node, key);
-		node = it->second.get();
-	}
-
-	if (!node->binding)
-		return false; // sequence doesn't exist as a binding
-
-	// Clear the binding
-	node->binding.reset();
-
-	// Prune empty nodes bottom-up
-	for (auto it = path.rbegin(); it != path.rend(); ++it)
-	{
-		SequenceTrieNode*  parent  = it->first;
-		const std::string& key     = it->second;
-		auto               childIt = parent->children.find(key);
-
-		if (childIt != parent->children.end())
-		{
-			SequenceTrieNode* child = childIt->second.get();
-
-			if (child->binding || !child->children.empty())
-				break; // stop pruning, still in use
-
-			// otherwise remove it
-			parent->children.erase(childIt);
-		}
-	}
-
-	return true;
-}
-
-// Process a single button press. Returns a pointer to the binding if its button sequence has been completed within the time window
-const Binding* SequenceBindingManager::processKeyPress(const ButtonPress& keyPress)
-{
-	auto it = m_currentNode->children.find(keyPress.buttonName);
-	if (it == m_currentNode->children.end())
-	{
-		resetState(); // no match found -> reset
-		return nullptr;
-	}
-
-	// update start time if we’re at root
-	if (m_currentNode == m_rootNode.get())
-		m_sequenceStart = keyPress.pressedTime;
-
-	// check if we're within time window before advancing the node
-	if (keyPress.pressedTime - m_sequenceStart > m_maxTimeWindow)
-	{
-		resetState();
-		return nullptr;
-	}
-
-	// advance the node
-	m_currentNode = it->second.get();
-
-	// check if binding exists at node
-	if (!m_currentNode->binding)
-		return nullptr;
-	else
-	{
-		// binding exists -> reset state and return binding ptr
-		const Binding* triggered = &(*m_currentNode->binding);
-		resetState();
-		return triggered;
-	}
-}
-
-void SequenceBindingManager::resetState() { m_currentNode = m_rootNode.get(); }
-
-// ##############################################################################################################
-// #######################################    CombinationBindingManager    ######################################
-// ##############################################################################################################
-
-bool           CombinationBindingManager::registerBinding(const Binding& b) {}
-bool           CombinationBindingManager::removeBinding(const Binding& b) {}
-const Binding* CombinationBindingManager::processKeyPress(const ButtonPress& keyPress) {}
-void           CombinationBindingManager::resetState() {}
 
 // ##############################################################################################################
 // ############################################    VariationList    #############################################
@@ -409,11 +276,11 @@ void VariationList::updateDataFromUnparsedString()
 // ###############################################    ...    ####################################################
 // ##############################################################################################################
 
-void ButtonPress::reset(const std::chrono::steady_clock::time_point& epochTime)
-{
-	buttonName.clear();
-	pressedTime = epochTime;
-}
+// void ButtonPress::reset(const std::chrono::steady_clock::time_point& epochTime)
+// {
+// 	buttonName.clear();
+// 	pressedTime = epochTime;
+// }
 
 FUniqueNetId NetId::to_unreal_id() const
 {

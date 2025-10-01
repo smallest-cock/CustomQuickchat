@@ -49,23 +49,23 @@ void CustomQuickchat::initCommands()
 
 		    LOG("============= pc custom qc lablels ============");
 
-		    for (int i = 0; i < 4; ++i)
+		    for (int i = 0; i < m_pcQcLabels.size(); ++i)
 		    {
-			    const auto& chat_label_arr = pc_qc_labels[i];
+			    const auto& chatLabels = m_pcQcLabels[i];
 
 			    LOG("{}:", PRESET_GROUP_NAMES[i]);
-			    for (int j = 0; j < 4; ++j)
-				    LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
+			    for (int j = 0; j < chatLabels.size(); ++j)
+				    LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
 		    }
 
 		    LOG("=========== gamepad custom qc lablels =========");
-		    for (int i = 0; i < 4; ++i)
+		    for (int i = 0; i < m_gamepadQcLabels.size(); ++i)
 		    {
-			    const auto& chat_label_arr = gp_qc_labels[i];
+			    const auto& chatLabels = m_gamepadQcLabels[i];
 
 			    LOG("{}:", PRESET_GROUP_NAMES[i]);
-			    for (int j = 0; j < 4; ++j)
-				    LOG("[{}]\t{}", j, chat_label_arr.at(j).ToString());
+			    for (int j = 0; j < chatLabels.size(); ++j)
+				    LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
 		    }
 	    });
 

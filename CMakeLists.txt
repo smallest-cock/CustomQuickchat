@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.9.7)
+project(CustomQuickchat VERSION 1.10.0)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -118,6 +118,7 @@ add_library(${PROJECT_NAME}
     ${SRC_DIR}/Events.cpp
     ${SRC_DIR}/Commands.cpp
     ${SRC_DIR}/Structs.cpp
+    ${SRC_DIR}/Bindings.cpp
     ${SRC_DIR}/TextEffects.cpp
     ${SRC_DIR}/Events.cpp
     ${SRC_DIR}/Commands.cpp

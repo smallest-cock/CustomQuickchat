@@ -3,9 +3,9 @@
 #include "CustomQuickchat.hpp"
 #include "Macros.hpp"
 #include "TextEffects.hpp"
-#include "Keys.hpp"
 #include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
+#include <memory>
 #ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
 #endif
@@ -160,29 +160,25 @@ void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& 
 	GAME_THREAD_EXECUTE({ Instances.SpawnNotification(title, message, duration, true); }, title, message, duration);
 }
 
-void CustomQuickchat::ResetAllFirstButtonStates()
-{
-	for (Binding& binding : m_bindings)
-	{
-		binding.firstButtonState.Reset(epochTime);
-	}
-}
+// void CustomQuickchat::ResetAllFirstButtonStates()
+// {
+// 	for (Binding& binding : m_bindings)
+// 	{
+// 		binding.firstButtonState.Reset(epochTime);
+// 	}
+// }
 
 void CustomQuickchat::ResetChatTimeoutMsg() { chatTimeoutMsg = "Chat disabled for [Time] second(s)."; }
 
-void CustomQuickchat::initKeyStates()
-{
-	for (const std::string& keyName : possibleKeyNames)
-	{
-		m_keyStates[keyName] = false;
-	}
-}
+// void CustomQuickchat::initKeyStates()
+// {
+// 	for (const std::string& keyName : possibleKeyNames)
+// 	{
+// 		m_keyStates[keyName] = false;
+// 	}
+// }
 
-void CustomQuickchat::addEmptyBinding()
-{
-	Binding newBinding;
-	m_bindings.push_back(newBinding);
-}
+void CustomQuickchat::addEmptyBinding() { m_bindings.emplace_back(std::make_shared<Binding>()); }
 
 void CustomQuickchat::addEmptyVariationList()
 {
@@ -190,10 +186,12 @@ void CustomQuickchat::addEmptyVariationList()
 	m_variations.push_back(list);
 }
 
-void CustomQuickchat::DeleteBinding(int idx)
+void CustomQuickchat::deleteBinding(int idx)
 {
 	if (m_bindings.empty())
 		return;
+
+	m_bindingManager.removeBinding(m_bindings[idx]);
 
 	// erase binding at given index
 	m_bindings.erase(m_bindings.begin() + idx);
@@ -220,18 +218,16 @@ void CustomQuickchat::DeleteVariationList(int idx)
 	writeVariationsToJson();
 }
 
-int CustomQuickchat::FindButtonIndex(const std::string& buttonName)
+/*
+int CustomQuickchat::findButtonIndex(const std::string& buttonName)
 {
-	auto it = std::find(possibleKeyNames.begin(), possibleKeyNames.end(), buttonName);
-	if (it != possibleKeyNames.end())
-	{
-		return std::distance(possibleKeyNames.begin(), it);
-	}
-	else
-	{
-		return 0;
-	}
+    auto it = std::find(possibleKeyNames.begin(), possibleKeyNames.end(), buttonName);
+    if (it != possibleKeyNames.end())
+        return std::distance(possibleKeyNames.begin(), it);
+    else
+        return 0;
 }
+*/
 
 void CustomQuickchat::initJsonFiles()
 {
@@ -272,21 +268,19 @@ void CustomQuickchat::updateBindingsFromJson()
 
 	m_bindings.clear();
 
-	for (int i = 0; i < bindingsList.size(); ++i)
+	for (const auto& bindingObj : bindingsList)
 	{
-		auto&   bindingObj = bindingsList[i];
-		Binding binding;
+		auto b         = std::make_shared<Binding>();
+		b->chat        = bindingObj.value("chat", "im gay");
+		b->chatMode    = bindingObj.value("chatMode", EChatChannel::EChatChannel_Match);
+		b->bindingType = bindingObj.value("bindingType", EBindingType::Combination);
+		b->buttons     = bindingObj.value("buttons", std::vector<std::string>{});
+		b->enabled     = bindingObj.value("enabled", true);
 
-		binding.chat        = bindingObj.value("chat", "im gay");
-		binding.chatMode    = bindingObj.value("chatMode", EChatChannel::EChatChannel_Match);
-		binding.bindingType = bindingObj.value("bindingType", EBindingType::Combination);
-		binding.buttons     = bindingObj.value("buttons", std::vector<std::string>{});
-		binding.enabled     = bindingObj.value("enabled", true);
+		// update the binding's keyWord and textEffect values (depends on the chat value set above)
+		b->updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
 
-		// lastly, update the binding's keyWord and textEffect values (depends on the chat value set above)
-		binding.updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
-
-		m_bindings.push_back(binding);
+		m_bindings.emplace_back(std::move(b));
 	}
 }
 
@@ -440,7 +434,10 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 void CustomQuickchat::updateBindingsData()
 {
 	for (auto& binding : m_bindings)
-		binding.updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
+	{
+		binding->updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
+		m_bindingManager.registerBinding(binding);
+	}
 }
 
 bool CustomQuickchat::writeBindingsToJson()
@@ -449,18 +446,21 @@ bool CustomQuickchat::writeBindingsToJson()
 
 	for (const auto& binding : m_bindings)
 	{
-		json singleBinding;
+		if (!binding)
+			continue;
 
-		singleBinding["chat"]        = binding.chat;
-		singleBinding["chatMode"]    = static_cast<int>(binding.chatMode);
-		singleBinding["bindingType"] = static_cast<int>(binding.bindingType);
-		singleBinding["enabled"]     = binding.enabled;
+		json bindingJsonObj;
 
-		singleBinding["buttons"] = {};
-		for (const auto& button : binding.buttons)
-			singleBinding["buttons"].push_back(button);
+		bindingJsonObj["chat"]        = binding->chat;
+		bindingJsonObj["chatMode"]    = static_cast<int>(binding->chatMode);
+		bindingJsonObj["bindingType"] = static_cast<int>(binding->bindingType);
+		bindingJsonObj["enabled"]     = binding->enabled;
 
-		bindingsJsonObj["bindings"].push_back(singleBinding);
+		bindingJsonObj["buttons"] = {};
+		for (const auto& button : binding->buttons)
+			bindingJsonObj["buttons"].push_back(button);
+
+		bindingsJsonObj["bindings"].push_back(bindingJsonObj);
 	}
 
 	return Files::write_json(m_bindingsJsonPath, bindingsJsonObj);
@@ -516,8 +516,7 @@ void CustomQuickchat::initStuffOnLoad()
 	initFilePaths();
 	initJsonFiles();
 	updateDataFromJson();
-
-	initKeyStates();
+	updateBindingsData();
 
 	m_inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
 
@@ -544,10 +543,10 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 	}
 
 	// clear old data
-	pc_qc_labels = {};
-	gp_qc_labels = {};
+	m_pcQcLabels      = {};
+	m_gamepadQcLabels = {};
 
-	std::array<BindingKey, 4> preset_group_bindings;
+	std::array<BindingKey, 4> presetGroupBindings;
 
 	// find/save key bindings for each preset group
 	for (int i = 0; i < 4; ++i)
@@ -559,8 +558,8 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 			if (action_name != PRESET_GROUP_NAMES[i])
 				continue;
 
-			preset_group_bindings[i].action = action_name;
-			preset_group_bindings[i].pcKey  = binding.Key.ToString();
+			presetGroupBindings[i].action = action_name;
+			presetGroupBindings[i].pcKey  = binding.Key.ToString();
 			break;
 		}
 
@@ -571,8 +570,8 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 			if (action_name != PRESET_GROUP_NAMES[i])
 				continue;
 
-			preset_group_bindings[i].action      = action_name;
-			preset_group_bindings[i].gamepad_key = binding.Key.ToString();
+			presetGroupBindings[i].action     = action_name;
+			presetGroupBindings[i].gamepadKey = binding.Key.ToString();
 			break;
 		}
 	}
@@ -582,9 +581,9 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 		for (int i = 0; i < 4; ++i)
 		{
 			LOG("========== preset_group_bindings[{}] ==========", i);
-			LOG("action: {}", preset_group_bindings[i].action);
-			LOG("pc_key: {}", preset_group_bindings[i].pcKey);
-			LOG("gamepad_key: {}", preset_group_bindings[i].gamepad_key);
+			LOG("action: {}", presetGroupBindings[i].action);
+			LOG("pc_key: {}", presetGroupBindings[i].pcKey);
+			LOG("gamepad_key: {}", presetGroupBindings[i].gamepadKey);
 		}
 
 		LOG("Bindings.size(): {}", m_bindings.size());
@@ -592,42 +591,45 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 
 	for (const auto& binding : m_bindings)
 	{
-		if (!binding.enabled || binding.bindingType != EBindingType::Sequence || binding.buttons.size() < 2)
+		if (!binding)
 			continue;
 
-		const std::string& first_button  = binding.buttons[0];
-		const std::string& second_button = binding.buttons[1];
+		if (!binding->enabled || binding->bindingType != EBindingType::Sequence || binding->buttons.size() != 2)
+			continue;
+
+		const std::string& firstButton  = binding->buttons[0];
+		const std::string& secondButton = binding->buttons[1];
 
 		// for (const BindingKey& preset_binding : preset_group_bindings)
-		for (int group_index = 0; group_index < 4; group_index++)
+		for (int groupIdx = 0; groupIdx < 4; ++groupIdx)
 		{
-			const BindingKey& group_key = preset_group_bindings[group_index];
+			const BindingKey& groupKey = presetGroupBindings[groupIdx];
 
 			// check if matches a pc binding
-			if (first_button == group_key.pcKey)
+			if (firstButton == groupKey.pcKey)
 			{
-				for (int chat_index = 0; chat_index < 4; chat_index++)
+				for (int chatIdx = 0; chatIdx < 4; ++chatIdx)
 				{
-					const BindingKey& chat_key = preset_group_bindings[chat_index];
+					const BindingKey& chatKey = presetGroupBindings[chatIdx];
 
-					if (second_button != chat_key.pcKey)
+					if (secondButton != chatKey.pcKey)
 						continue;
 
-					pc_qc_labels[group_index][chat_index] = FString::create(binding.chat);
+					m_pcQcLabels[groupIdx][chatIdx] = FString::create(binding->chat);
 					break;
 				}
 			}
 			// check if matches a gamepad binding
-			else if (first_button == group_key.gamepad_key)
+			else if (firstButton == groupKey.gamepadKey)
 			{
-				for (int chat_index = 0; chat_index < 4; chat_index++)
+				for (int chatIdx = 0; chatIdx < 4; ++chatIdx)
 				{
-					const BindingKey& chat_key = preset_group_bindings[chat_index];
+					const BindingKey& chatKey = presetGroupBindings[chatIdx];
 
-					if (second_button != chat_key.gamepad_key)
+					if (secondButton != chatKey.gamepadKey)
 						continue;
 
-					gp_qc_labels[group_index][chat_index] = FString::create(binding.chat);
+					m_gamepadQcLabels[groupIdx][chatIdx] = FString::create(binding->chat);
 					break;
 				}
 			}
@@ -646,28 +648,27 @@ void CustomQuickchat::apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller)
 	if (!ds)
 		return;
 
-	const auto& groups_of_chat_labels = using_gamepad ? gp_qc_labels : pc_qc_labels;
+	const auto& groupsOfChatLabels = m_usingGamepad ? m_gamepadQcLabels : m_pcQcLabels;
 
-	for (int group_index = 0; group_index < 4; group_index++)
+	for (int groupIdx = 0; groupIdx < 4; ++groupIdx)
 	{
-		const auto& group_of_labels = groups_of_chat_labels.at(group_index);
+		const auto& groupOfLabels = groupsOfChatLabels.at(groupIdx);
 
-		for (int label_index = 0; label_index < 4; label_index++)
+		for (int labelIdx = 0; labelIdx < 4; ++labelIdx)
 		{
-			const auto& chat_label = group_of_labels[label_index];
-			if (chat_label.empty())
+			const auto& chatLabel = groupOfLabels[labelIdx];
+			if (chatLabel.empty())
 				continue;
 
-			int ds_row_index = (group_index * 4) + label_index;
+			int dsRowIdx = (groupIdx * 4) + labelIdx;
 
 			// idk how this would ever happen, but to be safe...
-			if (ds_row_index < 0 || ds_row_index > 15)
+			if (dsRowIdx < 0 || dsRowIdx > 15)
 			{
-				LOG("[ERROR] UGFxDataRow_X index out of range: {}", ds_row_index);
+				LOG("[ERROR] UGFxDataRow_X index out of range: {}", dsRowIdx);
 				continue;
 			}
-			UGFxData_Chat_TA* ok;
-			ds->SetStringValue(L"ChatPresetMessages", ds_row_index, L"Label", chat_label);
+			ds->SetStringValue(L"ChatPresetMessages", dsRowIdx, L"Label", chatLabel);
 		}
 	}
 
@@ -683,32 +684,32 @@ void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGF
 	if (index == 420)
 		return;
 
-	auto ds = caller->Shell->DataStore;
+	UGFxDataStore_X* ds = caller->Shell->DataStore;
 	if (!ds)
 		return;
 
-	const auto& chat_labels = using_gamepad ? gp_qc_labels[index] : pc_qc_labels[index];
+	const auto& chatLabels = m_usingGamepad ? m_gamepadQcLabels[index] : m_pcQcLabels[index];
 
 	for (int i = 0; i < 4; ++i)
 	{
-		const auto& chat_label = chat_labels[i];
-		if (chat_label.empty())
+		const auto& chatLabel = chatLabels[i];
+		if (chatLabel.empty())
 			continue;
 
-		int ds_row_index = (index * 4) + i;
+		int dsRowIdx = (index * 4) + i;
 
 		// this prevents the chats with index of 420 (aka default RL quickchats that have been overridden) from being included
-		if (ds_row_index < 0 || ds_row_index > 15)
+		if (dsRowIdx < 0 || dsRowIdx > 15)
 		{
 			// the ds_row_index of chats that have been suppressed/overridden would be 1680-1683, so not exactly an error but still skip
-			if (ds_row_index >= 1680 && ds_row_index < 1684)
+			if (dsRowIdx >= 1680 && dsRowIdx < 1684)
 				continue;
 
-			LOGERROR("UGFxDataRow_X index out of range: {}", ds_row_index); // anything else would be an error
+			LOGERROR("UGFxDataRow_X index out of range: {}", dsRowIdx); // anything else would be an error
 			continue;
 		}
 
-		ds->SetStringValue(L"ChatPresetMessages", ds_row_index, L"Label", chat_label);
+		ds->SetStringValue(L"ChatPresetMessages", dsRowIdx, L"Label", chatLabel);
 	}
 
 	LOG("Applied quickchat labels to UI for {} group", PRESET_GROUP_NAMES[index]);

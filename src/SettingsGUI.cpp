@@ -137,20 +137,13 @@ void CustomQuickchat::display_generalSettings()
 	// sequence max time window
 	float sequenceTimeWindow = sequenceTimeWindow_cvar.getFloatValue();
 	if (ImGui::SliderFloat("button sequence time window", &sequenceTimeWindow, 0.0f, 10.0f, "%.1f seconds"))
-	{
 		sequenceTimeWindow_cvar.setValue(sequenceTimeWindow);
-	}
 
 	// min delay between bindings
 	float minBindingDelay = minBindingDelay_cvar.getFloatValue();
 	if (ImGui::SliderFloat("minimum delay between chats", &minBindingDelay, 0.01f, 0.5f, "%.2f seconds"))
-	{
 		minBindingDelay_cvar.setValue(minBindingDelay);
-	}
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::SetTooltip("can help prevent accidental chats... but also affects chat spamming speed");
-	}
+	GUI::ToolTip("can help prevent accidental chats... but also affects chat spamming speed");
 
 	GUI::Spacing(2);
 }
@@ -235,11 +228,11 @@ void CustomQuickchat::display_bindingsList()
 			auto bindingsSize = m_bindings.size();
 			for (int i = 0; i < bindingsSize; ++i)
 			{
-				const Binding& binding = m_bindings[i];
+				const auto& binding = m_bindings[i];
 
 				GUI::ScopedID id{&binding};
 
-				if (ImGui::Selectable(binding.chat.c_str(), i == m_selectedBindingIndex))
+				if (ImGui::Selectable(binding->chat.c_str(), i == m_selectedBindingIndex))
 					m_selectedBindingIndex = i;
 			}
 		}
@@ -275,9 +268,11 @@ void CustomQuickchat::display_bindingDetails()
 				return;
 			}
 
-			Binding& selectedBinding = m_bindings[m_selectedBindingIndex];
+			auto& selectedBinding = m_bindings[m_selectedBindingIndex];
+			if (!selectedBinding)
+				return;
 
-			ImGui::TextUnformatted(selectedBinding.chat.c_str());
+			ImGui::TextUnformatted(selectedBinding->chat.c_str());
 
 			{
 				GUI::ScopedChild c{"ChatDetails", ImVec2(0, ImGui::GetContentRegionAvail().y * 0.3f), true};
@@ -335,7 +330,7 @@ void CustomQuickchat::display_bindingDetails()
 							ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
 
 							if (ImGui::Button("Delete Binding", ImGui::GetContentRegionAvail()))
-								GAME_THREAD_EXECUTE({ DeleteBinding(m_selectedBindingIndex); });
+								GAME_THREAD_EXECUTE({ deleteBinding(m_selectedBindingIndex); });
 
 							ImGui::PopStyleColor(3);
 						}
@@ -346,12 +341,13 @@ void CustomQuickchat::display_bindingDetails()
 	}
 }
 
-void CustomQuickchat::display_bindingChatDetails(Binding& selectedBinding)
+void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding>& selectedBinding)
 {
-	if (ImGui::Checkbox("Enabled", &selectedBinding.enabled))
-	{
+	if (!selectedBinding)
+		return;
+
+	if (ImGui::Checkbox("Enabled", &selectedBinding->enabled))
 		GAME_THREAD_EXECUTE({ determineQuickchatLabels(); });
-	}
 
 	GUI::Spacing(2);
 
@@ -359,57 +355,61 @@ void CustomQuickchat::display_bindingChatDetails(Binding& selectedBinding)
 
 	GUI::Spacing(4);
 
-	ImGui::InputTextWithHint("Chat", "let me cook", &selectedBinding.chat);
+	ImGui::InputTextWithHint("Chat", "let me cook", &selectedBinding->chat);
 
 	GUI::Spacing(2);
 
-	if (ImGui::BeginCombo("Chat mode", possibleChatModes[static_cast<int>(selectedBinding.chatMode)].c_str()))
+	if (ImGui::BeginCombo("Chat mode", possibleChatModes[static_cast<int>(selectedBinding->chatMode)].c_str()))
 	{
 		for (int i = 0; i < possibleChatModes.size(); ++i)
 		{
 			GUI::ScopedID id{i};
 
 			const std::string& chatModeStr = possibleChatModes[i];
-			if (ImGui::Selectable(chatModeStr.c_str(), static_cast<int>(selectedBinding.chatMode) == i))
-				selectedBinding.chatMode = static_cast<EChatChannel>(i);
+			if (ImGui::Selectable(chatModeStr.c_str(), static_cast<int>(selectedBinding->chatMode) == i))
+				selectedBinding->chatMode = static_cast<EChatChannel>(i);
 		}
 		ImGui::EndCombo();
 	}
 }
 
-void CustomQuickchat::display_bindingTriggerDetails(Binding& selectedBinding)
+void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Binding>& selectedBinding)
 {
+	if (!selectedBinding)
+		return;
+
 	ImGui::TextColored(GUI::Colors::Yellow, "How it's triggered:");
 
 	GUI::Spacing(4);
 
-	if (ImGui::BeginCombo("Binding type", possibleBindingTypes[static_cast<int>(selectedBinding.bindingType)].c_str()))
+	if (ImGui::BeginCombo("Binding type", possibleBindingTypes[static_cast<int>(selectedBinding->bindingType)].c_str()))
 	{
 		for (int i = 0; i < possibleBindingTypes.size(); ++i)
 		{
 			GUI::ScopedID id{i};
 
 			const std::string& bindingTypeStr = possibleBindingTypes[i];
-			if (ImGui::Selectable(bindingTypeStr.c_str(), static_cast<int>(selectedBinding.bindingType) == i))
-				selectedBinding.bindingType = static_cast<EBindingType>(i);
+			if (ImGui::Selectable(bindingTypeStr.c_str(), static_cast<int>(selectedBinding->bindingType) == i))
+				selectedBinding->bindingType = static_cast<EBindingType>(i);
 		}
 		ImGui::EndCombo();
 	}
 
 	GUI::Spacing(4);
 
-	if (selectedBinding.bindingType == EBindingType::Sequence && selectedBinding.buttons.size() < 2)
+	bool notEnoughButtonsForSequence = selectedBinding->bindingType == EBindingType::Sequence && selectedBinding->buttons.size() < 2;
+	if (notEnoughButtonsForSequence)
 	{
-		ImGui::TextColored(GUI::Colors::LightRed, "*** Button sequence bindings must use 2 buttons! Please add a button...");
+		ImGui::TextColored(GUI::Colors::Yellow, "*** Button sequence bindings require at least use 2 buttons! ***");
 		GUI::Spacing(2);
 	}
 
 	// buttons
-	for (int i = 0; i < selectedBinding.buttons.size(); ++i)
+	for (int i = 0; i < selectedBinding->buttons.size(); ++i)
 	{
 		GUI::ScopedID iID{i};
 
-		std::string& buttonStr = selectedBinding.buttons[i];
+		std::string& buttonStr = selectedBinding->buttons[i];
 		std::string  label     = "Button " + std::to_string(i + 1);
 
 		char searchBuffer[128] = ""; // text buffer for search input
@@ -446,16 +446,27 @@ void CustomQuickchat::display_bindingTriggerDetails(Binding& selectedBinding)
 		ImGui::SameLine();
 
 		if (ImGui::Button("Remove"))
-			selectedBinding.buttons.erase(selectedBinding.buttons.begin() + i);
+			selectedBinding->buttons.erase(selectedBinding->buttons.begin() + i);
 
 		GUI::Spacing(2);
+
+		if (notEnoughButtonsForSequence)
+		{
+			ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
+			GUI::Spacing(2);
+		}
 	}
 
+	/*
 	if (!(selectedBinding.bindingType == EBindingType::Sequence && selectedBinding.buttons.size() >= 2))
 	{
-		if (ImGui::Button("Add New Button"))
-			selectedBinding.buttons.emplace_back("");
+	    if (ImGui::Button("Add New Button"))
+	        selectedBinding.buttons.emplace_back("");
 	}
+	*/
+
+	if (ImGui::Button("Add New Button"))
+		selectedBinding->buttons.emplace_back("");
 }
 
 void CustomQuickchat::display_variationListList()

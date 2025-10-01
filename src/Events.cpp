@@ -21,11 +21,7 @@ void CustomQuickchat::initHooks()
 		    m_inGameEvent = false;
 		    m_chatboxOpen = false;
 
-		    // reset all "pressed" buttons (to fix bug of bindings mistakenly firing bc a key's state is stuck in "pressed" mode upon
-		    // joining a game/freeplay)
-		    for (auto& [key, state] : m_keyStates)
-			    state = false;
-
+		    m_bindingManager.resetState();
 		    LobbyInfo.clearCachedData();
 	    });
 
@@ -43,8 +39,9 @@ void CustomQuickchat::initHooks()
 	    [this](std::string eventName)
 	    {
 		    // reset/update data for all bindings
-		    lastBindingActivated = std::chrono::steady_clock::now();
-		    ResetAllFirstButtonStates();
+		    // lastBindingActivated = std::chrono::steady_clock::now();
+		    m_bindingManager.setLastBindingActivation(std::chrono::steady_clock::now());
+		    // ResetAllFirstButtonStates();
 	    });
 
 	// ========================================= hooks with caller =========================================
@@ -56,12 +53,8 @@ void CustomQuickchat::initHooks()
 		    if (m_gamePaused || !m_inGameEvent || m_chatboxOpen)
 			    return;
 
-		    if (m_matchEnded)
-		    {
-			    auto disablePostMatchQuickchats_cvar = getCvar(Cvars::disablePostMatchQuickchats);
-			    if (!disablePostMatchQuickchats_cvar || disablePostMatchQuickchats_cvar.getBoolValue())
-				    return;
-		    }
+		    if (m_matchEnded && *m_disablePostMatchQuickchats)
+			    return;
 
 		    auto* keyPressData = reinterpret_cast<UGameViewportClient_TA_execHandleKeyPress_Params*>(Params);
 		    if (!keyPressData)
@@ -72,47 +65,52 @@ void CustomQuickchat::initHooks()
 
 		    if (keyEventType == EInputEvent::IE_Pressed)
 		    {
-			    m_keyStates[keyName] = true; // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
+			    m_bindingManager.updateKeyState(keyName, true);
+			    m_usingGamepad = keyPressData->bGamepad;
+			    // LOG("Using gamepad: {}", m_usingGamepad); // can uncomment for testing purposes, otherwise it clutters up the console
 
-			    // update state for tracking whether user is using gamepad or pc inputs
-			    using_gamepad = keyPressData->bGamepad;
-			    // LOG("Using gamepad: {}", using_gamepad);      // can uncomment for testing purposes, otherwise it clutters up the console
+			    auto triggeredBinding = m_bindingManager.processKeyPress({keyName, std::chrono::steady_clock::now()});
+			    if (!triggeredBinding)
+				    return;
 
-			    ButtonPress buttonPressEvent{keyName, std::chrono::steady_clock::now()};
+			    performBindingAction(*triggeredBinding);
 
+			    /*
+			    // TODO: assimilate this feature/logic/bs into BindingDetectionManager ...
 			    // get min binding delay
 			    auto minBindingDelay_cvar = getCvar(Cvars::minBindingDelay);
 			    if (!minBindingDelay_cvar)
-				    return;
+			        return;
 			    double minBindingDelay_raw = minBindingDelay_cvar.getFloatValue();
 			    auto   minBindingDelay     = std::chrono::duration<double>(minBindingDelay_raw);
 
 			    // get max sequence time window
 			    auto sequenceTimeWindow_cvar = getCvar(Cvars::sequenceTimeWindow);
 			    if (!sequenceTimeWindow_cvar)
-				    return;
+			        return;
 			    double sequenceTimeWindow_raw = sequenceTimeWindow_cvar.getFloatValue();
-			    auto   sequenceTimeWindow     = std::chrono::duration<double>(sequenceTimeWindow_raw);
+			    auto   sequenceTimeWindow     = std::chrono::duration<double>(sequenceTimeWindow_raw)
 
 			    // check if any bindings triggered
 			    for (Binding& binding : m_bindings)
 			    {
-				    if (binding.enabled &&
-				        binding.shouldBeTriggered(
-				            buttonPressEvent, m_keyStates, lastBindingActivated, epochTime, minBindingDelay, sequenceTimeWindow))
-				    {
-					    // reset/update data for all bindings
-					    lastBindingActivated = std::chrono::steady_clock::now();
-					    ResetAllFirstButtonStates();
+			        if (binding.enabled &&
+			            binding.shouldBeTriggered(
+			                buttonPressEvent, m_keyStates, lastBindingActivated, epochTime, minBindingDelay, sequenceTimeWindow))
+			        {
+			            // reset/update data for all bindings
+			            lastBindingActivated = std::chrono::steady_clock::now();
+			            ResetAllFirstButtonStates();
 
-					    // activate binding action
-					    performBindingAction(binding);
-					    return;
-				    }
+			            // activate binding action
+			            performBindingAction(binding);
+			            return;
+			        }
 			    }
+			    */
 		    }
 		    else if (keyEventType == EInputEvent::IE_Released)
-			    m_keyStates[keyName] = false; // update key state (for CheckCombination() to analyze a "snapshot" of all pressed buttons)
+			    m_bindingManager.updateKeyState(keyName, false);
 	    });
 
 	Hooks.hookEvent(Events::ApplyChatSpamFilter,
@@ -123,43 +121,33 @@ void CustomQuickchat::initHooks()
 		    if (!pc)
 			    return;
 
-		    auto disableChatTimeout_cvar = getCvar(Cvars::disableChatTimeout);
-		    if (!disableChatTimeout_cvar)
-			    return;
-		    bool disableChatTimeout = disableChatTimeout_cvar.getBoolValue();
-
 		    // effectively disables chat timeout (in freeplay)
-		    pc->ChatSpam.MaxValue   = disableChatTimeout ? 420 : 4; // default 4
-		    pc->ChatSpam.DecayRate  = disableChatTimeout ? 69 : 1;  // default 1
-		    pc->ChatSpam.RiseAmount = disableChatTimeout ? 1 : 1.2; // default 1.2
+		    pc->ChatSpam.MaxValue   = *m_disableChatTimeout ? 420 : 4; // default 4
+		    pc->ChatSpam.DecayRate  = *m_disableChatTimeout ? 69 : 1;  // default 1
+		    pc->ChatSpam.RiseAmount = *m_disableChatTimeout ? 1 : 1.2; // default 1.2
 	    });
 
 	Hooks.hookEvent(Events::GFxHUD_TA_ChatPreset,
 	    HookType::Pre,
 	    [this](ActorWrapper Caller, void* Params, ...)
 	    {
+		    if (!*m_enabled)
+			    return;
+
 		    auto* params = reinterpret_cast<AGFxHUD_TA_execChatPreset_Params*>(Params);
 		    if (!params)
 			    return;
 
-		    // get cvars
-		    auto enabled_cvar                   = getCvar(Cvars::enabled);
-		    auto overrideDefaultQuickchats_cvar = getCvar(Cvars::overrideDefaultQuickchats);
-		    auto blockDefaultQuickchats_cvar    = getCvar(Cvars::blockDefaultQuickchats);
-
-		    if (!enabled_cvar || !enabled_cvar.getBoolValue())
-			    return;
-
 		    // block default quickchat if necessary
-		    if (overrideDefaultQuickchats_cvar.getBoolValue())
+		    if (*m_overrideDefaultQuickchats)
 		    {
 			    auto currentTime          = std::chrono::steady_clock::now();
 			    auto blockQuickchatWindow = std::chrono::duration<double>(BLOCK_DEFAULT_QUICKCHAT_WINDOW);
 
-			    if (currentTime <= (lastBindingActivated + blockQuickchatWindow))
+			    if (currentTime <= (m_bindingManager.getLastBindingActivation() + blockQuickchatWindow))
 				    params->Index = 420; // effectively blocks default quickchat from propagating
 		    }
-		    else if (blockDefaultQuickchats_cvar.getBoolValue())
+		    else if (*m_blockDefaultQuickchats)
 			    params->Index = 420;
 	    });
 
@@ -210,9 +198,7 @@ void CustomQuickchat::initHooks()
 	    {
 		    m_inGameEvent = true;
 
-		    // set chat timeout message
-		    auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
-		    if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
+		    if (!*m_useCustomChatTimeoutMsg)
 			    return;
 
 		    auto* caller = reinterpret_cast<APlayerController*>(Caller.memory_address);
@@ -259,14 +245,10 @@ void CustomQuickchat::initHooks()
 	    HookType::Pre,
 	    [this](ActorWrapper Caller, void* Params, ...)
 	    {
-		    if (gameWrapper->IsInFreeplay())
+		    if (!*m_enabled || !*m_overrideDefaultQuickchats)
 			    return;
 
-		    auto enabled_cvar                   = getCvar(Cvars::enabled);
-		    auto overrideDefaultQuickchats_cvar = getCvar(Cvars::overrideDefaultQuickchats);
-		    if (!enabled_cvar || !enabled_cvar.getBoolValue())
-			    return;
-		    if (!overrideDefaultQuickchats_cvar || !overrideDefaultQuickchats_cvar.getBoolValue())
+		    if (gameWrapper->IsInFreeplay())
 			    return;
 
 		    auto* caller = reinterpret_cast<UGFxData_Chat_TA*>(Caller.memory_address);
