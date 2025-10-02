@@ -86,8 +86,8 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 			const std::string regexPatternStr = "\\[\\[" + keywordToProcess + "\\]\\]";
 			std::regex        keyword_regex_pattern(regexPatternStr);
 
-			auto it = keywordsMap.find(keywordToProcess);
-			if (it == keywordsMap.end()) // not found in the keywords map, so we assume its a variation list name
+			auto it = g_keywordsMap.find(keywordToProcess);
+			if (it == g_keywordsMap.end()) // not found in the keywords map, so we assume its a variation list name
 			{
 				result = std::regex_replace(result, keyword_regex_pattern, getVariationFromList(keywordToProcess));
 			}

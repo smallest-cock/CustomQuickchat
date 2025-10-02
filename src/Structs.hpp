@@ -4,8 +4,8 @@
 
 // ==================================== for imgui ====================================
 
-const std::vector<std::string> possibleBindingTypes = {"button combination", "button sequence"};
-const std::vector<std::string> possibleChatModes    = {"lobby", "team", "party"};
+const std::vector<std::string> g_possibleBindingTypes = {"Button combination", "Button sequence"};
+const std::vector<std::string> g_possibleChatModes    = {"Lobby", "Team", "Party"};
 
 // ================================== keyword stuff ==================================
 
@@ -39,7 +39,7 @@ enum class ETextEffect : uint8_t
 	Sarcasm = 2,
 };
 
-const std::unordered_map<std::string, EKeyword> keywordsMap = {
+const std::unordered_map<std::string, EKeyword> g_keywordsMap = {
     {"speechToText", EKeyword::SpeechToText},
     {"speechToText sarcasm", EKeyword::SpeechToTextSarcasm},
     {"speechToText uwu", EKeyword::SpeechToTextUwu},
@@ -212,7 +212,7 @@ enum class SkillTier
 };
 
 // credit to https://github.com/JulienML/BetterChat/ thx fam
-inline const std::map<std::string, std::string> quickchat_ids_to_text = {
+inline const std::map<std::string, std::string> g_quickchatIdsToText = {
     {"Group1Message1", "I got it!"},       // Je l'ai !
     {"Group1Message2", "Need boost!"},     // Besoin de turbo !
     {"Group1Message3", "Take the shot!"},  // Prends-le !

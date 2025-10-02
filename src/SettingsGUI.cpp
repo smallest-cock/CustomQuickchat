@@ -45,7 +45,7 @@ void CustomQuickchat::RenderSettings()
 				display_chatTimeoutSettings();
 
 			// speech-to-text
-			if (ImGui::CollapsingHeader("speech-to-text settings", ImGuiTreeNodeFlags_None))
+			if (ImGui::CollapsingHeader("Speech-to-text settings", ImGuiTreeNodeFlags_None))
 			{
 #ifdef USE_SPEECH_TO_TEXT
 				SpeechToText.display_settings();
@@ -71,17 +71,17 @@ void CustomQuickchat::RenderSettings()
 			GUI::Spacing(8);
 
 			// open bindings window button
-			std::string openMenuCommand = "togglemenu " + GetMenuName();
+			std::string openMenuCmd = "togglemenu " + GetMenuName();
 			if (ImGui::Button("Open Bindings Menu"))
-				GAME_THREAD_EXECUTE({ cvarManager->executeCommand(openMenuCommand); }, openMenuCommand);
+				GAME_THREAD_EXECUTE({ cvarManager->executeCommand(openMenuCmd); }, openMenuCmd);
 
 			GUI::Spacing(2);
 
 			ImGui::Text("or bind this command:  ");
 			ImGui::SameLine();
-			ImGui::PushItemWidth(200);
-			ImGui::InputText("##openMenuCommand", &openMenuCommand, ImGuiInputTextFlags_ReadOnly);
-			ImGui::PopItemWidth();
+			ImGui::SetNextItemWidth(200.0f);
+			ImGui::InputText("##openMenuCommand", &openMenuCmd, ImGuiInputTextFlags_ReadOnly);
+			GUI::CopyButton("Copy", openMenuCmd.c_str());
 		}
 	}
 	ImGui::EndChild();
@@ -136,12 +136,12 @@ void CustomQuickchat::display_generalSettings()
 
 	// sequence max time window
 	float sequenceTimeWindow = sequenceTimeWindow_cvar.getFloatValue();
-	if (ImGui::SliderFloat("button sequence time window", &sequenceTimeWindow, 0.0f, 10.0f, "%.1f seconds"))
+	if (ImGui::SliderFloat("Button sequence time window", &sequenceTimeWindow, 0.0f, 10.0f, "%.1f seconds"))
 		sequenceTimeWindow_cvar.setValue(sequenceTimeWindow);
 
 	// min delay between bindings
 	float minBindingDelay = minBindingDelay_cvar.getFloatValue();
-	if (ImGui::SliderFloat("minimum delay between chats", &minBindingDelay, 0.01f, 0.5f, "%.2f seconds"))
+	if (ImGui::SliderFloat("Minimum delay between chats", &minBindingDelay, 0.01f, 0.5f, "%.2f seconds"))
 		minBindingDelay_cvar.setValue(minBindingDelay);
 	GUI::ToolTip("can help prevent accidental chats... but also affects chat spamming speed");
 
@@ -264,7 +264,7 @@ void CustomQuickchat::display_bindingDetails()
 			if (m_bindings.empty())
 			{
 				GUI::Spacing(4);
-				ImGui::TextUnformatted("add a binding...");
+				ImGui::TextUnformatted("Add a binding...");
 				return;
 			}
 
@@ -359,13 +359,13 @@ void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding>&
 
 	GUI::Spacing(2);
 
-	if (ImGui::BeginCombo("Chat mode", possibleChatModes[static_cast<int>(selectedBinding->chatMode)].c_str()))
+	if (ImGui::BeginCombo("Chat mode", g_possibleChatModes[static_cast<int>(selectedBinding->chatMode)].c_str()))
 	{
-		for (int i = 0; i < possibleChatModes.size(); ++i)
+		for (int i = 0; i < g_possibleChatModes.size(); ++i)
 		{
 			GUI::ScopedID id{i};
 
-			const std::string& chatModeStr = possibleChatModes[i];
+			const std::string& chatModeStr = g_possibleChatModes[i];
 			if (ImGui::Selectable(chatModeStr.c_str(), static_cast<int>(selectedBinding->chatMode) == i))
 				selectedBinding->chatMode = static_cast<EChatChannel>(i);
 		}
@@ -382,13 +382,13 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 
 	GUI::Spacing(4);
 
-	if (ImGui::BeginCombo("Binding type", possibleBindingTypes[static_cast<int>(selectedBinding->bindingType)].c_str()))
+	if (ImGui::BeginCombo("Binding type", g_possibleBindingTypes[static_cast<int>(selectedBinding->bindingType)].c_str()))
 	{
-		for (int i = 0; i < possibleBindingTypes.size(); ++i)
+		for (int i = 0; i < g_possibleBindingTypes.size(); ++i)
 		{
 			GUI::ScopedID id{i};
 
-			const std::string& bindingTypeStr = possibleBindingTypes[i];
+			const std::string& bindingTypeStr = g_possibleBindingTypes[i];
 			if (ImGui::Selectable(bindingTypeStr.c_str(), static_cast<int>(selectedBinding->bindingType) == i))
 				selectedBinding->bindingType = static_cast<EBindingType>(i);
 		}
@@ -449,21 +449,13 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 			selectedBinding->buttons.erase(selectedBinding->buttons.begin() + i);
 
 		GUI::Spacing(2);
-
-		if (notEnoughButtonsForSequence)
-		{
-			ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
-			GUI::Spacing(2);
-		}
 	}
 
-	/*
-	if (!(selectedBinding.bindingType == EBindingType::Sequence && selectedBinding.buttons.size() >= 2))
+	if (notEnoughButtonsForSequence)
 	{
-	    if (ImGui::Button("Add New Button"))
-	        selectedBinding.buttons.emplace_back("");
+		ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
+		GUI::Spacing(2);
 	}
-	*/
 
 	if (ImGui::Button("Add New Button"))
 		selectedBinding->buttons.emplace_back("");

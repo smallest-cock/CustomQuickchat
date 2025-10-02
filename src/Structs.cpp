@@ -115,10 +115,10 @@ void Binding::updateKeywordAndTextEffect(const std::string& regexPatternStr)
 	// handle any words in double brackets, like special keywords or word variations
 	for (const std::string& stringFoundInBrackets : matchedSubstrings)
 	{
-		auto it = keywordsMap.find(stringFoundInBrackets);
+		auto it = g_keywordsMap.find(stringFoundInBrackets);
 
 		// if a special keyword was found
-		if (it != keywordsMap.end())
+		if (it != g_keywordsMap.end())
 		{
 			keyWord    = it->second;             // update binding's keyword
 			textEffect = getTextEffect(keyWord); // update binding's text effect (if any)
@@ -301,8 +301,8 @@ ChatData::ChatData(const FGFxChatMessage& msg)
 	std::string chat_text = msg.Message.ToString();
 	if (msg.bPreset)
 	{
-		auto it = quickchat_ids_to_text.find(chat_text);
-		if (it != quickchat_ids_to_text.end())
+		auto it = g_quickchatIdsToText.find(chat_text);
+		if (it != g_quickchatIdsToText.end())
 			chat_text = it->second;
 	}
 
