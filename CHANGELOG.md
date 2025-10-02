@@ -2,7 +2,8 @@
 
 ## v1.10.0
 - Added support for arbitrary length button sequence bindings
-  - Button sequences can now be longer than 2 buttons! e.g. `6` -> `7` -> `Ctrl` -> `8`
+  - Button sequences can now be longer than 2 buttons! 🥳 e.g. `6` → `7` → `Ctrl` → `8`
+- Updated internal SDK to match latest version of RL (v2.58)
 
 ## v1.9.7
 - Fixed crashes if user is missing the `SpeechToText.exe` file
