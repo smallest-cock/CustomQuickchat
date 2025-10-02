@@ -46,8 +46,11 @@ std::shared_ptr<Binding> BindingDetectionManager::processKeyPress(const ButtonPr
 
 	if (binding)
 	{
-		resetState(); // always reset state if a binding was triggered
 		m_lastBindingActivation = std::chrono::steady_clock::now();
+
+		// only reset button sequence state
+		// ... we dont reset the combination keypress state here bc that would desync from actual key state reality, which has caused bugs
+		m_sequenceManager.resetState();
 	}
 
 	return binding;
@@ -138,37 +141,49 @@ bool SequenceBindingManager::removeBinding(const std::shared_ptr<Binding>& b)
 // Process a single button press. Returns a pointer to the binding if its button sequence has been completed within the time window
 std::shared_ptr<Binding> SequenceBindingManager::processKeyPress(const ButtonPress& keyPress)
 {
-	auto it = m_currentNode->children.find(keyPress.buttonName);
-	if (it == m_currentNode->children.end())
+	auto tryAdvanceNode = [&](SequenceTrieNode* node, const std::string& buttonName) -> SequenceTrieNode*
 	{
-		resetState(); // no match found -> reset
-		return nullptr;
+		auto it = node->children.find(buttonName);
+		return (it != node->children.end()) ? it->second.get() : nullptr;
+	};
+
+	SequenceTrieNode* nextNode = tryAdvanceNode(m_currentNode, keyPress.buttonName);
+	if (!nextNode)
+	{
+		resetState(); // no match found, reset to root node
+
+		// check if keypress happens to be the start of a new sequence
+		nextNode = tryAdvanceNode(m_rootNode.get(), keyPress.buttonName);
+		if (!nextNode)
+			return nullptr; // still no match, return
+		else
+			m_sequenceStartTime = keyPress.pressedTime; // key was the start of a sequence, update start time
+	}
+	else
+	{
+		// update start time if we were at root
+		if (m_currentNode == m_rootNode.get())
+			m_sequenceStartTime = keyPress.pressedTime;
 	}
 
-	// update start time if we’re at root
-	if (m_currentNode == m_rootNode.get())
-		m_sequenceStart = keyPress.pressedTime;
-
 	// check if we're within time window before advancing the node
-	if (keyPress.pressedTime - m_sequenceStart > m_maxTimeWindow)
+	if (keyPress.pressedTime - m_sequenceStartTime > m_maxTimeWindow)
 	{
 		resetState();
 		return nullptr;
 	}
 
 	// advance the node
-	m_currentNode = it->second.get();
+	m_currentNode = nextNode;
 
-	// check if binding exists at node
+	// return if binding doesnt exist at node
 	if (m_currentNode->binding.expired())
 		return nullptr;
-	else
-	{
-		// binding exists -> reset state and return binding ptr
-		const std::shared_ptr<Binding> triggered = m_currentNode->binding.lock();
-		resetState();
-		return triggered;
-	}
+
+	// binding exists, reset state and return binding ptr
+	const auto triggeredBinding = m_currentNode->binding.lock();
+	resetState();
+	return triggeredBinding;
 }
 
 void SequenceBindingManager::resetState() { m_currentNode = m_rootNode.get(); }

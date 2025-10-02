@@ -15,7 +15,7 @@ class SequenceBindingManager
 	SequenceTrieNode*                 m_currentNode;
 
 	// time window state
-	std::chrono::steady_clock::time_point m_sequenceStart{};
+	std::chrono::steady_clock::time_point m_sequenceStartTime{};
 	std::chrono::duration<double>         m_maxTimeWindow{2.0};
 
 public:
