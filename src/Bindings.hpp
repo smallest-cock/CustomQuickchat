@@ -25,6 +25,7 @@ public:
 	bool                     removeBinding(const std::shared_ptr<Binding>& b);
 	std::shared_ptr<Binding> processKeyPress(const ButtonPress& keyPress);
 	void                     resetState();
+	void                     clearBindings();
 
 	void setMaxTimeWindow(const std::chrono::duration<double>& duration) { m_maxTimeWindow = duration; }
 };
@@ -43,6 +44,7 @@ public:
 	std::shared_ptr<Binding> processKeyPress(const ButtonPress& keyPress);
 	void                     resetState();
 	void                     updateKeyState(const std::string& keyName, bool pressed) { m_keyStates[keyName] = pressed; }
+	void                     clearBindings() { m_bindings.clear(); }
 };
 
 class BindingDetectionManager
@@ -56,6 +58,7 @@ public:
 	bool                     removeBinding(const std::shared_ptr<Binding>& b);
 	std::shared_ptr<Binding> processKeyPress(const ButtonPress& keyPress);
 	void                     resetState();
+	void                     clearBindings();
 
 	std::chrono::steady_clock::time_point getLastBindingActivation() const { return m_lastBindingActivation; }
 	void setLastBindingActivation(const std::chrono::steady_clock::time_point& time) { m_lastBindingActivation = time; }

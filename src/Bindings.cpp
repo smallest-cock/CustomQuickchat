@@ -5,6 +5,12 @@
 // ########################################    BindingDetectionManager    #######################################
 // ##############################################################################################################
 
+void BindingDetectionManager::clearBindings()
+{
+	m_combinationManager.clearBindings();
+	m_sequenceManager.clearBindings();
+}
+
 bool BindingDetectionManager::registerBinding(const std::shared_ptr<Binding>& b)
 {
 	if (!b)
@@ -65,6 +71,12 @@ void BindingDetectionManager::resetState()
 // ##############################################################################################################
 // ########################################    SequenceBindingManager    ########################################
 // ##############################################################################################################
+
+void SequenceBindingManager::clearBindings()
+{
+	m_rootNode    = std::make_unique<SequenceTrieNode>();
+	m_currentNode = m_rootNode.get();
+}
 
 bool SequenceBindingManager::registerBinding(const std::shared_ptr<Binding>& b)
 {

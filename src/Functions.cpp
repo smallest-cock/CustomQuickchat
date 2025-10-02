@@ -433,6 +433,8 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 
 void CustomQuickchat::updateBindingsData()
 {
+	m_bindingManager.clearBindings();
+
 	for (auto& binding : m_bindings)
 	{
 		binding->updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
