@@ -305,9 +305,7 @@ void InstancesComponent::SpawnNotification(const std::string& title, const std::
 		return;
 
 	if (!notificationClass)
-	{
 		notificationClass = UGenericNotification_TA::StaticClass();
-	}
 
 	UNotification_TA* notification = notificationManager->PopUpOnlyNotification(notificationClass);
 	if (!notification)
@@ -321,9 +319,7 @@ void InstancesComponent::SpawnNotification(const std::string& title, const std::
 	notification->PopUpDuration = duration;
 
 	if (log)
-	{
 		LOG("[{}] {}", title.c_str(), content.c_str());
-	}
 }
 
 void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode, bool log)
@@ -331,7 +327,7 @@ void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode
 	UGFxData_Chat_TA* chatBox = GetInstanceOf<UGFxData_Chat_TA>();
 	if (!chatBox)
 	{
-		LOG("UGFxData_Chat_TA* is null!");
+		LOGERROR("UGFxData_Chat_TA* is null!");
 		return;
 	}
 
@@ -342,27 +338,21 @@ void InstancesComponent::SendChat(const std::string& chat, EChatChannel chatMode
 		chatBox->SendChatMessage(chatFStr, 0); // match (lobby) chat
 
 		if (log)
-		{
 			LOG("Sent chat: '{}'", chat);
-		}
 	}
 	else if (chatMode == EChatChannel::EChatChannel_Team)
 	{
 		chatBox->SendTeamChatMessage(chatFStr, 0); // team chat
 
 		if (log)
-		{
 			LOG("Sent chat: [Team] '{}'", chat);
-		}
 	}
 	else if (chatMode == EChatChannel::EChatChannel_Party)
 	{
 		chatBox->SendPartyChatMessage(chatFStr, 0); // party chat
 
 		if (log)
-		{
 			LOG("Sent chat: [Party] '{}'", chat);
-		}
 	}
 }
 
@@ -378,8 +368,8 @@ void InstancesComponent::SetChatTimeoutMsg(const std::string& newMsg, AGFxHUD_TA
 	if (hud->ChatDisabledMessage.ToString() == newMsg)
 		return;
 
-	hud->ChatDisabledMessage = FString::create(newMsg); // overwrite ChatDisabledMessage
-	LOG("Set chat timeout message: \"{}\"", Format::EscapeBraces(newMsg));
+	hud->ChatDisabledMessage = FString::create(newMsg);
+	LOG("Set chat timeout message: \"{}\"", newMsg);
 }
 
 class InstancesComponent Instances{};

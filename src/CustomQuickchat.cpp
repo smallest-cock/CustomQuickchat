@@ -1,7 +1,8 @@
-#include "bakkesmod/wrappers/cvarwrapper.h"
 #include "pch.h"
-#include "Cvars.hpp"
 #include "CustomQuickchat.hpp"
+#include "bakkesmod/wrappers/cvarwrapper.h"
+#include "Cvars.hpp"
+#include "Macros.hpp"
 #include "components/Instances.hpp"
 #include "HookManager.hpp"
 #ifdef USE_SPEECH_TO_TEXT
@@ -82,17 +83,55 @@ void CustomQuickchat::initCvars()
 	sequenceTimeWindow_cvar.addOnValueChanged(
 	    [this](std::string oldVal, CVarWrapper updatedCvar) { m_bindingManager.setSequenceMaxTimeWindow(updatedCvar.getFloatValue()); });
 
-	enabled_cvar.addOnValueChanged(std::bind(&CustomQuickchat::changed_enabled, this, std::placeholders::_1, std::placeholders::_2));
+	enabled_cvar.addOnValueChanged(
+	    [this](std::string oldVal, CVarWrapper updatedCvar)
+	    {
+		    std::string msg = std::format("Custom quickchats turned {}", updatedCvar.getBoolValue() ? "ON" : "OFF");
+		    GAME_THREAD_EXECUTE({ Instances.SpawnNotification("Custom Quickchat", msg, 3); }, msg);
+	    });
 
 	overrideDefaultQuickchats_cvar.addOnValueChanged(
-	    std::bind(&CustomQuickchat::changed_overrideDefaultQuickchats, this, std::placeholders::_1, std::placeholders::_2));
+	    [this](std::string oldVal, CVarWrapper updatedCvar)
+	    {
+		    bool overrideDefaultQuickchats = updatedCvar.getBoolValue();
+
+		    // there can be only one...
+		    if (overrideDefaultQuickchats)
+		    {
+			    auto blockDefaultQuickchats_cvar = getCvar(Cvars::blockDefaultQuickchats);
+			    if (!blockDefaultQuickchats_cvar)
+				    return;
+
+			    blockDefaultQuickchats_cvar.setValue(false);
+		    }
+	    });
 
 	blockDefaultQuickchats_cvar.addOnValueChanged(
-	    std::bind(&CustomQuickchat::changed_blockDefaultQuickchats, this, std::placeholders::_1, std::placeholders::_2));
+	    [this](std::string oldVal, CVarWrapper updatedCvar)
+	    {
+		    bool blockDefaultQuickchats = updatedCvar.getBoolValue();
 
-	useCustomChatTimeoutMsg_cvar.addOnValueChanged(
-	    std::bind(&CustomQuickchat::changed_useCustomChatTimeoutMsg, this, std::placeholders::_1, std::placeholders::_2));
+		    // there can be only one...
+		    if (blockDefaultQuickchats)
+		    {
+			    auto overrideDefaultQuickchats_cvar = getCvar(Cvars::overrideDefaultQuickchats);
+			    if (!overrideDefaultQuickchats_cvar)
+				    return;
+
+			    overrideDefaultQuickchats_cvar.setValue(false);
+		    }
+	    });
+
+	useCustomChatTimeoutMsg_cvar.addOnValueChanged([this](std::string oldVal, CVarWrapper updatedCvar)
+	    { GAME_THREAD_EXECUTE({ Instances.SetChatTimeoutMsg(getChatTimeoutMsg()); }); });
 
 	customChatTimeoutMsg_cvar.addOnValueChanged(
-	    std::bind(&CustomQuickchat::changed_customChatTimeoutMsg, this, std::placeholders::_1, std::placeholders::_2));
+	    [this](std::string oldVal, CVarWrapper updatedCvar)
+	    {
+		    if (!*m_useCustomChatTimeoutMsg)
+			    return;
+
+		    std::string newMsg = updatedCvar.getStringValue();
+		    GAME_THREAD_EXECUTE({ Instances.SetChatTimeoutMsg(newMsg); }, newMsg);
+	    });
 }

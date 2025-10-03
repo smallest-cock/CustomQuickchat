@@ -105,20 +105,17 @@ void CustomQuickchat::display_generalSettings()
 	bool overrideDefaultQuickchats = overrideDefaultQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Override default quickchats", &overrideDefaultQuickchats))
 		overrideDefaultQuickchats_cvar.setValue(overrideDefaultQuickchats);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Block default quickchat if it conflicts with a custom chat (prevents both chats from being sent)");
+	GUI::ToolTip("Block default quickchat if it conflicts with a custom chat (prevents both chats from being sent)");
 
 	bool blockDefaultQuickchats = blockDefaultQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Block all default quickchats", &blockDefaultQuickchats))
 		blockDefaultQuickchats_cvar.setValue(blockDefaultQuickchats);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Block all default quickchats from being sent... without having to unbind them :)");
+	GUI::ToolTip("Block all default quickchats from being sent... without having to unbind them :)");
 
 	bool disablePostMatchQuickchats = disablePostMatchQuickchats_cvar.getBoolValue();
 	if (ImGui::Checkbox("Disable custom quickchats in post-match screen", &disablePostMatchQuickchats))
 		disablePostMatchQuickchats_cvar.setValue(disablePostMatchQuickchats);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Prevents your custom chats from overriding default post-match chats like 'gg'");
+	GUI::ToolTip("Prevents your custom chats from overriding default post-match chats like 'gg'");
 
 	bool randomizeSarcasm = randomizeSarcasm_cvar.getBoolValue();
 	if (ImGui::Checkbox("Randomize sarcasm effect", &randomizeSarcasm))
@@ -158,15 +155,11 @@ void CustomQuickchat::display_chatTimeoutSettings()
 
 	bool disableChatTimeout = disableChatTimeout_cvar.getBoolValue();
 	if (ImGui::Checkbox("Disable chat timeout (freeplay)", &disableChatTimeout))
-	{
 		disableChatTimeout_cvar.setValue(disableChatTimeout);
-	}
 
 	bool useCustomChatTimeoutMsg = useCustomChatTimeoutMsg_cvar.getBoolValue();
 	if (ImGui::Checkbox("Custom chat timeout message", &useCustomChatTimeoutMsg))
-	{
 		useCustomChatTimeoutMsg_cvar.setValue(useCustomChatTimeoutMsg);
-	}
 
 	if (useCustomChatTimeoutMsg)
 	{
@@ -174,13 +167,8 @@ void CustomQuickchat::display_chatTimeoutSettings()
 
 		std::string customChatTimeoutMsg = customChatTimeoutMsg_cvar.getStringValue();
 		if (ImGui::InputText("Chat timeout message", &customChatTimeoutMsg))
-		{
 			customChatTimeoutMsg_cvar.setValue(customChatTimeoutMsg);
-		}
-		if (ImGui::IsItemHovered())
-		{
-			ImGui::SetTooltip("TIP: use [Time] in your message to include the timeout seconds");
-		}
+		GUI::ToolTip("TIP: use [Time] in your message to include the timeout seconds");
 	}
 
 	GUI::Spacing(2);
@@ -447,15 +435,15 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 
 		if (ImGui::Button("Remove"))
 			selectedBinding->buttons.erase(selectedBinding->buttons.begin() + i);
-
-		GUI::Spacing(2);
 	}
 
 	if (notEnoughButtonsForSequence)
 	{
-		ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
 		GUI::Spacing(2);
+		ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
 	}
+
+	GUI::Spacing(2);
 
 	if (ImGui::Button("Add New Button"))
 		selectedBinding->buttons.emplace_back("");

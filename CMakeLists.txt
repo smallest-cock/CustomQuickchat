@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.10.0)
+project(CustomQuickchat VERSION 1.10.1)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -112,7 +112,6 @@ add_library(${PROJECT_NAME}
     ${COMPONENTS_SRC}
     ${SRC_DIR}/${PROJECT_NAME}.cpp
     ${SRC_DIR}/HelperFuncs.cpp
-    ${SRC_DIR}/CvarChangeCallbacks.cpp
     ${SRC_DIR}/SettingsGUI.cpp
     ${SRC_DIR}/Functions.cpp
     ${SRC_DIR}/Events.cpp

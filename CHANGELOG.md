@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.1
+- Fixed bug in applying custom chat timeout message
+- Minor improvements to binding detection system
+- Minor UI improvements
+
 ## v1.10.0
 - Added support for arbitrary length button sequence bindings
   - Button sequences can now be longer than 2 buttons! 🥳 e.g. `6` → `7` → `Ctrl` → `8`

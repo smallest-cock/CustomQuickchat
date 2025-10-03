@@ -114,22 +114,7 @@ void CustomQuickchat::initHooks()
 			    params->Index = 420;
 	    });
 
-	Hooks.hookEvent(Events::GFxHUD_TA_NotifyChatDisabled,
-	    HookType::Pre,
-	    [this](ActorWrapper Caller, ...)
-	    {
-		    m_gamePaused = false;
-
-		    auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
-		    if (!useCustomChatTimeoutMsg_cvar || !useCustomChatTimeoutMsg_cvar.getBoolValue())
-			    return;
-
-		    auto* hud = reinterpret_cast<AGFxHUD_TA*>(Caller.memory_address);
-		    if (!hud)
-			    return;
-
-		    Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
-	    });
+	Hooks.hookEvent(Events::GFxHUD_TA_NotifyChatDisabled, HookType::Pre, [this](ActorWrapper Caller, ...) { m_gamePaused = false; });
 
 	Hooks.hookEvent(Events::PushMenu,
 	    HookType::Post,
@@ -161,15 +146,12 @@ void CustomQuickchat::initHooks()
 	    {
 		    m_inGameEvent = true;
 
-		    if (!*m_useCustomChatTimeoutMsg)
-			    return;
-
 		    auto* caller = reinterpret_cast<APlayerController*>(Caller.memory_address);
 		    if (!caller || !caller->myHUD || !caller->myHUD->IsA<AGFxHUD_TA>())
 			    return;
 		    auto* hud = static_cast<AGFxHUD_TA*>(caller->myHUD);
 
-		    Instances.SetChatTimeoutMsg(chatTimeoutMsg, hud);
+		    Instances.SetChatTimeoutMsg(getChatTimeoutMsg(), hud);
 	    });
 
 	// happens after joining a match and after a binding has been changed in RL settings

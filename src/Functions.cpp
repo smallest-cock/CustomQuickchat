@@ -160,24 +160,6 @@ void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& 
 	GAME_THREAD_EXECUTE({ Instances.SpawnNotification(title, message, duration, true); }, title, message, duration);
 }
 
-// void CustomQuickchat::ResetAllFirstButtonStates()
-// {
-// 	for (Binding& binding : m_bindings)
-// 	{
-// 		binding.firstButtonState.Reset(epochTime);
-// 	}
-// }
-
-void CustomQuickchat::ResetChatTimeoutMsg() { chatTimeoutMsg = "Chat disabled for [Time] second(s)."; }
-
-// void CustomQuickchat::initKeyStates()
-// {
-// 	for (const std::string& keyName : possibleKeyNames)
-// 	{
-// 		m_keyStates[keyName] = false;
-// 	}
-// }
-
 void CustomQuickchat::addEmptyBinding() { m_bindings.emplace_back(std::make_shared<Binding>()); }
 
 void CustomQuickchat::addEmptyVariationList()

@@ -33,13 +33,11 @@ private:
 	void initCvars();
 	void initCommands();
 	void initHooks();
-	// void initKeyStates();
 	void initJsonFiles();
 	void initFilePaths();
 	void updateVariationsFromJson();
 	void updateBindingsFromJson();
 	void updateDataFromJson();
-	void PreventGameFreeze(); // hacky solution to prevent game freezing for few seconds on 1st chat sent
 
 private:
 	// plugin boilerplate helper stuff
@@ -84,6 +82,8 @@ private:
 	// constants
 	static constexpr const char* KEYWORD_REGEX_PATTERN          = R"(\[\[(.*?)\]\])";
 	static constexpr double      BLOCK_DEFAULT_QUICKCHAT_WINDOW = 0.1; // maybe turn into a cvar w slider in settings
+	static constexpr int         MAX_KEYWORD_DEPTH              = 10;
+	static constexpr auto        DEFAULT_CHAT_TIMEOUT_MSG       = "Chat disabled for [Time] second(s).";
 
 	// flags
 	bool m_onLoadComplete = false;
@@ -105,11 +105,6 @@ private:
 	int m_selectedVariationIndex = 0;
 
 	BindingDetectionManager m_bindingManager;
-	// std::unordered_map<std::string, bool> m_keyStates;
-
-	// std::chrono::steady_clock::time_point epochTime = std::chrono::steady_clock::time_point();
-	// std::chrono::steady_clock::time_point lastBindingActivated;
-	static constexpr int MAX_KEYWORD_DEPTH = 10;
 
 	// modify quickchat UI stuff
 	static constexpr std::array<const char*, 4> PRESET_GROUP_NAMES = {"ChatPreset1", "ChatPreset2", "ChatPreset3", "ChatPreset4"};
@@ -118,9 +113,6 @@ private:
 	bool                                        m_usingGamepad = false;
 
 private:
-	// void ResetAllFirstButtonStates();
-	// int findButtonIndex(const std::string& buttonName);
-
 	void updateBindingsData();
 	bool writeBindingsToJson();
 	void writeVariationsToJson();
@@ -143,12 +135,10 @@ private:
 	FString m_censoredChatSave;
 
 	// chat timeout
-	std::string chatTimeoutMsg = "Chat disabled for [Time] second(s).";
-	void        ResetChatTimeoutMsg();
-
-	void determineQuickchatLabels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
-	void apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params = nullptr);
-	void apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller);
+	std::string getChatTimeoutMsg() { return *m_useCustomChatTimeoutMsg ? *m_customChatTimeoutMsg : DEFAULT_CHAT_TIMEOUT_MSG; }
+	void        determineQuickchatLabels(UGFxData_Controls_TA* controls = nullptr, bool log = false);
+	void        apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params = nullptr);
+	void        apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller);
 
 	// misc functions
 	void                       NotifyAndLog(const std::string& title, const std::string& message, int duration = 3);
@@ -156,13 +146,6 @@ private:
 	std::optional<std::string> getCurrentRumbleItem();
 
 	void no_speech_to_text_warning();
-
-	// cvar change callbacks
-	void changed_enabled(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_overrideDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_blockDefaultQuickchats(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_useCustomChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
-	void changed_customChatTimeoutMsg(std::string cvarName, CVarWrapper updatedCvar);
 
 public:
 	// sending chats
