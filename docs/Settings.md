@@ -3,7 +3,7 @@
 You can either create **button combination** bindings (buttons pressed at the same time), or **button sequence** bindings (buttons pressed in a sequence).
 
 >[!IMPORTANT]
->Button sequence bindings must contain exactly 2 buttons!
+>Button sequence bindings must contain at least 2 buttons
 
 ## Chats
 ![](./images/chat_binding_example.png)
