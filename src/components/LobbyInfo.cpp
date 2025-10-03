@@ -62,7 +62,7 @@ void LobbyInfoComponent::initHooks()
 		auto* params = reinterpret_cast<UGFxData_Chat_TA_execAddChatMessage_Params*>(Params);
 		if (!params)
 		{
-			LOG("ERROR: Function params are null for: \"{}\"", event);
+			LOGERROR("Function params are null for: \"{}\"", event);
 			return;
 		}
 

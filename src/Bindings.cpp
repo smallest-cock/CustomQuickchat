@@ -43,6 +43,21 @@ bool BindingDetectionManager::removeBinding(const std::shared_ptr<Binding>& b)
 	}
 }
 
+void BindingDetectionManager::updateKeyState(const std::string& keyName, EInputEvent event)
+{
+	switch (event)
+	{
+	case EInputEvent::IE_Pressed:
+		m_combinationManager.updateKeyState(keyName, true);
+		break;
+	case EInputEvent::IE_Released:
+		m_combinationManager.updateKeyState(keyName, false);
+		break;
+	default:
+		break;
+	}
+}
+
 // Checks button combination bindings first, then sequence bindings
 std::shared_ptr<Binding> BindingDetectionManager::processKeyPress(const ButtonPress& keyPress)
 {
@@ -62,9 +77,10 @@ std::shared_ptr<Binding> BindingDetectionManager::processKeyPress(const ButtonPr
 	return binding;
 }
 
-void BindingDetectionManager::resetState()
+void BindingDetectionManager::resetState(bool resetKeypressState)
 {
-	m_combinationManager.resetState();
+	if (resetKeypressState)
+		m_combinationManager.resetState();
 	m_sequenceManager.resetState();
 }
 

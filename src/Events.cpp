@@ -21,7 +21,7 @@ void CustomQuickchat::initHooks()
 		    m_inGameEvent = false;
 		    m_chatboxOpen = false;
 
-		    m_bindingManager.resetState();
+		    m_bindingManager.resetState(true);
 		    LobbyInfo.clearCachedData();
 	    });
 
@@ -38,10 +38,8 @@ void CustomQuickchat::initHooks()
 	    HookType::Pre,
 	    [this](std::string eventName)
 	    {
-		    // reset/update data for all bindings
-		    // lastBindingActivated = std::chrono::steady_clock::now();
 		    m_bindingManager.setLastBindingActivation(std::chrono::steady_clock::now());
-		    // ResetAllFirstButtonStates();
+		    m_bindingManager.resetState();
 	    });
 
 	// ========================================= hooks with caller =========================================
@@ -50,12 +48,6 @@ void CustomQuickchat::initHooks()
 	    HookType::Post,
 	    [this](ActorWrapper Caller, void* Params, ...)
 	    {
-		    if (m_gamePaused || !m_inGameEvent || m_chatboxOpen)
-			    return;
-
-		    if (m_matchEnded && *m_disablePostMatchQuickchats)
-			    return;
-
 		    auto* keyPressData = reinterpret_cast<UGameViewportClient_TA_execHandleKeyPress_Params*>(Params);
 		    if (!keyPressData)
 			    return;
@@ -63,9 +55,16 @@ void CustomQuickchat::initHooks()
 		    std::string keyName      = keyPressData->Key.ToString();
 		    EInputEvent keyEventType = static_cast<EInputEvent>(keyPressData->EventType);
 
+		    m_bindingManager.updateKeyState(keyName, keyEventType);
+
+		    if (m_gamePaused || !m_inGameEvent || m_chatboxOpen)
+			    return;
+
+		    if (m_matchEnded && *m_disablePostMatchQuickchats)
+			    return;
+
 		    if (keyEventType == EInputEvent::IE_Pressed)
 		    {
-			    m_bindingManager.updateKeyState(keyName, true);
 			    m_usingGamepad = keyPressData->bGamepad;
 			    // LOG("Using gamepad: {}", m_usingGamepad); // can uncomment for testing purposes, otherwise it clutters up the console
 
@@ -74,43 +73,7 @@ void CustomQuickchat::initHooks()
 				    return;
 
 			    performBindingAction(*triggeredBinding);
-
-			    /*
-			    // TODO: assimilate this feature/logic/bs into BindingDetectionManager ...
-			    // get min binding delay
-			    auto minBindingDelay_cvar = getCvar(Cvars::minBindingDelay);
-			    if (!minBindingDelay_cvar)
-			        return;
-			    double minBindingDelay_raw = minBindingDelay_cvar.getFloatValue();
-			    auto   minBindingDelay     = std::chrono::duration<double>(minBindingDelay_raw);
-
-			    // get max sequence time window
-			    auto sequenceTimeWindow_cvar = getCvar(Cvars::sequenceTimeWindow);
-			    if (!sequenceTimeWindow_cvar)
-			        return;
-			    double sequenceTimeWindow_raw = sequenceTimeWindow_cvar.getFloatValue();
-			    auto   sequenceTimeWindow     = std::chrono::duration<double>(sequenceTimeWindow_raw)
-
-			    // check if any bindings triggered
-			    for (Binding& binding : m_bindings)
-			    {
-			        if (binding.enabled &&
-			            binding.shouldBeTriggered(
-			                buttonPressEvent, m_keyStates, lastBindingActivated, epochTime, minBindingDelay, sequenceTimeWindow))
-			        {
-			            // reset/update data for all bindings
-			            lastBindingActivated = std::chrono::steady_clock::now();
-			            ResetAllFirstButtonStates();
-
-			            // activate binding action
-			            performBindingAction(binding);
-			            return;
-			        }
-			    }
-			    */
 		    }
-		    else if (keyEventType == EInputEvent::IE_Released)
-			    m_bindingManager.updateKeyState(keyName, false);
 	    });
 
 	Hooks.hookEvent(Events::ApplyChatSpamFilter,

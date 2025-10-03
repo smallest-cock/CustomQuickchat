@@ -57,11 +57,11 @@ public:
 	bool                     registerBinding(const std::shared_ptr<Binding>& b);
 	bool                     removeBinding(const std::shared_ptr<Binding>& b);
 	std::shared_ptr<Binding> processKeyPress(const ButtonPress& keyPress);
-	void                     resetState();
+	void                     resetState(bool resetKeypressState = false);
 	void                     clearBindings();
+	void                     updateKeyState(const std::string& keyName, EInputEvent event);
 
 	std::chrono::steady_clock::time_point getLastBindingActivation() const { return m_lastBindingActivation; }
 	void setLastBindingActivation(const std::chrono::steady_clock::time_point& time) { m_lastBindingActivation = time; }
-	void updateKeyState(const std::string& keyName, bool pressed) { m_combinationManager.updateKeyState(keyName, pressed); }
 	void setSequenceMaxTimeWindow(double duration) { m_sequenceManager.setMaxTimeWindow(std::chrono::duration<double>(duration)); }
 };
