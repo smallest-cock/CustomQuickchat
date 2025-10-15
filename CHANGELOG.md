@@ -1,6 +1,13 @@
 # Changelog
 
 ## v1.10.2
+- Added ability to programatically send chats via console commands
+    |           Command     | Description |
+    |:----------------------|:-----------:|
+    | `cqc_send_chat_match "some chat"` | Send a match chat |
+    | `cqc_send_chat_team "some chat"` | Send a team chat |
+    | `cqc_send_chat_party "some chat"` | Send a party chat |
+    - Can be used as a simple way for other plugins to send chats ✅
 - Updated internal SDK to match latest version of RL (v2.59)
 
 ## v1.10.1

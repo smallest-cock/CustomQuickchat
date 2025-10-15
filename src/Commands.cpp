@@ -120,6 +120,48 @@ void CustomQuickchat::initCommands()
 		    LOG("voted to forfeit...");
 	    });
 
+	registerCommand(Commands::sendChatMatch,
+	    [this](std::vector<std::string> args)
+	    {
+		    if (args.size() < 2)
+		    {
+			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatMatch.name);
+			    return;
+		    }
+
+		    const std::string& msg = args[1];
+		    Instances.SendChat(msg, EChatChannel::EChatChannel_Match);
+		    LOG("Sent match chat...");
+	    });
+
+	registerCommand(Commands::sendChatTeam,
+	    [this](std::vector<std::string> args)
+	    {
+		    if (args.size() < 2)
+		    {
+			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatTeam.name);
+			    return;
+		    }
+
+		    const std::string& msg = args[1];
+		    Instances.SendChat(msg, EChatChannel::EChatChannel_Team);
+		    LOG("Sent team chat...");
+	    });
+
+	registerCommand(Commands::sendChatParty,
+	    [this](std::vector<std::string> args)
+	    {
+		    if (args.size() < 2)
+		    {
+			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatParty.name);
+			    return;
+		    }
+
+		    const std::string& msg = args[1];
+		    Instances.SendChat(msg, EChatChannel::EChatChannel_Party);
+		    LOG("Sent party chat...");
+	    });
+
 	// ================================= testing =================================
 	registerCommand(Commands::test,
 	    [this](std::vector<std::string> args)

@@ -57,6 +57,9 @@ constexpr CvarData listPlaylistInfo     = CVAR("list_playlist_info", "list info 
 constexpr CvarData listBindings         = CVAR("list_bindings", "show a list of all current bindings");
 constexpr CvarData exitToMainMenu       = CVAR("exit_to_main_menu", "exit to the main menu");
 constexpr CvarData forfeit              = CVAR("forfeit", "forfeit the current match");
+constexpr CvarData sendChatMatch        = CVAR("send_chat_match", "Send match chat");
+constexpr CvarData sendChatTeam         = CVAR("send_chat_team", "Send team chat");
+constexpr CvarData sendChatParty        = CVAR("send_chat_party", "Send party chat");
 constexpr CvarData test                 = CVAR("test", "test");
 constexpr CvarData test2                = CVAR("test2", "test 2");
 } // namespace Commands

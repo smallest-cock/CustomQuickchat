@@ -27,6 +27,9 @@ You can use the following commands in the BakkesMod console (`F6`) or bind them 
 | Command | Description | Best Used With |
 |--------|--------------|:--------------:|
 | `cqc_toggle_enabled` | Toggle custom quickchats on or off | Key bind |
+| `cqc_send_chat_match "some chat"` | Send a match chat | Another plugin |
+| `cqc_send_chat_team "some chat"` | Send a team chat | Another plugin |
+| `cqc_send_chat_party "some chat"` | Send a party chat | Another plugin |
 | `cqc_forfeit` | Instantly forfeit the match | Key bind |
 | `cqc_exit_to_main_menu` | Instantly return to the main menu | Key bind |
 | `cqc_list_bindings` | Lists your current quickchat bindings | Console |
