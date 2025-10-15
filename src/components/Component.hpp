@@ -1,4 +1,5 @@
 #pragma once
+#include "Instances.hpp"
 #include "Cvars.hpp"
 #include <ModUtils/wrappers/GFxWrapper.hpp>
 

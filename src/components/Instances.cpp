@@ -2,7 +2,6 @@
 #include "Instances.hpp"
 
 InstancesComponent::InstancesComponent() { OnCreate(); }
-
 InstancesComponent::~InstancesComponent() { OnDestroy(); }
 
 void InstancesComponent::OnCreate()
@@ -204,19 +203,14 @@ void InstancesComponent::MarkForDestroy(class UObject* object)
 	}
 }
 
-class UEngine* InstancesComponent::IUEngine() { return UEngine::GetEngine(); }
-
-class UAudioDevice* InstancesComponent::IUAudioDevice() { return UEngine::GetAudioDevice(); }
-
-class AWorldInfo* InstancesComponent::IAWorldInfo() { return UEngine::GetCurrentWorldInfo(); }
-
-class UCanvas* InstancesComponent::IUCanvas() { return I_UCanvas; }
-
-class AHUD* InstancesComponent::IAHUD() { return I_AHUD; }
-
-class UFileSystem* InstancesComponent::IUFileSystem() { return (UFileSystem*)UFileSystem::StaticClass(); }
-
+class UEngine*             InstancesComponent::IUEngine() { return UEngine::GetEngine(); }
+class UAudioDevice*        InstancesComponent::IUAudioDevice() { return UEngine::GetAudioDevice(); }
+class AWorldInfo*          InstancesComponent::IAWorldInfo() { return UEngine::GetCurrentWorldInfo(); }
+class UCanvas*             InstancesComponent::IUCanvas() { return I_UCanvas; }
+class AHUD*                InstancesComponent::IAHUD() { return I_AHUD; }
+class UFileSystem*         InstancesComponent::IUFileSystem() { return (UFileSystem*)UFileSystem::StaticClass(); }
 class UGameViewportClient* InstancesComponent::IUGameViewportClient() { return I_UGameViewportClient; }
+class APlayerController*   InstancesComponent::IAPlayerController() { return I_APlayerController; }
 
 class ULocalPlayer* InstancesComponent::IULocalPlayer()
 {
@@ -229,8 +223,6 @@ class ULocalPlayer* InstancesComponent::IULocalPlayer()
 
 	return nullptr;
 }
-
-class APlayerController* InstancesComponent::IAPlayerController() { return I_APlayerController; }
 
 struct FUniqueNetId InstancesComponent::GetUniqueID()
 {

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.2
+- Updated internal SDK to match latest version of RL (v2.59)
+
 ## v1.10.1
 - Fixed bug in applying custom chat timeout message
 - Minor improvements to binding detection system
