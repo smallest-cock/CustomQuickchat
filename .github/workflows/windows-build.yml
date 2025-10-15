@@ -226,15 +226,17 @@ jobs:
                 - `CustomQuickchat-with-STT.zip` has speech-to-text functionality, `CustomQuickchat.zip` does not
 
             3. Extract the `.zip` file and run `install.bat`
-              - If you get an error when running `install.bat`, you can manually drag/drop `${{ env.PLUGIN_NAME }}.dll` into your bakkesmod plugins folder located here:
-                ```
-                %appdata%\bakkesmod\bakkesmod\plugins
-                ```
-                - If you're using the STT version, you will also need to drag/drop the `SpeechToText` folder here:
-                  ```
-                  %appdata%\bakkesmod\bakkesmod\data\CustomQuickchat
-                  ```
-                  (you can create the `CustomQuickchat` folder if it doesn't exist)
+                <details> <summary>Getting an error when running <code>install.bat</code> ?</summary>
+                    <ul><br>
+                        <li>Drag/drop <code>CustomQuickchat.dll</code> into your bakkesmod plugins folder, usually located here:
+                            <br><code>C:\Users\{YOUR USERNAME}\AppData\Roaming\bakkesmod\bakkesmod\plugins</code>
+                        </li><br>
+                        <li>If you're using the STT version, you'll also need to drag/drop the <code>SpeechToText</code> folder here:
+                            <br><code>C:\Users\{YOUR USERNAME}\AppData\Roaming\bakkesmod\bakkesmod\data\CustomQuickchat</code>
+                            <br><ul><br><li>You can create the <code>CustomQuickchat</code> folder if it doesn't exist</li></ul>
+                        </li>
+                    </ul>
+                </details>
 
             ## Notes
             ${{ needs.check-changelog.outputs.changelog }}
