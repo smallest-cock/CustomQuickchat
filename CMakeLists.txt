@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.10.2)
+project(CustomQuickchat VERSION 1.10.3)
 
 set(CMAKE_CXX_STANDARD 20)
 

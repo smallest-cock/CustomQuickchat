@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.10.3
+- Removed some features that no longer work due to RL's recent chat system update:
+    - Disabling chat timeout in freeplay
+    - Chat uncensoring
+        - RIP you will be miss 🪦🙏🥀
+- Updated internal SDK to match latest version of RL (v2.60)
+
 ## v1.10.2
 - Added ability to programatically send chats via console commands
     |           Command     | Description |

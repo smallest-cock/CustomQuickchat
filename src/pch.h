@@ -25,10 +25,11 @@
 #pragma comment(lib, "Shlwapi.lib")
 
 #include <json/single_include/nlohmann/json.hpp>
+
+#define USE_GMALLOC
 #include <RLSDK/RLSDK_w_pch_includes/SdkHeaders.hpp>
 
 #include "logging.h"
 
-
 namespace fs = std::filesystem;
-using json = nlohmann::json;
+using json   = nlohmann::json;

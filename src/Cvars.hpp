@@ -16,11 +16,11 @@ constexpr CvarData overrideDefaultQuickchats = CVAR(
     "override_default_quickchats", "override default quickchat with custom one if they share the same binding");
 constexpr CvarData blockDefaultQuickchats     = CVAR("block_default_quickchats", "block default quickchats (without unbinding them)");
 constexpr CvarData disablePostMatchQuickchats = CVAR("disable_post_match_quickchats", "disable custom quickchats in the post match screen");
-constexpr CvarData disableChatTimeout         = CVAR("disable_chat_timeout", "disable chat timeout in freeplay");
+// constexpr CvarData disableChatTimeout         = CVAR("disable_chat_timeout", "disable chat timeout in freeplay");
 constexpr CvarData useCustomChatTimeoutMsg    = CVAR("enable_custom_chat_timeout_msg", "enable custom chat timeout message");
 constexpr CvarData removeTimestamps           = CVAR("remove_timestamps", "remove default chat timestamps");
 constexpr CvarData randomizeSarcasm           = CVAR("randomize_sarcasm", "randomize the sarcasm text effect");
-constexpr CvarData uncensorChats              = CVAR("uncensor_chats", "uncensor chats");
+// constexpr CvarData uncensorChats              = CVAR("uncensor_chats", "uncensor chats");
 
 // numbers
 constexpr CvarData sequenceTimeWindow = CVAR("button_sequence_time_window", "time window given for button sequence macros");

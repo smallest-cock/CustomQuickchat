@@ -18,7 +18,7 @@ void CustomQuickchat::onLoad()
 	_globalCvarManager = cvarManager;
 
 	Hooks.init(gameWrapper);
-	if (!Instances.InitGlobals())
+	if (!Instances.initGlobals())
 		return;
 
 	initCvars();
@@ -50,11 +50,11 @@ void CustomQuickchat::initCvars()
 	auto overrideDefaultQuickchats_cvar  = registerCvar_Bool(Cvars::overrideDefaultQuickchats, true);
 	auto blockDefaultQuickchats_cvar     = registerCvar_Bool(Cvars::blockDefaultQuickchats, false);
 	auto disablePostMatchQuickchats_cvar = registerCvar_Bool(Cvars::disablePostMatchQuickchats, false);
-	auto disableChatTimeout_cvar         = registerCvar_Bool(Cvars::disableChatTimeout, true);
+	// auto disableChatTimeout_cvar         = registerCvar_Bool(Cvars::disableChatTimeout, true);
 	auto useCustomChatTimeoutMsg_cvar    = registerCvar_Bool(Cvars::useCustomChatTimeoutMsg, true);
 	auto removeTimestamps_cvar           = registerCvar_Bool(Cvars::removeTimestamps, true);
 	auto randomizeSarcasm_cvar           = registerCvar_Bool(Cvars::randomizeSarcasm, true);
-	auto uncensorChats_cvar              = registerCvar_Bool(Cvars::uncensorChats, true);
+	// auto uncensorChats_cvar              = registerCvar_Bool(Cvars::uncensorChats, true);
 
 	// numbers
 	auto sequenceTimeWindow_cvar = registerCvar_Number(Cvars::sequenceTimeWindow, 2, true, 0, 10);
@@ -68,11 +68,11 @@ void CustomQuickchat::initCvars()
 	overrideDefaultQuickchats_cvar.bindTo(m_overrideDefaultQuickchats);
 	blockDefaultQuickchats_cvar.bindTo(m_blockDefaultQuickchats);
 	disablePostMatchQuickchats_cvar.bindTo(m_disablePostMatchQuickchats);
-	disableChatTimeout_cvar.bindTo(m_disableChatTimeout);
+	// disableChatTimeout_cvar.bindTo(m_disableChatTimeout);
 	useCustomChatTimeoutMsg_cvar.bindTo(m_useCustomChatTimeoutMsg);
 	removeTimestamps_cvar.bindTo(m_removeTimestamps);
 	randomizeSarcasm_cvar.bindTo(m_randomizeSarcasm);
-	uncensorChats_cvar.bindTo(m_uncensorChats);
+	// uncensorChats_cvar.bindTo(m_uncensorChats);
 
 	sequenceTimeWindow_cvar.bindTo(m_sequenceTimeWindow);
 	minBindingDelay_cvar.bindTo(m_minBindingDelay);

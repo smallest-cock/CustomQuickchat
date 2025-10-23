@@ -98,7 +98,7 @@ void CustomQuickchat::display_generalSettings()
 	auto disablePostMatchQuickchats_cvar = getCvar(Cvars::disablePostMatchQuickchats);
 	auto removeTimestamps_cvar           = getCvar(Cvars::removeTimestamps);
 	auto randomizeSarcasm_cvar           = getCvar(Cvars::randomizeSarcasm);
-	auto uncensorChats_cvar              = getCvar(Cvars::uncensorChats);
+	// auto uncensorChats_cvar              = getCvar(Cvars::uncensorChats);
 
 	GUI::Spacing(2);
 
@@ -125,9 +125,9 @@ void CustomQuickchat::display_generalSettings()
 	if (ImGui::Checkbox("Remove chat timestamps", &removeTimestamps))
 		removeTimestamps_cvar.setValue(removeTimestamps);
 
-	bool uncensorChats = uncensorChats_cvar.getBoolValue();
-	if (ImGui::Checkbox("Uncensor chats", &uncensorChats))
-		uncensorChats_cvar.setValue(uncensorChats);
+	// bool uncensorChats = uncensorChats_cvar.getBoolValue();
+	// if (ImGui::Checkbox("Uncensor chats", &uncensorChats))
+	// 	uncensorChats_cvar.setValue(uncensorChats);
 
 	GUI::Spacing(2);
 
@@ -147,15 +147,15 @@ void CustomQuickchat::display_generalSettings()
 
 void CustomQuickchat::display_chatTimeoutSettings()
 {
-	auto disableChatTimeout_cvar      = getCvar(Cvars::disableChatTimeout);
+	// auto disableChatTimeout_cvar      = getCvar(Cvars::disableChatTimeout);
 	auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
 	auto customChatTimeoutMsg_cvar    = getCvar(Cvars::customChatTimeoutMsg);
 
 	GUI::Spacing(2);
 
-	bool disableChatTimeout = disableChatTimeout_cvar.getBoolValue();
-	if (ImGui::Checkbox("Disable chat timeout (freeplay)", &disableChatTimeout))
-		disableChatTimeout_cvar.setValue(disableChatTimeout);
+	// bool disableChatTimeout = disableChatTimeout_cvar.getBoolValue();
+	// if (ImGui::Checkbox("Disable chat timeout (freeplay)", &disableChatTimeout))
+	// 	disableChatTimeout_cvar.setValue(disableChatTimeout);
 
 	bool useCustomChatTimeoutMsg = useCustomChatTimeoutMsg_cvar.getBoolValue();
 	if (ImGui::Checkbox("Custom chat timeout message", &useCustomChatTimeoutMsg))

@@ -1,7 +1,13 @@
 #pragma once
 #include "pch.h"
 
-static constexpr int32_t INSTANCES_INTERATE_OFFSET = 100;
+static constexpr int32_t INSTANCES_INTERATE_OFFSET = 10;
+
+template <typename T>
+concept UObjectOrDerived = std::is_base_of_v<UObject, T>;
+
+using GNames_t   = TArray<FNameEntry*>*;
+using GObjects_t = TArray<UObject*>*;
 
 class InstancesComponent
 {
@@ -13,14 +19,17 @@ public:
 	void OnCreate();
 	void OnDestroy();
 
-	// initialize globals for RLSDK
+	bool initGlobals(); // initialize globals for RLSDK
+
+private:
 	uintptr_t FindPattern(HMODULE module, const unsigned char* pattern, const char* mask);
-	uintptr_t GetGNamesAddress();
-	uintptr_t GetGObjectsAddress();
-	bool      InitGlobals();
 	bool      AreGObjectsValid();
 	bool      AreGNamesValid();
 	bool      CheckGlobals();
+
+	uintptr_t findGNamesAddress();
+	uintptr_t findGMallocAddress();
+	uintptr_t findGPsyonixBuildIDAddress();
 
 private:
 	std::map<std::string, class UClass*>    m_staticClasses;
@@ -31,40 +40,31 @@ private:
 
 public:
 	// Get the default constructor of a class type. Example: UGameData_TA* gameData = GetDefaultInstanceOf<UGameData_TA>();
-	template <typename T> T* GetDefaultInstanceOf()
+	template <UObjectOrDerived T> T* GetDefaultInstanceOf()
 	{
-		if (std::is_base_of<UObject, T>::value)
+		for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); ++i)
 		{
-			for (int32_t i = 0; i < (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i++)
-			{
-				UObject* uObject = UObject::GObjObjects()->at(i);
+			UObject* uObject = UObject::GObjObjects()->at(i);
+			if (!validUObject(uObject) || !uObject->IsA<T>())
+				continue;
 
-				if (uObject && uObject->IsA<T>())
-				{
-					if (uObject->GetFullName().find("Default__") != std::string::npos)
-					{
-						return static_cast<T*>(uObject);
-					}
-				}
-			}
+			if (uObject->ObjectFlags & RF_ClassDefaultObject)
+				return static_cast<T*>(uObject);
 		}
 
 		return nullptr;
 	}
 
 	// Get the most current/active instance of a class. Example: UEngine* engine = GetInstanceOf<UEngine>();
-	template <typename T> T* GetInstanceOf()
+	template <UObjectOrDerived T> T* GetInstanceOf(bool omitDefaultsAndArchetypes = true)
 	{
-		if (!std::is_base_of<UObject, T>::value)
-			return nullptr;
-
 		for (int32_t i = (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i > 0; --i)
 		{
 			UObject* uObject = UObject::GObjObjects()->at(i);
-			if (!uObject || !uObject->IsA<T>())
+			if (!validUObject(uObject) || !uObject->IsA<T>())
 				continue;
 
-			if (uObject->ObjectFlags & RF_DefaultOrArchetypeFlags)
+			if (omitDefaultsAndArchetypes && uObject->ObjectFlags & RF_DefaultOrArchetypeFlags)
 				continue;
 
 			return static_cast<T*>(uObject);
@@ -73,56 +73,43 @@ public:
 		return nullptr;
 	}
 
-	// Get the most current/active instance of a class, if one isn't found it creates a new instance. Example: UEngine* engine =
-	// GetInstanceOf<UEngine>();
-	template <typename T> T* GetOrCreateInstance()
-	{
-		if (std::is_base_of<UObject, T>::value)
-		{
-			for (int32_t i = (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i > 0; i--)
-			{
-				UObject* uObject = UObject::GObjObjects()->at(i);
-
-				if (uObject && uObject->IsA<T>())
-				{
-					// if (uObject->GetFullName().find("Default__") == std::string::npos)
-					if (CheckNotInName(uObject, "Default") && CheckNotInName(uObject, "Archetype") &&
-					    CheckNotInName(uObject, "PostGameLobby") && CheckNotInName(uObject, "Test"))
-					{
-						return static_cast<T*>(uObject);
-					}
-				}
-			}
-
-			return CreateInstance<T>();
-		}
-
-		return nullptr;
-	}
-
 	// Get all active instances of a class type. Example: std::vector<APawn*> pawns = GetAllInstancesOf<APawn>();
-	template <typename T> std::vector<T*> GetAllInstancesOf()
+	template <UObjectOrDerived T> std::vector<T*> GetAllInstancesOf(bool omitDefaultsAndArchetypes = true)
 	{
 		std::vector<T*> objectInstances;
-
-		if (!std::is_base_of<UObject, T>::value)
-			return objectInstances;
 
 		for (int32_t i = (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i > 0; --i)
 		{
 			UObject* uObject = UObject::GObjObjects()->at(i);
-			if (!uObject || !uObject->IsA<T>())
+			if (!validUObject(uObject) || !uObject->IsA<T>())
 				continue;
 
-			if (uObject->ObjectFlags & RF_DefaultOrArchetypeFlags)
+			if (omitDefaultsAndArchetypes && uObject->ObjectFlags & RF_DefaultOrArchetypeFlags)
 				continue;
 
 			objectInstances.push_back(static_cast<T*>(uObject));
 		}
 
-		LOG("Number of {}* found: {}", GetTypeName<T>(), objectInstances.size());
-
 		return objectInstances;
+	}
+
+	// Get the most current/active instance of a class, if one isn't found it creates a new instance. Example: UEngine* engine =
+	// GetInstanceOf<UEngine>();
+	template <UObjectOrDerived T> T* GetOrCreateInstance()
+	{
+		for (int32_t i = (UObject::GObjObjects()->size() - INSTANCES_INTERATE_OFFSET); i > 0; --i)
+		{
+			UObject* uObject = UObject::GObjObjects()->at(i);
+			if (!validUObject(uObject) || !uObject->IsA<T>())
+				continue;
+
+			if (uObject->ObjectFlags & RF_DefaultOrArchetypeFlags)
+				continue;
+
+			return static_cast<T*>(uObject);
+		}
+
+		return CreateInstance<T>();
 	}
 
 	// Get all default instances of a class type.
@@ -236,26 +223,20 @@ public:
 	// Creates a new transient instance of a class which then adds it to globals.
 	// YOU are required to make sure these objects eventually get eaten up by the garbage collector in some shape or form.
 	// Example: UObject* newObject = CreateInstance<UObject>();
-	template <typename T> T* CreateInstance()
+	template <UObjectOrDerived T> T* CreateInstance()
 	{
-		T* returnObject = nullptr;
+		T*      returnObject  = nullptr;
+		T*      defaultObject = GetDefaultInstanceOf<T>();
+		UClass* staticClass   = T::StaticClass();
 
-		if (std::is_base_of<UObject, T>::value)
+		if (defaultObject && staticClass)
+			returnObject = static_cast<T*>(defaultObject->DuplicateObject(defaultObject, defaultObject->Outer, staticClass));
+
+		// Making sure newly created object doesn't get randomly destoyed by the garbage collector when we don't want it do.
+		if (returnObject)
 		{
-			T*      defaultObject = GetDefaultInstanceOf<T>();
-			UClass* staticClass   = T::StaticClass();
-
-			if (defaultObject && staticClass)
-			{
-				returnObject = static_cast<T*>(defaultObject->DuplicateObject(defaultObject, defaultObject->Outer, staticClass));
-			}
-
-			// Making sure newly created object doesn't get randomly destoyed by the garbage collector when we don't want it do.
-			if (returnObject)
-			{
-				MarkInvincible(returnObject);
-				m_createdObjects.push_back(returnObject);
-			}
+			MarkInvincible(returnObject);
+			m_createdObjects.push_back(returnObject);
 		}
 
 		return returnObject;

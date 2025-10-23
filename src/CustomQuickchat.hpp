@@ -131,8 +131,10 @@ private:
 	void        performBindingAction(const Binding& binding);
 	std::string process_keywords_in_chat_str(const Binding& binding);
 
+	/*
 	// recieving chats
 	FString m_censoredChatSave;
+	*/
 
 	// chat timeout
 	std::string getChatTimeoutMsg() { return *m_useCustomChatTimeoutMsg ? *m_customChatTimeoutMsg : DEFAULT_CHAT_TIMEOUT_MSG; }
