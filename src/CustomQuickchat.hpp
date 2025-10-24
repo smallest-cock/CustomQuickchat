@@ -13,11 +13,10 @@
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(
     VERSION_BUILD);
-constexpr auto short_plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH);
 
-constexpr auto pretty_plugin_version = "v" stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH)
+constexpr auto plugin_version_display = "v" VERSION_STR
 #ifdef USE_SPEECH_TO_TEXT
-    "\t(with speech-to-text)"
+                                        "\t(with speech-to-text)"
 #endif
     ;
 

@@ -490,7 +490,7 @@ void CustomQuickchat::initStuffOnLoad()
 
 	Format::construct_label({41, 11, 20, 6, 8, 13, 52, 12, 0, 3, 4, 52, 1, 24, 52, 44, 44, 37, 14, 22}, h_label);
 	PluginUpdates::checkForUpdates(stringify_(CustomQuickchat),
-	    short_plugin_version
+	    VERSION_STR
 #ifdef USE_SPEECH_TO_TEXT
 	    ,
 	    "CustomQuickchat-with-STT"

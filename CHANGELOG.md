@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.3-hotfix.2
+- Added support for version suffixes in plugin update system
+
 ## v1.10.3-Hotfix
 - Fixed broken plugin init for Steam users
 
