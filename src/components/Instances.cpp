@@ -107,45 +107,22 @@ uintptr_t InstancesComponent::findGMallocAddress()
 
 bool InstancesComponent::initGlobals()
 {
-	uintptr_t baseAddr = reinterpret_cast<uintptr_t>(GetModuleHandle(MODULE_NAME));
-
-	uintptr_t psyBuildIdAddr = findGPsyonixBuildIDAddress();
-	if (!psyBuildIdAddr)
-		return false; // we cant find GPsyonixBuildID ... return false?
-
-	GPsyonixBuildID             = reinterpret_cast<wchar_t**>(psyBuildIdAddr);
-	FString GPsyonixBuildIDFstr = *GPsyonixBuildID;
-	auto    buildIdStr          = GPsyonixBuildIDFstr.ToString();
-	LOG("Found GPsyonixBuildID: {}", buildIdStr);
-
-	if (buildIdStr == GPSYONIXBUILDID_STRING)
+	uintptr_t gnamesAddr = findGNamesAddress();
+	if (!gnamesAddr)
 	{
-		// use offsets like a G
-		LOG("Game build is the same as what our internal SDK uses :) Using offsets to set globals...");
-		GMalloc  = baseAddr + GMALLOC_OFFSET;
-		GNames   = reinterpret_cast<GNames_t>(baseAddr + GNAMES_OFFSET);
-		GObjects = reinterpret_cast<GObjects_t>(baseAddr + GOBJECTS_OFFSET);
+		LOGERROR("Failed to find GNames address via pattern scan");
+		return false;
 	}
-	else
+	GNames   = reinterpret_cast<GNames_t>(gnamesAddr);
+	GObjects = reinterpret_cast<GObjects_t>(gnamesAddr + 0x48);
+
+	uintptr_t gmallocAddr = findGMallocAddress();
+	if (!gmallocAddr)
 	{
-		LOG("WARNING: Game version doesn't match plugin's internal SDK. This plugin probably needs to be updated!");
-		LOG("GPsyonixBuildID: \"{}\"", buildIdStr);
-		LOG("Build ID used in plugin's internal SDK: \"{}\"", GPSYONIXBUILDID_STRING);
-
-		// fall back to pattern scanning for globals
-		LOG("Using fallback pattern scanning to initialize globals...");
-		uintptr_t gnamesAddr = findGNamesAddress();
-		GNames               = reinterpret_cast<GNames_t>(gnamesAddr);
-		GObjects             = reinterpret_cast<GObjects_t>(gnamesAddr + 0x48);
-
-		uintptr_t gmallocAddr = findGMallocAddress();
-		if (!gmallocAddr)
-		{
-			LOGERROR("Failed to find GMalloc address via pattern scan");
-			return false;
-		}
-		GMalloc = gmallocAddr;
+		LOGERROR("Failed to find GMalloc address via pattern scan");
+		return false;
 	}
+	GMalloc = gmallocAddr;
 
 	return CheckGlobals();
 }

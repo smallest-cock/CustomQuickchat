@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.3-Hotfix
+- Fixed broken plugin init for Steam users
+
 ## v1.10.3
 - Removed some features that no longer work due to RL's recent chat system update:
     - Disabling chat timeout in freeplay
