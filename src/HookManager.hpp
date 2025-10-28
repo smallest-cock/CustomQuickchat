@@ -42,7 +42,7 @@ public:
 #ifdef THROW_ON_DOUBLE_HOOK // if this throws in the onLoad function BM will just catch the exception and log it in console. aka no crash :(
 			throw std::runtime_error("Already hooked " + std::string(type == HookType::Pre ? "Pre" : "Post") + ": \"" + eventName + "\"");
 #else
-			LOG("ERROR: Already hooked {}: \"{}\"", type == HookType::Pre ? "Pre" : "Post", eventName);
+			LOGERROR("Already hooked {}: \"{}\"", type == HookType::Pre ? "Pre" : "Post", eventName);
 #endif
 			return;
 		}
@@ -88,6 +88,7 @@ public:
 		}
 
 		m_hookedEvents.insert(key);
+		LOG("Hooked function {} (with caller): \"{}\"", type == HookType::Pre ? "PRE" : "POST", eventName);
 	}
 
 	void unhookEvent(const std::string& eventName, HookType type)

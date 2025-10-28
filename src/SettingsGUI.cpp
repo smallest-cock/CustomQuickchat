@@ -20,10 +20,11 @@ void CustomQuickchat::RenderSettings()
 	if (!enabled_cvar)
 		return;
 
-	const float content_height = ImGui::GetContentRegionAvail().y - FOOTER_HEIGHT; // available height after accounting for footer
+	const float contentHeight = ImGui::GetContentRegionAvail().y - FOOTER_HEIGHT; // available height after accounting for footer
 
-	if (ImGui::BeginChild("PluginSettingsSection", ImVec2(0, content_height)))
 	{
+		GUI::ScopedChild c{"PluginSettingsSection", ImVec2(0, contentHeight)};
+
 		GUI::alt_settings_header(h_label.c_str(), plugin_version_display, gameWrapper);
 
 		bool enabled = enabled_cvar.getBoolValue();
@@ -83,8 +84,13 @@ void CustomQuickchat::RenderSettings()
 			ImGui::InputText("##openMenuCommand", &openMenuCmd, ImGuiInputTextFlags_ReadOnly);
 			GUI::CopyButton("Copy", openMenuCmd.c_str());
 		}
+
+		/*
+		// debug
+		GUI::Spacing(4);
+		LobbyInfo.display_debug();
+		*/
 	}
-	ImGui::EndChild();
 
 	GUI::alt_settings_footer("Need help? Join the Discord", "https://discord.gg/d5ahhQmJbJ");
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.4
+- Fixed `[[lastChat]]` keywords not working due to RL update v2.59 [#19](https://github.com/smallest-cock/CustomQuickchat/issues/19)
+
 ## v1.10.3-hotfix.2
 - Added support for version suffixes in plugin update system
 

@@ -258,14 +258,43 @@ void CustomQuickchat::initHooks()
 
 	// ====================================================================================================
 
-	// when censored chat is displayed
+	auto logChatData = [this](const UGFxData_Chat_TA_execOnChatMessage_Params& params)
+	{
+		{
+			Helper::ScopedBannerLog log{"Chat Info"};
+			LOG("{:<25} {}", "Team:", params.Team);
+			LOG("{:<25} \"{}\"", "PlayerName:", params.PlayerName.ToString());
+			LOG("{:<25} \"{}\"", "Message:", params.Message.ToString());
+			LOG("{:<25} {}", "ChatChannel:", params.ChatChannel);
+			LOG("{:<25} {}", "bLocalPlayer:", static_cast<bool>(params.bLocalPlayer));
+			LOG("{:<25} {}", "MessageType:", params.MessageType);
+			LOG("{:<25} \"{}\"", "TimeStamp:", params.TimeStamp.ToString());
+		}
+		{
+			Helper::ScopedBannerLog log{"SenderId"};
+			LOG("{:<25} {}", "Platform:", params.SenderId.Platform);
+			LOG("{:<25} \"{}\"", "EpicAccountId:", params.SenderId.EpicAccountId.ToString());
+			LOG("{:<25} {}", "Uid:", params.SenderId.Uid);
+			LOG("{:<25} {}", "SplitscreenID:", params.SenderId.SplitscreenID);
+		}
+	};
+
+	// when a chat is displayed
+	// ... also fires on "X left the match." match notification chats
 	Hooks.hookEvent(Events::GFxData_Chat_TA_OnChatMessage,
 	    HookType::Pre,
-	    [this](ActorWrapper Caller, void* Params, ...)
+	    [this, logChatData](ActorWrapper Caller, void* Params, ...)
 	    {
 		    auto* params = reinterpret_cast<UGFxData_Chat_TA_execOnChatMessage_Params*>(Params);
 		    if (!params)
 			    return;
+
+		    // logChatData(*params); // for debug
+
+		    if (params->Team < 0 && params->PlayerName.empty())
+			    LOG("Team < 0 and PlayerName is empty. Assuming this is a match notification (wont be added to log)", params->Team);
+		    else
+			    LobbyInfo.handleChatMsg(*params);
 
 		    if (*m_removeTimestamps)
 		    {

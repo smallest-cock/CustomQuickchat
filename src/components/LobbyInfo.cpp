@@ -1,6 +1,7 @@
 #include "pch.h"
-#include "ModUtils/gui/GuiTools.hpp"
 #include "LobbyInfo.hpp"
+#include "Structs.hpp"
+#include "ModUtils/gui/GuiTools.hpp"
 #include "bakkesmod/wrappers/Engine/ActorWrapper.h"
 #include "Events.hpp"
 #include "Cvars.hpp"
@@ -8,6 +9,10 @@
 #include "Instances.hpp"
 #include "HookManager.hpp"
 #include <optional>
+
+// ##############################################################################################################
+// ################################################    INIT    ##################################################
+// ##############################################################################################################
 
 void LobbyInfoComponent::init(const std::shared_ptr<GameWrapper>& gw)
 {
@@ -75,7 +80,7 @@ void LobbyInfoComponent::initHooks()
 		m_matchChats.emplace_back(params->NewMessage);
 		LOG("Added chat to stored chats. New size: {}", m_matchChats.size());
 	};
-	Hooks.hookEvent(Events::GFxData_Chat_TA_AddChatMessage, HookType::Post, handleGfxMsgAdded);
+	// Hooks.hookEvent(Events::GFxData_Chat_TA_AddChatMessage, HookType::Post, handleGfxMsgAdded);
 	Hooks.hookEvent(Events::GFxData_Chat_TA_AddPresetMessage, HookType::Post, handleGfxMsgAdded);
 
 	Hooks.hookEvent(Events::GFxData_Chat_TA_OnRemoved,
@@ -85,6 +90,22 @@ void LobbyInfoComponent::initHooks()
 		    LOG("UGFxData_Chat_TA::OnRemoved fired");
 		    m_gfxChatData = nullptr;
 	    });
+}
+
+// ##############################################################################################################
+// ###############################################    FUNCTIONS    ##############################################
+// ##############################################################################################################
+
+void LobbyInfoComponent::handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params& params)
+{
+	if (UidWrapper::unreal_id_to_uid_str(params.SenderId) == "Unknown|0|0")
+	{
+		LOG("Chat SenderId is empty. We aint finna save it");
+		return;
+	}
+
+	m_matchChats.emplace_back(params);
+	LOG("Added chat to m_matchChats: \"{}\"", m_matchChats.back().Message);
 }
 
 std::string LobbyInfoComponent::getLastChat()
@@ -97,7 +118,7 @@ std::string LobbyInfoComponent::getLastChat()
 	}
 	if (chat->Message.empty())
 	{
-		LOG("[ERROR] Message is empty string from last chat data");
+		LOGERROR("Message from last chat data is empty string");
 		return "";
 	}
 
@@ -343,6 +364,46 @@ void LobbyInfoComponent::display_settings()
 
 	if (ImGui::Button("Clear##playerRanks"))
 		GAME_THREAD_EXECUTE({ clearStoredRanks(); });
+}
+
+void LobbyInfoComponent::display_debug()
+{
+	static bool show = false;
+
+	ImGui::Checkbox("Show debug info", &show);
+	if (!show)
+		return;
+
+	ImGui::Text("m_matchChats size: %zu", m_matchChats.size());
+	ImGui::Text("m_matchRanks size: %zu", m_matchRanks.size());
+
+	GUI::Spacing(2);
+
+	ImGui::TextUnformatted("Match Chats:");
+	{
+		GUI::ScopedChild c{"MatchChats", ImVec2(0.0f, 500.0f), true};
+
+		for (int i = m_matchChats.size() - 1; i >= 0; --i)
+		{
+			const auto& matchChat = m_matchChats[i];
+
+			std::string chatMode;
+			switch (matchChat.ChatChannel)
+			{
+			case EChatChannel::EChatChannel_Team:
+				chatMode = "[Team]";
+				break;
+			case EChatChannel::EChatChannel_Party:
+				chatMode = "[Party]";
+				break;
+			default:
+				break;
+			}
+
+			std::string displayStr = std::format("{0:<7} {1:<30} \"{2}\"", chatMode, matchChat.PlayerName + ":", matchChat.Message);
+			ImGui::TextUnformatted(displayStr.c_str());
+		}
+	}
 }
 
 class LobbyInfoComponent LobbyInfo{};

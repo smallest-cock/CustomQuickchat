@@ -1,4 +1,5 @@
 #pragma once
+#include "RLSDK/RLSDK_w_pch_includes/SDK_HEADERS/TAGame_parameters.hpp"
 #include <string>
 #include <unordered_map>
 
@@ -329,14 +330,18 @@ struct ChatData
 	std::string  Message;
 	std::string  TimeStamp;
 	std::string  IdString;
-	int          Team;
+	int          Team = 420;
 	EChatChannel ChatChannel;
 	NetId        SenderId;
-	bool         IsUser;
-	bool         IsQuickchat;
+	bool         IsUser      = false;
+	bool         IsQuickchat = false;
 
+public:
+	ChatData() = default;
 	ChatData(const FGFxChatMessage& msg);
+	ChatData(const UGFxData_Chat_TA_execOnChatMessage_Params& params);
 
+public:
 	bool is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const;
 };
 

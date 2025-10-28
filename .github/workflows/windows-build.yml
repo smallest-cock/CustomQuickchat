@@ -2,6 +2,7 @@ name: 🧱 Build DLL & release (Windows)
 
 env:
   PLUGIN_NAME: CustomQuickchat
+  PLUGIN_NAME_FORMATTED: Custom Quickchat
   TAG_NAME: ${{ github.event.inputs.tag || github.ref_name }}
 
 on:
@@ -241,3 +242,17 @@ jobs:
             ## Notes
             ${{ needs.check-changelog.outputs.changelog }}
           files: artifacts/*.zip
+
+  post-to-discord:
+    runs-on: windows-latest
+    needs: release
+    steps:
+      - name: Post release info in discord channel 🤓
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          nodetail: true
+          title: "💬 **${{ env.PLUGIN_NAME_FORMATTED }}** `${{ env.TAG_NAME }}` has been released! 🚀"
+          description: |
+            Click [here](${{ github.event.release.html_url }}) to download!
+          color: 0x00fff4

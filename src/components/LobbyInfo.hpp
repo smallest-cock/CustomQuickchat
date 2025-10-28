@@ -46,6 +46,7 @@ public:
 	static std::string      getPlatformStr(uint8_t platform);
 	static void             logChatData(const ChatData& chat);
 	void                    clearStoredChats();
+	void                    handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params& params);
 
 	inline size_t getMatchChatsSize() { return m_matchChats.size(); }
 	inline size_t getMatchRanksSize() { return m_matchRanks.size(); }
@@ -60,6 +61,7 @@ public:
 
 public:
 	void display_settings();
+	void display_debug();
 };
 
 extern class LobbyInfoComponent LobbyInfo;

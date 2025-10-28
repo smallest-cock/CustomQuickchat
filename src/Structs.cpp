@@ -8,106 +8,6 @@
 // ##############################################    Binding    #################################################
 // ##############################################################################################################
 
-/*
-bool Binding::shouldBeTriggered(const ButtonPress& buttonEvent,
-    const std::unordered_map<std::string, bool>&   keyStates,
-    const std::chrono::steady_clock::time_point&   lastChatSent,
-    const std::chrono::steady_clock::time_point&   epochTime,
-    const std::chrono::duration<double>&           minDelayBetweenBindings,
-    const std::chrono::duration<double>&           maxTimeWindow)
-{
-    switch (bindingType)
-    {
-    case EBindingType::Combination:
-        return checkCombination(buttonEvent, keyStates, lastChatSent, minDelayBetweenBindings);
-    case EBindingType::Sequence:
-        return checkSequence(buttonEvent, lastChatSent, epochTime, minDelayBetweenBindings, maxTimeWindow);
-    default:
-        return false; // if there's no valid binding type for some reason
-    }
-}
-
-bool Binding::checkCombination(const ButtonPress& buttonEvent,
-    const std::unordered_map<std::string, bool>&  keyStates,
-    const std::chrono::steady_clock::time_point&  lastBindingActivated,
-    const std::chrono::duration<double>&          minDelayBetweenBindings)
-{
-    if (buttons.empty())
-        return false;
-
-    for (const std::string& button : buttons)
-    {
-        if (keyStates.contains(button))
-        {
-            if (!keyStates.at(button))
-                return false;
-        }
-    }
-
-    // check if event happened AFTER minBindingDelay
-    return buttonEvent.pressedTime > lastBindingActivated + minDelayBetweenBindings;
-}
-
-// TODO: this function is gay, replace with cleaner trie system.. maybe take a global trie object as params
-bool Binding::checkSequence(const ButtonPress&   buttonEvent,
-    const std::chrono::steady_clock::time_point& lastChatSent,
-    const std::chrono::steady_clock::time_point& epochTime,
-    const std::chrono::duration<double>&         minDelayBetweenBindings,
-    const std::chrono::duration<double>&         maxTimeWindow)
-{
-    if (buttons.size() < 2)
-        return false; // exit if there's not at least 2 buttons in binding
-
-    bool button1Pressed = buttonEvent.buttonName == buttons[0];
-    bool button2Pressed = buttonEvent.buttonName == buttons[1];
-
-    if (!button1Pressed && !button2Pressed)
-        return false; // early exit if no buttons from binding have been pressed
-
-    // if first button press data is empty...
-    if (firstButtonState.buttonName.empty() || firstButtonState.pressedTime == epochTime)
-    {
-        if (button1Pressed)
-            firstButtonState = buttonEvent; // update first button press data then exit
-        return false;
-    }
-
-    // if first button press data exists.......
-
-    // if first button press data is too old... reset or update it, then exit
-    if (buttonEvent.pressedTime > firstButtonState.pressedTime + maxTimeWindow)
-    {
-        if (button1Pressed)
-            firstButtonState = buttonEvent; // update first button press data
-        else
-            firstButtonState.reset(epochTime); // reset info bc 1st button doesn't match
-        return false;
-    }
-
-    // if first button press data is still valid.......
-
-    if (!button2Pressed)
-        return false;
-
-    // make sure 2nd button pressed in appropriate time window (AFTER minBindingDelay and BEFORE sequenceTimeWindow)
-    bool correct1stButtonPressed  = firstButtonState.buttonName == buttons[0];
-    bool button2PressedLateEnough = buttonEvent.pressedTime > firstButtonState.pressedTime + minDelayBetweenBindings;
-
-    if (correct1stButtonPressed)
-    {
-        if (button2PressedLateEnough)
-        {
-            firstButtonState.reset(epochTime);
-            return true;
-        }
-
-        firstButtonState.reset(epochTime); // binding was triggered too early, just reset it (bc it prolly wasn't meant to be triggered)
-    }
-
-    return false;
-}
-*/
-
 void Binding::updateKeywordAndTextEffect(const std::string& regexPatternStr)
 {
 	std::vector<std::string> matchedSubstrings = getMatchedSubstrings(chat, regexPatternStr);
@@ -276,12 +176,6 @@ void VariationList::updateDataFromUnparsedString()
 // ###############################################    ...    ####################################################
 // ##############################################################################################################
 
-// void ButtonPress::reset(const std::chrono::steady_clock::time_point& epochTime)
-// {
-// 	buttonName.clear();
-// 	pressedTime = epochTime;
-// }
-
 FUniqueNetId NetId::to_unreal_id() const
 {
 	FUniqueNetId id;
@@ -314,8 +208,28 @@ ChatData::ChatData(const FGFxChatMessage& msg)
 	SenderId    = msg.SenderId;
 	IsUser      = msg.bLocalPlayer;
 	IsQuickchat = msg.bPreset;
+	IdString    = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
+}
 
-	IdString = UidWrapper::unreal_id_to_uid_str(msg.SenderId);
+ChatData::ChatData(const UGFxData_Chat_TA_execOnChatMessage_Params& params)
+{
+	// Determine if message is a quickchat. If so, update chatText and IsQuickchat flag
+	std::string chatText = params.Message.ToString();
+	auto        it       = g_quickchatIdsToText.find(chatText);
+	if (it != g_quickchatIdsToText.end())
+	{
+		chatText    = it->second;
+		IsQuickchat = true;
+	}
+
+	PlayerName  = params.PlayerName.ToString();
+	Message     = chatText;
+	TimeStamp   = params.TimeStamp.ToString();
+	Team        = params.Team;
+	ChatChannel = static_cast<EChatChannel>(params.ChatChannel);
+	SenderId    = params.SenderId;
+	IsUser      = params.bLocalPlayer;
+	IdString    = UidWrapper::unreal_id_to_uid_str(params.SenderId);
 }
 
 bool ChatData::is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const
