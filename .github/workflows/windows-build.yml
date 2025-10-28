@@ -252,7 +252,7 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           nodetail: true
-          title: "💬 **${{ env.PLUGIN_NAME_FORMATTED }}** `${{ env.TAG_NAME }}` has been released! 🚀"
+          title: "**${{ env.PLUGIN_NAME_FORMATTED }}** `${{ env.TAG_NAME }}` has been released! 💬🚀"
           description: |
-            Click [here](${{ github.event.release.html_url }}) to download!
+            Click [here](${{ github.event.repository.html_url }}/releases/tag/${{ github.ref_name }}) to download!
           color: 0x00fff4
