@@ -9,8 +9,8 @@
 #include <thread>
 #ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
-#include "components/LobbyInfo.hpp"
 #endif
+#include "components/LobbyInfo.hpp"
 
 BAKKESMOD_PLUGIN(CustomQuickchat, "Custom Quickchat", plugin_version, PLUGINTYPE_FREEPLAY)
 
