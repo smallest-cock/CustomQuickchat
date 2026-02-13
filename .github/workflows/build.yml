@@ -218,6 +218,7 @@ jobs:
           subject-path: "artifacts/${{ env.PLUGIN_NAME }}-with-STT.zip"
 
       - name: 🚀 Create release
+        id: create_release
         uses: softprops/action-gh-release@v2
         env:
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -249,16 +250,15 @@ jobs:
             [GitHub build workflow](${{ env.WORKFLOW_URL }})
           files: artifacts/*.zip
 
-  post-to-discord:
-    runs-on: windows-latest
-    needs: release
-    steps:
       - name: Post release info in discord channel 🤓
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           nodetail: true
-          title: "**${{ env.PLUGIN_NAME_FORMATTED }}** `${{ env.TAG_NAME }}` has been released! 💬🚀"
+          title: "**${{ env.PLUGIN_NAME_FORMATTED }}** `${{ env.TAG_NAME }}` has been released! 💬"
           description: |
-            Click [here](${{ github.event.repository.html_url }}/releases/tag/${{ github.ref_name }}) to download!
+            ### Notes
+            ${{ needs.check-changelog.outputs.changelog }}
+
+            **Download:** [${{ env.TAG_NAME }}](${{ steps.create_release.outputs.url }})
           color: 0x00fff4
