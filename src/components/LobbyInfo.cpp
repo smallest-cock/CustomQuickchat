@@ -5,17 +5,15 @@
 #include "bakkesmod/wrappers/Engine/ActorWrapper.h"
 #include "Events.hpp"
 #include "Cvars.hpp"
-#include "Macros.hpp"
-#include "Instances.hpp"
-#include "HookManager.hpp"
+#include "util/Macros.hpp"
+#include "util/Instances.hpp"
 #include <optional>
 
 // ##############################################################################################################
 // ################################################    INIT    ##################################################
 // ##############################################################################################################
 
-void LobbyInfoComponent::init(const std::shared_ptr<GameWrapper>& gw)
-{
+void LobbyInfoComponent::init(const std::shared_ptr<GameWrapper> &gw) {
 	gameWrapper = gw;
 
 	initFilepaths();
@@ -23,8 +21,7 @@ void LobbyInfoComponent::init(const std::shared_ptr<GameWrapper>& gw)
 	initHooks();
 }
 
-void LobbyInfoComponent::initFilepaths()
-{
+void LobbyInfoComponent::initFilepaths() {
 	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
 	fs::path pluginFolder         = bmDataFolderFilePath / "CustomQuickchat";
 
@@ -33,8 +30,7 @@ void LobbyInfoComponent::initFilepaths()
 	m_ranksJsonPath   = m_lobbyInfoFolder / "Ranks.json";
 }
 
-void LobbyInfoComponent::initCvars()
-{
+void LobbyInfoComponent::initCvars() {
 	registerCvar_bool(Cvars::userChatsInLastChat, false).bindTo(m_userChatsInLastChat);
 	registerCvar_bool(Cvars::teammateChatsInLastChat, true).bindTo(m_teammateChatsInLastChat);
 	registerCvar_bool(Cvars::quickchatsInLastChat, true).bindTo(m_quickchatsInLastChat);
@@ -42,37 +38,30 @@ void LobbyInfoComponent::initCvars()
 	registerCvar_bool(Cvars::teamChatsInLastChat, true).bindTo(m_teamChatsInLastChat);
 }
 
-void LobbyInfoComponent::initHooks()
-{
-	Hooks.hookEvent(Events::GFxHUD_TA_Destroyed, HookType::Post, [this](std::string) { clearCachedData(); });
+void LobbyInfoComponent::initHooks() {
+	hookEventPost(Events::GFxHUD_TA_Destroyed, [this](...) { clearCachedData(); });
 
-	Hooks.hookEvent(Events::GFxData_Chat_TA_OnShellSet,
-	    HookType::Post,
-	    [this](ActorWrapper caller, ...)
-	    {
-		    auto* gfxChat = reinterpret_cast<UGFxData_Chat_TA*>(caller.memory_address);
-		    if (!gfxChat)
-			    return;
+	hookWithCallerPost(Events::GFxData_Chat_TA_OnShellSet, [this](ActorWrapper caller, ...) {
+		auto *gfxChat = reinterpret_cast<UGFxData_Chat_TA *>(caller.memory_address);
+		if (!gfxChat)
+			return;
 
-		    m_gfxChatData = gfxChat;
-		    LOG("Updated stored UGFxData_Chat_TA*");
-	    });
+		m_gfxChatData = gfxChat;
+		LOG("Updated stored UGFxData_Chat_TA*");
+	});
 
-	auto handleGfxMsgAdded = [this](ActorWrapper Caller, void* Params, std::string event)
-	{
+	auto handleGfxMsgAdded = [this](ActorWrapper Caller, void *Params, std::string event) {
 		LOG("Function fired: \"{}\"", event);
 
-		m_gfxChatData = reinterpret_cast<UGFxData_Chat_TA*>(Caller.memory_address);
+		m_gfxChatData = reinterpret_cast<UGFxData_Chat_TA *>(Caller.memory_address);
 
-		auto* params = reinterpret_cast<UGFxData_Chat_TA_execAddChatMessage_Params*>(Params);
-		if (!params)
-		{
+		auto *params = reinterpret_cast<UGFxData_Chat_TA_execAddChatMessage_Params *>(Params);
+		if (!params) {
 			LOGERROR("Function params are null for: \"{}\"", event);
 			return;
 		}
 
-		if (UidWrapper::unreal_id_to_uid_str(params->NewMessage.SenderId) == "Unknown|0|0")
-		{
+		if (UidWrapper::unreal_id_to_uid_str(params->NewMessage.SenderId) == "Unknown|0|0") {
 			LOG("Chat SenderId is empty. We aint finna save it");
 			return;
 		}
@@ -81,25 +70,20 @@ void LobbyInfoComponent::initHooks()
 		LOG("Added chat to stored chats. New size: {}", m_matchChats.size());
 	};
 	// Hooks.hookEvent(Events::GFxData_Chat_TA_AddChatMessage, HookType::Post, handleGfxMsgAdded);
-	Hooks.hookEvent(Events::GFxData_Chat_TA_AddPresetMessage, HookType::Post, handleGfxMsgAdded);
+	hookWithCallerPost(Events::GFxData_Chat_TA_AddPresetMessage, handleGfxMsgAdded);
 
-	Hooks.hookEvent(Events::GFxData_Chat_TA_OnRemoved,
-	    HookType::Pre,
-	    [this](std::string event)
-	    {
-		    LOG("UGFxData_Chat_TA::OnRemoved fired");
-		    m_gfxChatData = nullptr;
-	    });
+	hookEvent(Events::GFxData_Chat_TA_OnRemoved, [this](...) {
+		LOG("UGFxData_Chat_TA::OnRemoved fired");
+		m_gfxChatData = nullptr;
+	});
 }
 
 // ##############################################################################################################
 // ###############################################    FUNCTIONS    ##############################################
 // ##############################################################################################################
 
-void LobbyInfoComponent::handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params& params)
-{
-	if (UidWrapper::unreal_id_to_uid_str(params.SenderId) == "Unknown|0|0")
-	{
+void LobbyInfoComponent::handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params &params) {
+	if (UidWrapper::unreal_id_to_uid_str(params.SenderId) == "Unknown|0|0") {
 		LOG("Chat SenderId is empty. We aint finna save it");
 		return;
 	}
@@ -108,16 +92,13 @@ void LobbyInfoComponent::handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_
 	LOG("Added chat to m_matchChats: \"{}\"", m_matchChats.back().Message);
 }
 
-std::string LobbyInfoComponent::getLastChat()
-{
+std::string LobbyInfoComponent::getLastChat() {
 	auto chat = getLastChatData();
-	if (!chat)
-	{
+	if (!chat) {
 		LOGERROR("Unable to get last chat data");
 		return "";
 	}
-	if (chat->Message.empty())
-	{
+	if (chat->Message.empty()) {
 		LOGERROR("Message from last chat data is empty string");
 		return "";
 	}
@@ -125,22 +106,18 @@ std::string LobbyInfoComponent::getLastChat()
 	return chat->Message;
 }
 
-std::string LobbyInfoComponent::getLastChatterRankStr(EKeyword keyword)
-{
+std::string LobbyInfoComponent::getLastChatterRankStr(EKeyword keyword) {
 	auto chatterRanks = getLastChatterRanks();
-	if (!chatterRanks)
-	{
+	if (!chatterRanks) {
 		LOGERROR("Unable to get last chatter's ranks");
 		return "";
 	}
-	if (chatterRanks->playerName.empty())
-	{
+	if (chatterRanks->playerName.empty()) {
 		LOGERROR("ChatterRanks::playerName is empty string");
 		return std::string();
 	}
 
-	switch (keyword)
-	{
+	switch (keyword) {
 	case EKeyword::BlastAll:
 		return chatterRanks->get_all_ranks_str();
 	case EKeyword::BlastCasual:
@@ -156,26 +133,22 @@ std::string LobbyInfoComponent::getLastChatterRankStr(EKeyword keyword)
 	}
 }
 
-void LobbyInfoComponent::clearCachedData()
-{
+void LobbyInfoComponent::clearCachedData() {
 	clearStoredChats();
 	clearStoredRanks();
 }
 
-void LobbyInfoComponent::clearStoredChats()
-{
+void LobbyInfoComponent::clearStoredChats() {
 	m_matchChats.clear();
 	LOG("Cleared stored match chats");
 }
 
-void LobbyInfoComponent::clearStoredRanks()
-{
+void LobbyInfoComponent::clearStoredRanks() {
 	m_matchRanks.clear();
 	LOG("Cleared stored player ranks");
 }
 
-void LobbyInfoComponent::logChatData(const ChatData& chat)
-{
+void LobbyInfoComponent::logChatData(const ChatData &chat) {
 	LOG("----------------------------------------------------");
 	LOG("SenderId: {}", chat.IdString);
 	LOG("----------------------------------------------------");
@@ -190,8 +163,7 @@ void LobbyInfoComponent::logChatData(const ChatData& chat)
 	LOG("TimeStamp: {}", chat.TimeStamp);
 }
 
-std::optional<ChatData> LobbyInfoComponent::getLastChatData()
-{
+std::optional<ChatData> LobbyInfoComponent::getLastChatData() {
 	/*
 	    NOTE:
 	        It would've been easier to just read from the game's built-in chat history data, but:
@@ -210,18 +182,15 @@ std::optional<ChatData> LobbyInfoComponent::getLastChatData()
 	const uint8_t hopefullyCorrectUserTeam = gameWrapper->GetPlayerController().GetTeamNum2();
 
 	LOG("Stored chat messages size: {}", m_matchChats.size());
-	for (int i = m_matchChats.size() - 1; i >= 0; --i)
-	{
-		const auto& chat = m_matchChats.at(i);
+	for (int i = m_matchChats.size() - 1; i >= 0; --i) {
+		const auto &chat = m_matchChats.at(i);
 
-		if (chat.Message.empty())
-		{
+		if (chat.Message.empty()) {
 			LOG("Skipped chat at index {} because Message string was empty", i);
 			continue;
 		}
 
-		if (chat.is_valid_last_chat(chatPreferences, hopefullyCorrectUserTeam))
-		{
+		if (chat.is_valid_last_chat(chatPreferences, hopefullyCorrectUserTeam)) {
 			LOG("Found a suitable last chat: {}", chat.Message);
 			return chat;
 		}
@@ -231,33 +200,28 @@ std::optional<ChatData> LobbyInfoComponent::getLastChatData()
 	return std::nullopt;
 }
 
-std::optional<ChatterRanks> LobbyInfoComponent::getLastChatterRanks()
-{
+std::optional<ChatterRanks> LobbyInfoComponent::getLastChatterRanks() {
 	// TODO: make this UOnlineGameSkill_X* a member and update current instance using hooks (like how we do with UGFxData_Chat_TA*)
-	auto* skill = Instances.GetInstanceOf<UOnlineGameSkill_X>();
-	if (!skill)
-	{
+	auto *skill = Instances.getInstanceOf<UOnlineGameSkill_X>();
+	if (!skill) {
 		LOG("[ERROR] UOnlineGameSkill_X* is null");
 		return std::nullopt;
 	}
 
 	auto chatData = getLastChatData();
-	if (!chatData)
-	{
+	if (!chatData) {
 		LOGERROR("Unable to get last chat data");
 		return std::nullopt;
 	}
 
 	auto it = m_matchRanks.find(chatData->IdString);
-	if (it == m_matchRanks.end())
-	{
+	if (it == m_matchRanks.end()) {
 		ChatterRanks ranks{*chatData, skill};
 		m_matchRanks[chatData->IdString] = ranks;
 		LOG("Stored ranks for {}", chatData->PlayerName);
 		LOG("Stored ranks size: {}", m_matchRanks.size());
 		return ranks;
-	}
-	else
+	} else
 		return it->second;
 }
 
@@ -267,16 +231,13 @@ std::optional<ChatterRanks> LobbyInfoComponent::getLastChatterRanks()
 float LobbyInfoComponent::getSkillRating(float mu) { return (mu * 20) + 100; }
 
 // Returns an ID string in the following format: platform|accountId|splitScreenId
-std::string LobbyInfoComponent::uidStrFromNetId(const FUniqueNetId& id)
-{
+std::string LobbyInfoComponent::uidStrFromNetId(const FUniqueNetId &id) {
 	std::string acctId = id.EpicAccountId.empty() ? std::to_string(id.Uid) : id.EpicAccountId.ToString();
 	return std::format("{}|{}|{}", getPlatformStr(id.Platform), acctId, id.SplitscreenID);
 }
 
-std::string LobbyInfoComponent::getPlatformStr(uint8_t platform)
-{
-	switch (static_cast<EOnlinePlatform>(platform))
-	{
+std::string LobbyInfoComponent::getPlatformStr(uint8_t platform) {
+	switch (static_cast<EOnlinePlatform>(platform)) {
 	case EOnlinePlatform::OnlinePlatform_Steam:
 		return "Steam";
 	case EOnlinePlatform::OnlinePlatform_PS4:
@@ -304,8 +265,7 @@ std::string LobbyInfoComponent::getPlatformStr(uint8_t platform)
 // ##########################################   DISPLAY FUNCTIONS    ############################################
 // ##############################################################################################################
 
-void LobbyInfoComponent::display_settings()
-{
+void LobbyInfoComponent::display_settings() {
 	auto userChatsInLastChat_cvar     = getCvar(Cvars::userChatsInLastChat);
 	auto quickchatsInLastChat_cvar    = getCvar(Cvars::quickchatsInLastChat);
 	auto teammateChatsInLastChat_cvar = getCvar(Cvars::teammateChatsInLastChat);
@@ -366,8 +326,7 @@ void LobbyInfoComponent::display_settings()
 		GAME_THREAD_EXECUTE({ clearStoredRanks(); });
 }
 
-void LobbyInfoComponent::display_debug()
-{
+void LobbyInfoComponent::display_debug() {
 	static bool show = false;
 
 	ImGui::Checkbox("Show debug info", &show);
@@ -383,13 +342,11 @@ void LobbyInfoComponent::display_debug()
 	{
 		GUI::ScopedChild c{"MatchChats", ImVec2(0.0f, 500.0f), true};
 
-		for (int i = m_matchChats.size() - 1; i >= 0; --i)
-		{
-			const auto& matchChat = m_matchChats[i];
+		for (int i = m_matchChats.size() - 1; i >= 0; --i) {
+			const auto &matchChat = m_matchChats[i];
 
 			std::string chatMode;
-			switch (matchChat.ChatChannel)
-			{
+			switch (matchChat.ChatChannel) {
 			case EChatChannel::EChatChannel_Team:
 				chatMode = "[Team]";
 				break;

@@ -1,182 +1,146 @@
 #include "pch.h"
-#include "logging.h"
 #include "CustomQuickchat.hpp"
 #include "Cvars.hpp"
-#include "components/Instances.hpp"
+#include "util/Logging.hpp"
+#include "util/Instances.hpp"
 #ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
 #endif
 
-void CustomQuickchat::initCommands()
-{
-	registerCommand(Commands::toggleEnabled,
-	    [this](std::vector<std::string> args)
-	    {
-		    CVarWrapper enabledCvar = getCvar(Cvars::enabled);
-		    if (!enabledCvar)
-			    return;
+void CustomQuickchat::initCommands() {
+	registerCommand(Commands::toggleEnabled, [this](std::vector<std::string> args) {
+		CVarWrapper enabledCvar = getCvar(Cvars::enabled);
+		if (!enabledCvar)
+			return;
 
-		    bool enabled = enabledCvar.getBoolValue();
-		    enabledCvar.setValue(!enabled);
-	    });
+		bool enabled = enabledCvar.getBoolValue();
+		enabledCvar.setValue(!enabled);
+	});
 
-	registerCommand(Commands::listBindings,
-	    [this](std::vector<std::string> args)
-	    {
-		    auto* controls = Instances.GetInstanceOf<UGFxData_Controls_TA>();
-		    if (!controls)
-		    {
-			    LOGERROR("UGFxData_Controls_TA* is null!");
-			    return;
-		    }
+	registerCommand(Commands::listBindings, [this](std::vector<std::string> args) {
+		auto *controls = Instances.getInstanceOf<UGFxData_Controls_TA>();
+		if (!controls) {
+			LOGERROR("UGFxData_Controls_TA* is null!");
+			return;
+		}
 
-		    auto gpBindings = controls->GamepadBindings;
-		    auto pcBindings = controls->PCBindings;
+		auto gpBindings = controls->GamepadBindings;
+		auto pcBindings = controls->PCBindings;
 
-		    LOG("================ PC bindings =================");
-		    for (const auto& binding : pcBindings)
-			    LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
+		LOG("================ PC bindings =================");
+		for (const auto &binding : pcBindings)
+			LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
 
-		    LOG("============== Gamepad bindings ==============");
-		    for (const auto& binding : gpBindings)
-			    LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
-	    });
+		LOG("============== Gamepad bindings ==============");
+		for (const auto &binding : gpBindings)
+			LOG("{}: {}", binding.Action.ToString(), binding.Key.ToString());
+	});
 
-	registerCommand(Commands::listCustomChatLabels,
-	    [this](std::vector<std::string> args)
-	    {
-		    determineQuickchatLabels(nullptr, true);
+	registerCommand(Commands::listCustomChatLabels, [this](std::vector<std::string> args) {
+		determineQuickchatLabels(nullptr, true);
 
-		    LOG("============= pc custom qc lablels ============");
+		LOG("============= pc custom qc lablels ============");
 
-		    for (int i = 0; i < m_pcQcLabels.size(); ++i)
-		    {
-			    const auto& chatLabels = m_pcQcLabels[i];
+		for (int i = 0; i < m_pcQcLabels.size(); ++i) {
+			const auto &chatLabels = m_pcQcLabels[i];
 
-			    LOG("{}:", PRESET_GROUP_NAMES[i]);
-			    for (int j = 0; j < chatLabels.size(); ++j)
-				    LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
-		    }
+			LOG("{}:", m_chatPresetGroupNames[i]);
+			for (int j = 0; j < chatLabels.size(); ++j)
+				LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
+		}
 
-		    LOG("=========== gamepad custom qc lablels =========");
-		    for (int i = 0; i < m_gamepadQcLabels.size(); ++i)
-		    {
-			    const auto& chatLabels = m_gamepadQcLabels[i];
+		LOG("=========== gamepad custom qc lablels =========");
+		for (int i = 0; i < m_gamepadQcLabels.size(); ++i) {
+			const auto &chatLabels = m_gamepadQcLabels[i];
 
-			    LOG("{}:", PRESET_GROUP_NAMES[i]);
-			    for (int j = 0; j < chatLabels.size(); ++j)
-				    LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
-		    }
-	    });
+			LOG("{}:", m_chatPresetGroupNames[i]);
+			for (int j = 0; j < chatLabels.size(); ++j)
+				LOG("[{}]\t{}", j, chatLabels.at(j).ToString());
+		}
+	});
 
-	registerCommand(Commands::listPlaylistInfo,
-	    [this](std::vector<std::string> args)
-	    {
-		    auto* playlists = Instances.GetInstanceOf<UOnlineGamePlaylists_X>();
-		    if (!playlists)
-			    return;
+	registerCommand(Commands::listPlaylistInfo, [this](std::vector<std::string> args) {
+		auto *playlists = Instances.getInstanceOf<UOnlineGamePlaylists_X>();
+		if (!playlists)
+			return;
 
-		    LOG("DownloadedPlaylists size: {}", playlists->DownloadedPlaylists.size());
+		LOG("DownloadedPlaylists size: {}", playlists->DownloadedPlaylists.size());
 
-		    LOG("--------------------------------------");
-		    LOG("ID --> Internal name --> Display name");
-		    LOG("--------------------------------------");
-		    for (const auto& p : playlists->DownloadedPlaylists)
-		    {
-			    if (!p)
-				    continue;
+		LOG("--------------------------------------");
+		LOG("ID --> Internal name --> Display name");
+		LOG("--------------------------------------");
+		for (const auto &p : playlists->DownloadedPlaylists) {
+			if (!p)
+				continue;
 
-			    LOG("{} --> {} --> {}", p->PlaylistId, playlists->IdToName(p->PlaylistId).ToString(), p->GetLocalizedName().ToString());
-		    }
-	    });
+			LOG("{} --> {} --> {}", p->PlaylistId, playlists->IdToName(p->PlaylistId).ToString(), p->GetLocalizedName().ToString());
+		}
+	});
 
-	registerCommand(Commands::exitToMainMenu,
-	    [this](std::vector<std::string> args)
-	    {
-		    if (m_chatboxOpen)
-			    return;
+	registerCommand(Commands::exitToMainMenu, [this](std::vector<std::string> args) {
+		if (m_chatboxOpen)
+			return;
 
-		    auto* shell = Instances.GetInstanceOf<UGFxShell_X>();
-		    if (!shell)
-			    return;
+		auto *shell = Instances.getInstanceOf<UGFxShell_X>();
+		if (!shell)
+			return;
 
-		    shell->ExitToMainMenu();
+		shell->ExitToMainMenu();
 
-		    LOG("exited to main menu");
-	    });
+		LOG("exited to main menu");
+	});
 
-	registerCommand(Commands::forfeit,
-	    [this](std::vector<std::string> args)
-	    {
-		    if (m_chatboxOpen)
-			    return;
+	registerCommand(Commands::forfeit, [this](std::vector<std::string> args) {
+		if (m_chatboxOpen)
+			return;
 
-		    auto* shell = Instances.GetInstanceOf<UGFxShell_TA>();
-		    if (!shell)
-			    return;
+		auto *shell = Instances.getInstanceOf<UGFxShell_TA>();
+		if (!shell)
+			return;
 
-		    shell->VoteToForfeit();
+		shell->VoteToForfeit();
 
-		    LOG("voted to forfeit...");
-	    });
+		LOG("voted to forfeit...");
+	});
 
-	registerCommand(Commands::sendChatMatch,
-	    [this](std::vector<std::string> args)
-	    {
-		    if (args.size() < 2)
-		    {
-			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatMatch.name);
-			    return;
-		    }
+	registerCommand(Commands::sendChatMatch, [this](std::vector<std::string> args) {
+		if (args.size() < 2) {
+			LOG("Usage: {} \"this is a chat\"", Commands::sendChatMatch.name);
+			return;
+		}
+		sendChat(args[1], EChatChannel::EChatChannel_Match);
+		LOG("Sent match chat...");
+	});
 
-		    const std::string& msg = args[1];
-		    Instances.SendChat(msg, EChatChannel::EChatChannel_Match);
-		    LOG("Sent match chat...");
-	    });
+	registerCommand(Commands::sendChatTeam, [this](std::vector<std::string> args) {
+		if (args.size() < 2) {
+			LOG("Usage: {} \"this is a chat\"", Commands::sendChatTeam.name);
+			return;
+		}
+		sendChat(args[1], EChatChannel::EChatChannel_Team);
+		LOG("Sent team chat...");
+	});
 
-	registerCommand(Commands::sendChatTeam,
-	    [this](std::vector<std::string> args)
-	    {
-		    if (args.size() < 2)
-		    {
-			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatTeam.name);
-			    return;
-		    }
-
-		    const std::string& msg = args[1];
-		    Instances.SendChat(msg, EChatChannel::EChatChannel_Team);
-		    LOG("Sent team chat...");
-	    });
-
-	registerCommand(Commands::sendChatParty,
-	    [this](std::vector<std::string> args)
-	    {
-		    if (args.size() < 2)
-		    {
-			    LOG("Usage: {} \"this is a chat\"", Commands::sendChatParty.name);
-			    return;
-		    }
-
-		    const std::string& msg = args[1];
-		    Instances.SendChat(msg, EChatChannel::EChatChannel_Party);
-		    LOG("Sent party chat...");
-	    });
+	registerCommand(Commands::sendChatParty, [this](std::vector<std::string> args) {
+		if (args.size() < 2) {
+			LOG("Usage: {} \"this is a chat\"", Commands::sendChatParty.name);
+			return;
+		}
+		sendChat(args[1], EChatChannel::EChatChannel_Party);
+		LOG("Sent party chat...");
+	});
 
 	// ================================= testing =================================
-	registerCommand(Commands::test,
-	    [this](std::vector<std::string> args)
-	    {
+	registerCommand(Commands::test, [this](std::vector<std::string> args) {
 #ifdef USE_SPEECH_TO_TEXT
-		    SpeechToText.test();
+		SpeechToText.test();
 #endif
 
-		    LOG("did the test");
-	    });
+		LOG("did the test");
+	});
 
-	registerCommand(Commands::test2,
-	    [this](std::vector<std::string> args)
-	    {
-		    // ...
-		    LOG("This is kinda gay");
-	    });
+	registerCommand(Commands::test2, [this](std::vector<std::string> args) {
+		// ...
+		LOG("This is kinda gay");
+	});
 }

@@ -2,15 +2,14 @@
 #include "WebsocketConnection.hpp"
 #include "ModUtils/gui/GuiTools.hpp"
 #include "SpeechToText.hpp"
-#include "Macros.hpp"
-#include "components/Instances.hpp"
+#include "util/Macros.hpp"
+#include "util/Instances.hpp"
 
 // ##############################################################################################################
 // ###############################################    INIT    ###################################################
 // ##############################################################################################################
 
-void STTComponent::init(const std::shared_ptr<CustomQuickchat>& mainPluginClass, const std::shared_ptr<GameWrapper>& gw)
-{
+void STTComponent::init(const std::shared_ptr<CustomQuickchat> &mainPluginClass, const std::shared_ptr<GameWrapper> &gw) {
 	gameWrapper   = gw;
 	m_pluginClass = mainPluginClass;
 
@@ -26,8 +25,7 @@ void STTComponent::init(const std::shared_ptr<CustomQuickchat>& mainPluginClass,
 	DELAY(1.0f, { m_wsConnection.connect(m_jsonResponseCallback); });
 }
 
-void STTComponent::initFilepaths()
-{
+void STTComponent::initFilepaths() {
 	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
 	fs::path pluginFolder         = bmDataFolderFilePath / "CustomQuickchat";
 
@@ -36,8 +34,7 @@ void STTComponent::initFilepaths()
 	m_errorLogPath = pluginFolder / "SpeechToText" / "ErrorLog.txt";
 }
 
-void STTComponent::initCvars()
-{
+void STTComponent::initCvars() {
 	// bools
 	registerCvar_bool(Cvars::enableSTTNotifications, true).bindTo(m_enableSTTNotifications);
 	registerCvar_bool(Cvars::autoCalibrateMic, true).bindTo(m_autoCalibrateMic);
@@ -61,10 +58,8 @@ void STTComponent::onUnload() { m_wsConnection.onPluginUnload(); }
 // ###############################################    FUNCTIONS    ##############################################
 // ##############################################################################################################
 
-void STTComponent::triggerSTT(const Binding& binding)
-{
-	if (!m_wsConnection.serverExeExists())
-	{
+void STTComponent::triggerSTT(const Binding &binding) {
+	if (!m_wsConnection.serverExeExists()) {
 		sttLog("ERROR: Missing required files. Check your installation");
 		return;
 	}
@@ -75,15 +70,13 @@ void STTComponent::triggerSTT(const Binding& binding)
 		sttLog("Speech-to-text is already active!");
 }
 
-void STTComponent::startSTT(const Binding& binding)
-{
+void STTComponent::startSTT(const Binding &binding) {
 	// update active attempt data
 	m_activeAtempt.binding   = binding;
 	m_activeAtempt.attemptID = generateAttemptId();
 
 	json data = generateDataForSTTAttempt();
-	if (data.empty())
-	{
+	if (data.empty()) {
 		sttLog("Error generating JSON data for speech-to-text attempt");
 		return;
 	}
@@ -92,18 +85,15 @@ void STTComponent::startSTT(const Binding& binding)
 	m_attemptingSTT.store(true);
 }
 
-void STTComponent::startConnection()
-{
+void STTComponent::startConnection() {
 	EWebsocketError err = m_wsConnection.connect(m_jsonResponseCallback);
 	notifyWsError(err);
 }
 
 void STTComponent::endConnection() { m_wsConnection.disconnect(); }
 
-void STTComponent::notifyWsError(EWebsocketError err)
-{
-	switch (err)
-	{
+void STTComponent::notifyWsError(EWebsocketError err) {
+	switch (err) {
 	case EWebsocketError::MissingRequiredFiles:
 		sttLog("ERROR: Missing required files. Check your installation");
 		break;
@@ -131,8 +121,7 @@ void STTComponent::notifyWsError(EWebsocketError err)
 	}
 }
 
-json STTComponent::generateDataForSTTAttempt()
-{
+json STTComponent::generateDataForSTTAttempt() {
 	json data;
 
 	// an additional ~1.1 seconds is added in py script due to pause/phrase thresholds
@@ -149,18 +138,15 @@ json STTComponent::generateDataForSTTAttempt()
 
 json STTComponent::generateDataForMicCalibrationAttempt() const { return {{"attemptId", m_activeAtempt.attemptID}}; }
 
-std::string STTComponent::generateAttemptId()
-{
+std::string STTComponent::generateAttemptId() {
 	std::string id = Format::GenRandomString(10);
 	LOG("Generated ID for current speech-to-text attempt: {}", id);
 	return id;
 }
 
 // large gross function, may benefit from a redesign
-void STTComponent::processWsResponse(const json& res)
-{
-	if (!res.contains("event"))
-	{
+void STTComponent::processWsResponse(const json &res) {
+	if (!res.contains("event")) {
 		sttLog("ERROR: Missing \"event\" field in response JSON from websocket server");
 		return;
 	}
@@ -168,10 +154,8 @@ void STTComponent::processWsResponse(const json& res)
 	std::string event = res["event"];
 
 	// TODO: maybe abstract repeated code below into a function that takes event as an arg (DRY)
-	if (event == "speech_to_text_result")
-	{
-		if (!res.contains("data"))
-		{
+	if (event == "speech_to_text_result") {
+		if (!res.contains("data")) {
 			sttLog("[ERROR] Missing 'data' field in speech-to-text response JSON");
 			return;
 		}
@@ -179,44 +163,34 @@ void STTComponent::processWsResponse(const json& res)
 		auto stt_result_data = res["data"];
 
 		processSTTResult(stt_result_data);
-	}
-	else if (event == "mic_calibration_result")
-	{
-		if (!res.contains("data"))
-		{
+	} else if (event == "mic_calibration_result") {
+		if (!res.contains("data")) {
 			sttLog("[ERROR] Missing 'data' field in mic calibration response JSON");
 			return;
 		}
 
 		auto calibrationResult = res["data"];
 		processMicCalibrationResult(calibrationResult);
-	}
-	else if (event == "test_response")
-	{
+	} else if (event == "test_response") {
 		auto responseData = res["data"];
 
 		std::string message = responseData["message"];
 
 		sttLog(message);
-	}
-	else if (event == "notify_mic_listening")
-	{
-		if (!res.contains("data"))
-		{
+	} else if (event == "notify_mic_listening") {
+		if (!res.contains("data")) {
 			sttLog("[ERROR] Missing 'data' field in error response JSON from websocket server");
 			return;
 		}
 
 		auto responseData = res["data"];
 
-		if (!responseData.contains("attemptId"))
-		{
+		if (!responseData.contains("attemptId")) {
 			sttLog("[ERROR] Missing 'attemptId' field in notify_mic_listening response JSON");
 			return;
 		}
 
-		if (responseData["attemptId"] != m_activeAtempt.attemptID)
-		{
+		if (responseData["attemptId"] != m_activeAtempt.attemptID) {
 			LOG("[ERROR] Attempt ID in response JSON doesn't match active STT attempt ID");
 			return;
 		}
@@ -231,10 +205,8 @@ void STTComponent::processWsResponse(const json& res)
 
 	// 	m_websocketClient->setConnectedStatus(false); // wtf is this?
 	// }
-	else if (event == "error_response")
-	{
-		if (!res.contains("data"))
-		{
+	else if (event == "error_response") {
+		if (!res.contains("data")) {
 			sttLog("[ERROR] Missing 'data' field in error response JSON from websocket server");
 			return;
 		}
@@ -247,77 +219,60 @@ void STTComponent::processWsResponse(const json& res)
 			sttLog(std::format("[ERROR] {}", error_data["errorMsg"].get<std::string>()));
 		else
 			sttLog("[ERROR] Missing \"errorMsg\" field in error response JSON");
-	}
-	else
+	} else
 		sttLog("[ERROR] Unknown event type in response JSON");
 }
 
-void STTComponent::processSTTResult(const json& res)
-{
-	if (!res.contains("attemptId"))
-	{
+void STTComponent::processSTTResult(const json &res) {
+	if (!res.contains("attemptId")) {
 		sttLog("ERROR: Missing \"attemptId\" field in speech-to-text response JSON");
 		return;
 	}
 
-	if (res["attemptId"] != m_activeAtempt.attemptID)
-	{
+	if (res["attemptId"] != m_activeAtempt.attemptID) {
 		LOGERROR("Attempt ID in response JSON doesn't match active STT attempt ID");
 		return;
 	}
 
-	if (res.contains("success"))
-	{
-		if (res["success"])
-		{
-			if (res.contains("transcription"))
-			{
+	if (res.contains("success")) {
+		if (res["success"]) {
+			if (res.contains("transcription")) {
 				std::string    text    = res["transcription"];
-				const Binding& binding = m_activeAtempt.binding;
+				const Binding &binding = m_activeAtempt.binding;
 
 				// apply text effect if necessary
-				text = m_pluginClass->ApplyTextEffect(text, binding.textEffect);
+				text = m_pluginClass->applyTextEffect(text, binding.textEffect);
 
 				// send chat
-				GAME_THREAD_EXECUTE({ m_pluginClass->SendChat(text, binding.chatMode); }, text, binding);
-			}
-			else
+				GAME_THREAD_EXECUTE({ m_pluginClass->sendChat(text, binding.chatMode); }, text, binding);
+			} else
 				sttLog("ERROR: No transcription data found in speech-to-text response JSON");
-		}
-		else
-		{
+		} else {
 			if (res.contains("errorMsg"))
 				sttLog(res["errorMsg"]);
 			else
 				sttLog("Unknown error occurred during speech-to-text processing");
 		}
-	}
-	else
+	} else
 		sttLog("ERROR: Missing \"success\" field in speech-to-text response JSON");
 
 	m_attemptingSTT.store(false);
 }
 
-void STTComponent::processMicCalibrationResult(const json& res)
-{
-	if (!res.contains("attemptId"))
-	{
+void STTComponent::processMicCalibrationResult(const json &res) {
+	if (!res.contains("attemptId")) {
 		sttLog("ERROR: Missing \"attemptId\" field in speech-to-text response JSON");
 		return;
 	}
 
-	if (res["attemptId"] != m_activeAtempt.attemptID)
-	{
+	if (res["attemptId"] != m_activeAtempt.attemptID) {
 		LOGERROR("Attempt ID in response JSON doesn't match active STT attempt ID");
 		return;
 	}
 
-	if (res.contains("success"))
-	{
-		if (res["success"])
-		{
-			if (res.contains("mic_energy_threshold"))
-			{
+	if (res.contains("success")) {
+		if (res["success"]) {
+			if (res.contains("mic_energy_threshold")) {
 				auto micEnergyThreshold_cvar = getCvar(Cvars::micEnergyThreshold);
 				if (!micEnergyThreshold_cvar)
 					return;
@@ -327,19 +282,15 @@ void STTComponent::processMicCalibrationResult(const json& res)
 				micEnergyThreshold_cvar.setValue(new_energy_threshold);
 
 				LOG("Updated mic energy threshold: {}", new_energy_threshold);
-			}
-			else
+			} else
 				sttLog("ERROR: Missing \"mic_energy_threshold\" field in mic calibration response JSON");
-		}
-		else
-		{
+		} else {
 			if (res.contains("errorMsg"))
 				sttLog(res["errorMsg"]);
 			else
 				sttLog("ERROR: Unknown error occurred during microphone calibration");
 		}
-	}
-	else
+	} else
 		sttLog("ERROR: Missing \"success\" field in speech-to-text response JSON");
 
 	m_calibratingMicLevel.store(false);
@@ -347,16 +298,13 @@ void STTComponent::processMicCalibrationResult(const json& res)
 
 // ======================================== MIC CALIBRATION ========================================
 
-void STTComponent::calibrateMicrophone()
-{
-	if (!m_wsConnection.serverExeExists())
-	{
+void STTComponent::calibrateMicrophone() {
+	if (!m_wsConnection.serverExeExists()) {
 		sttLog("ERROR: Missing required files. Check your installation");
 		return;
 	}
 
-	if (m_calibratingMicLevel)
-	{
+	if (m_calibratingMicLevel) {
 		sttLog("Mic calibration is already active!");
 		return;
 	}
@@ -364,8 +312,7 @@ void STTComponent::calibrateMicrophone()
 	m_activeAtempt.attemptID = generateAttemptId();
 
 	json data = generateDataForMicCalibrationAttempt();
-	if (data.empty())
-	{
+	if (data.empty()) {
 		sttLog("Error generating JSON data for mic calibration attempt");
 		return;
 	}
@@ -387,18 +334,16 @@ void STTComponent::calibrateMicrophone()
 
 // ========================================= SPEECH-TO-TEXT ========================================
 
-std::string STTComponent::CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args)
-{
+std::string STTComponent::CreateCommandString(const fs::path &executablePath, const std::vector<std::string> &args) {
 	std::string commandStr = "\"" + executablePath.string() + "\"";
 
-	for (const std::string& arg : args)
+	for (const std::string &arg : args)
 		commandStr += " \"" + arg + "\"";
 
 	return commandStr;
 }
 
-void STTComponent::clearSttErrorLog()
-{
+void STTComponent::clearSttErrorLog() {
 	// Open file in write mode to clear its contents
 	std::ofstream ofs(m_errorLogPath, std::ofstream::out | std::ofstream::trunc);
 	ofs.close();
@@ -406,8 +351,7 @@ void STTComponent::clearSttErrorLog()
 	LOG("Cleared STT error log at \"{}\"", m_errorLogPath.string());
 }
 
-void STTComponent::sttLog(const std::string& message)
-{
+void STTComponent::sttLog(const std::string &message) {
 	auto enableSTTNotifications_cvar = getCvar(Cvars::enableSTTNotifications);
 	auto notificationDuration_cvar   = getCvar(Cvars::notificationDuration);
 	if (!enableSTTNotifications_cvar || !notificationDuration_cvar)
@@ -417,15 +361,12 @@ void STTComponent::sttLog(const std::string& message)
 		notifyAndLog("Speech-To-Text", message, notificationDuration_cvar.getFloatValue());
 }
 
-void STTComponent::notifyAndLog(const std::string& title, const std::string& message, int duration)
-{
-	GAME_THREAD_EXECUTE({ Instances.SpawnNotification(title, message, duration, true); }, title, message, duration);
+void STTComponent::notifyAndLog(const std::string &title, const std::string &message, int duration) {
+	GAME_THREAD_EXECUTE({ Instances.spawnNotification(title, message, duration, true); }, title, message, duration);
 }
 
-void STTComponent::test()
-{
-	if (!m_wsConnection.serverExeExists())
-	{
+void STTComponent::test() {
+	if (!m_wsConnection.serverExeExists()) {
 		sttLog("ERROR: Missing required files. Check your installation");
 		return;
 	}
@@ -437,8 +378,7 @@ void STTComponent::test()
 // ##########################################   DISPLAY FUNCTIONS    ############################################
 // ##############################################################################################################
 
-void STTComponent::display_settings()
-{
+void STTComponent::display_settings() {
 #ifndef USE_SPEECH_TO_TEXT
 	GUI::Spacing(4);
 	ImGui::Text("This version of the plugin doesnt support speech-to-text. You can find that version on the github Releases page:");
@@ -464,8 +404,7 @@ void STTComponent::display_settings()
 
 	GUI::SameLineSpacing_relative(50.0f);
 
-	if (!m_connectingToWsServer && bConnectedToWsServer)
-	{
+	if (!m_connectingToWsServer && bConnectedToWsServer) {
 		if (ImGui::Button("Test##websocketConnection"))
 			GAME_THREAD_EXECUTE({ test(); });
 		GUI::ToolTip("Send a test message to check the websocket connection");
@@ -480,14 +419,11 @@ void STTComponent::display_settings()
 
 	GUI::Spacing();
 
-	if (!bConnectedToWsServer && !m_connectingToWsServer)
-	{
+	if (!bConnectedToWsServer && !m_connectingToWsServer) {
 		if (ImGui::Button("Connect##websocket"))
 			GAME_THREAD_EXECUTE({ startConnection(); });
 		GUI::ToolTip(std::format("Connecting will take about {} seconds", START_WS_CLIENT_DELAY).c_str());
-	}
-	else
-	{
+	} else {
 		if (ImGui::Button("Disconnect##websocket"))
 			GAME_THREAD_EXECUTE({ endConnection(); });
 	}
@@ -511,8 +447,7 @@ void STTComponent::display_settings()
 		autoCalibrateMic_cvar.setValue(false);
 	GUI::ToolTip("Uses a stored calibration value, eliminating the need to calibrate mic before every attempt (can be faster)");
 
-	if (!autoCalibrateMic)
-	{
+	if (!autoCalibrateMic) {
 		GUI::Spacing(4);
 
 		std::string thresholdStr = std::format(
@@ -541,8 +476,7 @@ void STTComponent::display_settings()
 	if (ImGui::Checkbox("Enable speech-to-text notifications", &speechToTextNotificationsOn))
 		enableSTTNotifications_cvar.setValue(speechToTextNotificationsOn);
 
-	if (speechToTextNotificationsOn)
-	{
+	if (speechToTextNotificationsOn) {
 		GUI::Spacing(2);
 
 		// popup notification duration
@@ -553,11 +487,10 @@ void STTComponent::display_settings()
 		GUI::SameLineSpacing_relative(10);
 
 		// test popup notifications
-		if (ImGui::Button("Test"))
-		{
+		if (ImGui::Button("Test")) {
 			GAME_THREAD_EXECUTE(
 			    {
-				    Instances.SpawnNotification("Terry A Davis",
+				    Instances.spawnNotification("Terry A Davis",
 				        "You can see 'em if you're driving. You just run them over. That's what you do.",
 				        notificationDuration);
 			    },
@@ -581,16 +514,13 @@ void STTComponent::display_settings()
 	GUI::Spacing(2);
 }
 
-GUI::WordColor STTComponent::display_getWsConnectionColoredStr(bool bConnecting)
-{
-	if (!m_connectingToWsServer)
-	{
+GUI::WordColor STTComponent::display_getWsConnectionColoredStr(bool bConnecting) {
+	if (!m_connectingToWsServer) {
 		if (bConnecting)
 			return {std::format("Connected ({})", m_wsConnection.getCurrentURI()), GUI::Colors::Green};
 		else
 			return {"Not connected", GUI::Colors::Red};
-	}
-	else
+	} else
 		return {"Connecting....", GUI::Colors::LightGray};
 }
 

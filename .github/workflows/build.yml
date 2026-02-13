@@ -16,6 +16,8 @@ on:
         required: true
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   check-changelog:
@@ -87,15 +89,15 @@ jobs:
       - name: 🥵 Prepare release files
         shell: bash
         run: |
-          7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!docs -xr!assets -xr!.git
-          mkdir -p dist temp/debug temp/installation_zip
-          mv ./source.zip temp/debug
+          mkdir -p dist temp/installation_zip
           cp ./plugins/*.dll temp/installation_zip
           mv ./scripts/install.bat temp/installation_zip
-          mv ./plugins/*.dll temp/debug
-          mv ./plugins/*.pdb temp/debug
           7z a "dist/${{ env.PLUGIN_NAME }}.zip" ./temp/installation_zip/*
-          7z a dist/debug.zip ./temp/debug/*
+
+      - name: 🔑 Attest release ZIP
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: "dist/${{ env.PLUGIN_NAME }}.zip"
 
       - name: ⬆️ Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -133,15 +135,10 @@ jobs:
       - name: 🥵 Prepare release files
         shell: bash
         run: |
-          7z a source.zip * -xr!README.md -xr!build -xr!plugins -xr!scripts -xr!docs -xr!assets -xr!.git
-          mkdir -p dist temp/debug temp/installation_zip
-          mv ./source.zip temp/debug
+          mkdir -p dist temp/installation_zip
           cp ./plugins/*.dll temp/installation_zip
           mv ./scripts/install.bat temp/installation_zip
-          mv ./plugins/*.dll temp/debug
-          mv ./plugins/*.pdb temp/debug
           7z a "dist/${{ env.PLUGIN_NAME }}-STT-partial.zip" ./temp/installation_zip/*
-          7z a dist/debug-STT.zip ./temp/debug/*
 
       - name: ⬆️ Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -215,8 +212,15 @@ jobs:
           7z a artifacts/${{ env.PLUGIN_NAME }}-with-STT.zip ./combined_stt_package/*
           rm -rf ./artifacts/${{ env.PLUGIN_NAME }}-STT-partial.zip ./artifacts/bundled-STT-script.zip
 
+      - name: 🔑 Attest release ZIP (STT version)
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: "artifacts/${{ env.PLUGIN_NAME }}-with-STT.zip"
+
       - name: 🚀 Create release
         uses: softprops/action-gh-release@v2
+        env:
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         with:
           tag_name: ${{ env.TAG_NAME }}
           body: |
@@ -241,6 +245,8 @@ jobs:
 
             ## Notes
             ${{ needs.check-changelog.outputs.changelog }}
+
+            [GitHub build workflow](${{ env.WORKFLOW_URL }})
           files: artifacts/*.zip
 
   post-to-discord:

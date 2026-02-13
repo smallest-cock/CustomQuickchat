@@ -10,8 +10,7 @@ const std::vector<std::string> g_possibleChatModes    = {"Lobby", "Team", "Party
 
 // ================================== keyword stuff ==================================
 
-enum class EKeyword : uint8_t
-{
+enum class EKeyword : uint8_t {
 	None                = 0,
 	WordVariation       = 1,
 	SpeechToText        = 2,
@@ -33,8 +32,7 @@ enum class EKeyword : uint8_t
 	ExitToMainMenu      = 18
 };
 
-enum class ETextEffect : uint8_t
-{
+enum class ETextEffect : uint8_t {
 	None    = 0,
 	Uwu     = 1,
 	Sarcasm = 2,
@@ -62,80 +60,37 @@ const std::unordered_map<std::string, EKeyword> g_keywordsMap = {
 
 // ============================================================================
 
-enum class EBindingType : uint8_t
-{
-	Combination = 0,
-	Sequence    = 1
-};
+enum class EBindingType : uint8_t { Combination = 0, Sequence = 1 };
 
-struct ButtonPress
-{
+struct ButtonPress {
 	std::string                           buttonName;
 	std::chrono::steady_clock::time_point pressedTime;
-
-	// ButtonPress() = default;
-	// ButtonPress(const std::string& button, const std::chrono::steady_clock::time_point& time) : buttonName(button), pressedTime(time) {}
-
-	// void reset(const std::chrono::steady_clock::time_point& epochTime);
 };
 
-struct BindingKey
-{
+struct BindingKey {
 	std::string action;
 	std::string pcKey;
 	std::string gamepadKey;
 };
 
-// ######################################################################################################
-// ######################################################################################################
-// ######################################################################################################
-
-struct Binding
-{
+struct Binding {
 	std::string              chat;
-	EChatChannel             chatMode    = EChatChannel::EChatChannel_Match;
-	EBindingType             bindingType = EBindingType::Combination;
-	EKeyword                 keyWord     = EKeyword::None;
-	ETextEffect              textEffect  = ETextEffect::None;
-	bool                     enabled     = true;
+	EChatChannel             chatMode                = EChatChannel::EChatChannel_Match;
+	EBindingType             bindingType             = EBindingType::Combination;
+	EKeyword                 keyWord                 = EKeyword::None;
+	ETextEffect              textEffect              = ETextEffect::None;
+	bool                     bEnabled                = true;
+	bool                     bConflictsWithDefaultQC = false;
 	std::vector<std::string> buttons;
-
-	/*
-	// --------------------------- this shit is gay -----------------------------
-	ButtonPress firstButtonState;
-
-	bool shouldBeTriggered(const ButtonPress&        buttonEvent,
-	    const std::unordered_map<std::string, bool>& keyStates,
-	    const std::chrono::steady_clock::time_point& lastChatSent,
-	    const std::chrono::steady_clock::time_point& epochTime,
-	    const std::chrono::duration<double>&         minDelayBetweenBindings,
-	    const std::chrono::duration<double>&         maxTimeWindow);
-	bool checkCombination(const ButtonPress&         buttonEvent,
-	    const std::unordered_map<std::string, bool>& keyStates,
-	    const std::chrono::steady_clock::time_point& lastBindingActivated,
-	    const std::chrono::duration<double>&         minDelayBetweenBindings);
-	bool checkSequence(const ButtonPress&            buttonEvent,
-	    const std::chrono::steady_clock::time_point& lastChatSent,
-	    const std::chrono::steady_clock::time_point& epochTime,
-	    const std::chrono::duration<double>&         minDelayBetweenBindings,
-	    const std::chrono::duration<double>&         maxTimeWindow);
-
-	// --------------------------------------------------------------------------
-	*/
 
 	// determine if chat contains any special keyword or text effect (once, at the time of binding creation, rather than every time binding
 	// is triggered)
-	void                            updateKeywordAndTextEffect(const std::string& regexPatternStr);
+	void                            updateKeywordAndTextEffect(const std::string &regexPatternStr);
 	static ETextEffect              getTextEffect(EKeyword keyword);
-	static std::vector<std::string> getMatchedSubstrings(const std::string& str, const std::string& regexPatternStr);
+	static std::vector<std::string> getMatchedSubstrings(const std::string &str, const std::string &regexPatternStr);
 };
 
-// ######################################################################################################
-// ######################################################################################################
-// ######################################################################################################
-
-struct VariationList
-{
+struct VariationList {
 	std::string              listName;
 	std::string              unparsedString; // for ImGui
 	std::vector<std::string> wordList;
@@ -153,13 +108,7 @@ struct VariationList
 // ============================================= RANKS =============================================
 // =================================================================================================
 
-enum class ERankPlaylists : uint8_t
-{
-	Ones   = 0,
-	Twos   = 1,
-	Threes = 2,
-	Casual = 3
-};
+enum class ERankPlaylists : uint8_t { Ones = 0, Twos = 1, Threes = 2, Casual = 3 };
 
 const std::unordered_map<int, std::string> skill_tier_to_label = {{0, "Casual"},
     {1, "B1"},
@@ -185,8 +134,7 @@ const std::unordered_map<int, std::string> skill_tier_to_label = {{0, "Casual"},
     {21, "GC3"},
     {22, "SSL"}};
 
-enum class SkillTier
-{
+enum class SkillTier {
 	Unranked         = 0,
 	Bronze1          = 1,
 	Bronze2          = 2,
@@ -278,27 +226,23 @@ inline const std::map<std::string, std::string> g_quickchatIdsToText = {
     {"Group6Message4", "This is Rocket League!"} // �a c'est Rocket League !
 };
 
-struct UidWrapper
-{
+struct UidWrapper {
 	FUniqueNetId id;
 
-	static inline std::string unreal_id_to_uid_str(const FUniqueNetId& id)
-	{
+	static inline std::string unreal_id_to_uid_str(const FUniqueNetId &id) {
 		return UniqueIDWrapper::FromEpicAccountID(
 		    id.EpicAccountId.ToString(), id.Uid, static_cast<OnlinePlatform>(id.Platform), id.SplitscreenID)
 		    .GetIdString();
 	}
 };
 
-struct FStringBase
-{
-	wchar_t* data;
+struct FStringBase {
+	wchar_t *data;
 	int32_t  size;
 	int32_t  capacity;
 };
 
-struct NetId
-{
+struct NetId {
 	uint64_t    Uid;
 	FSceNpId    NpId;
 	std::string EpicAccountId;
@@ -306,17 +250,14 @@ struct NetId
 	uint8_t     SplitscreenID;
 
 	NetId() {}
-	NetId(const FUniqueNetId& unreal_id)
+	NetId(const FUniqueNetId &unreal_id)
 	    : Uid(unreal_id.Uid), NpId(unreal_id.NpId), EpicAccountId(unreal_id.EpicAccountId.ToString()), Platform(unreal_id.Platform),
-	      SplitscreenID(unreal_id.SplitscreenID)
-	{
-	}
+	      SplitscreenID(unreal_id.SplitscreenID) {}
 
 	FUniqueNetId to_unreal_id() const;
 };
 
-struct LastChatPreferences
-{
+struct LastChatPreferences {
 	bool Quickchats;
 	bool UserChats;
 	bool TeamChats;
@@ -324,8 +265,7 @@ struct LastChatPreferences
 	bool TeammateChats;
 };
 
-struct ChatData
-{
+struct ChatData {
 	std::string  PlayerName;
 	std::string  Message;
 	std::string  TimeStamp;
@@ -338,40 +278,37 @@ struct ChatData
 
 public:
 	ChatData() = default;
-	ChatData(const FGFxChatMessage& msg);
-	ChatData(const UGFxData_Chat_TA_execOnChatMessage_Params& params);
+	ChatData(const FGFxChatMessage &msg);
+	ChatData(const UGFxData_Chat_TA_execOnChatMessage_Params &params);
 
 public:
-	bool is_valid_last_chat(const LastChatPreferences& prefs, uint8_t user_team) const;
+	bool is_valid_last_chat(const LastChatPreferences &prefs, uint8_t user_team) const;
 };
 
-struct ChatMsgData
-{
+struct ChatMsgData {
 	std::string uid;
 	std::string uncensoredMsg;
 
 	ChatMsgData() {}
-	ChatMsgData(const FChatMessage& chat);
+	ChatMsgData(const FChatMessage &chat);
 
-	static std::string generateUid(const FChatMessage& data);
-	static std::string generateUid(UGFxData_Chat_TA_execOnChatMessage_Params* data);
+	static std::string generateUid(const FChatMessage &data);
+	static std::string generateUid(UGFxData_Chat_TA_execOnChatMessage_Params *data);
 };
 
-struct RankData
-{
+struct RankData {
 	FPlayerSkillRating skill_data;
 	std::string        div;
 	std::string        tier;
 
 	RankData() {}
-	RankData(const FPlayerSkillRating& skill) { assign(skill); }
+	RankData(const FPlayerSkillRating &skill) { assign(skill); }
 
-	void        assign(const FPlayerSkillRating& skill);
+	void        assign(const FPlayerSkillRating &skill);
 	std::string get_rank_str() const;
 };
 
-struct ChatterRanks
-{
+struct ChatterRanks {
 	std::string playerName;
 	RankData    ones;
 	RankData    twos;
@@ -380,19 +317,17 @@ struct ChatterRanks
 	// std::unordered_map <std::string, Rank> ranks;
 
 	ChatterRanks() {}
-	ChatterRanks(const std::string& name, const RankData& ones, const RankData& twos, const RankData& threes, const RankData& cas)
-	    : playerName(name), ones(ones), twos(twos), threes(threes), casual(cas)
-	{
-	}
-	ChatterRanks(const ChatData& chat, UOnlineGameSkill_X* game_skill) { assign(chat, game_skill); }
+	ChatterRanks(const std::string &name, const RankData &ones, const RankData &twos, const RankData &threes, const RankData &cas)
+	    : playerName(name), ones(ones), twos(twos), threes(threes), casual(cas) {}
+	ChatterRanks(const ChatData &chat, UOnlineGameSkill_X *game_skill) { assign(chat, game_skill); }
 
-	void        assign(const ChatData& chat, UOnlineGameSkill_X* game_skill);
+	void        assign(const ChatData &chat, UOnlineGameSkill_X *game_skill);
 	RankData    get_rank(ERankPlaylists playlist);
 	std::string get_all_ranks_str() const;
 	std::string get_playlist_rank_str(ERankPlaylists playlist);
 
 	static float              calculate_skill_rating(float mu);
-	static FPlayerSkillRating get_skill_rating(const FUniqueNetId& id, int playlist_id, UOnlineGameSkill_X* game_skill);
+	static FPlayerSkillRating get_skill_rating(const FUniqueNetId &id, int playlist_id, UOnlineGameSkill_X *game_skill);
 	static std::string        get_playlist_str(ERankPlaylists playlist);
 };
 

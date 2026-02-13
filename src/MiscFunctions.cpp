@@ -1,9 +1,11 @@
 #include "pch.h"
-#include "Structs.hpp"
 #include "CustomQuickchat.hpp"
-#include "Macros.hpp"
+#include "PluginConfig.hpp"
+#include "Structs.hpp"
+#include "util/Macros.hpp"
 #include "TextEffects.hpp"
-#include "components/Instances.hpp"
+#include "util/Instances.hpp"
+#include "util/Logging.hpp"
 #include "components/LobbyInfo.hpp"
 #include <memory>
 #ifdef USE_SPEECH_TO_TEXT
@@ -13,20 +15,17 @@
 #include <regex>
 #include <random>
 
-void CustomQuickchat::performBindingAction(const Binding& binding)
-{
-	// processedChat starts out as the original raw chat string, and will get processed
-	std::string processedChat = binding.chat;
+void CustomQuickchat::performBindingAction(const Binding &binding) {
+	std::string processedChat = binding.chat; // starts out as the original chat string and will get processed if necessary
 
-	switch (binding.keyWord)
-	{
+	switch (binding.keyWord) {
 	case EKeyword::SpeechToText:
 	case EKeyword::SpeechToTextSarcasm:
 	case EKeyword::SpeechToTextUwu:
 #ifdef USE_SPEECH_TO_TEXT
 		SpeechToText.triggerSTT(binding);
 #else
-		no_speech_to_text_warning();
+		warnNoSTT();
 #endif
 		return;
 	case EKeyword::BlastAll:
@@ -34,7 +33,7 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 	case EKeyword::Blast1v1:
 	case EKeyword::Blast2v2:
 	case EKeyword::Blast3v3:
-		SendChat(LobbyInfo.getLastChatterRankStr(binding.keyWord), binding.chatMode);
+		sendChat(LobbyInfo.getLastChatterRankStr(binding.keyWord), binding.chatMode);
 		return;
 	case EKeyword::Forfeit:
 		runCommand(Commands::forfeit);
@@ -54,7 +53,7 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 	case EKeyword::ClosestOpponent:
 	case EKeyword::ClosestTeammate:
 	case EKeyword::RumbleItem:
-		processedChat = process_keywords_in_chat_str(binding);
+		processedChat = processKeywordsInChatStr(binding);
 		break;
 	default:
 		break;
@@ -63,62 +62,52 @@ void CustomQuickchat::performBindingAction(const Binding& binding)
 	// send processed chat
 	if (processedChat.empty())
 		return;
-	SendChat(processedChat, binding.chatMode);
+	sendChat(processedChat, binding.chatMode);
 }
 
-std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding)
-{
+std::string CustomQuickchat::processKeywordsInChatStr(const Binding &binding) {
 	std::string result = binding.chat;
 
-	for (int i = 0; i < MAX_KEYWORD_DEPTH; ++i)
-	{
+	for (int i = 0; i < MAX_KEYWORD_DEPTH; ++i) {
 		auto keywordsToProcess = binding.getMatchedSubstrings(result, KEYWORD_REGEX_PATTERN);
 
-		if (keywordsToProcess.empty())
-		{
+		if (keywordsToProcess.empty()) {
 			if (i > 1)
 				LOG("Resolved nested variation(s) using {} substitution passes", i);
 			break;
 		}
 
-		for (const auto& keywordToProcess : keywordsToProcess)
-		{
+		for (const auto &keywordToProcess : keywordsToProcess) {
 			const std::string regexPatternStr = "\\[\\[" + keywordToProcess + "\\]\\]";
-			std::regex        keyword_regex_pattern(regexPatternStr);
+			std::regex        keyword_regex_pattern{regexPatternStr};
 
 			auto it = g_keywordsMap.find(keywordToProcess);
 			if (it == g_keywordsMap.end()) // not found in the keywords map, so we assume its a variation list name
 			{
 				result = std::regex_replace(result, keyword_regex_pattern, getVariationFromList(keywordToProcess));
-			}
-			else
-			{
-				auto getLastChatStr = [this](const Binding& binding) -> std::string
-				{
+			} else {
+				auto getLastChatStr = [this](const Binding &binding) -> std::string {
 					std::string lastChat = LobbyInfo.getLastChat();
 					if (lastChat.empty())
 						return lastChat;
-					return ApplyTextEffect(lastChat, binding.textEffect);
+					return applyTextEffect(lastChat, binding.textEffect);
 				};
 
-				auto getClosestPlayerStr = [this](EKeyword keyword) -> std::string
-				{
+				auto getClosestPlayerStr = [this](EKeyword keyword) -> std::string {
 					auto strOpt = getClosestPlayer(keyword);
 					if (!strOpt)
 						return "";
 					return *strOpt;
 				};
 
-				auto getRumbleItemStr = [this]() -> std::string
-				{
+				auto getRumbleItemStr = [this]() -> std::string {
 					auto itemStrOpt = getCurrentRumbleItem();
 					if (!itemStrOpt)
 						return "Nothing";
 					return *itemStrOpt;
 				};
 
-				switch (it->second)
-				{
+				switch (it->second) {
 				case EKeyword::LastChat:
 				case EKeyword::LastChatUwu:
 				case EKeyword::LastChatSarcasm:
@@ -142,34 +131,53 @@ std::string CustomQuickchat::process_keywords_in_chat_str(const Binding& binding
 	return result;
 }
 
-void CustomQuickchat::SendChat(const std::string& chat, EChatChannel chatMode)
-{
+void CustomQuickchat::sendChat(const std::string &chat, EChatChannel chatMode) {
+	static constexpr bool log = true;
+
+	if (!*m_enabled)
+		return;
+
 	if (chat.empty())
 		return;
 
-	// only send chat if custom quickchats are turned on
-	auto enabledCvar = getCvar(Cvars::enabled);
-	if (!enabledCvar || !enabledCvar.getBoolValue())
+	auto *chatBox = Instances.getInstanceOf<UGFxData_Chat_TA>();
+	if (!chatBox) {
+		LOGERROR("UGFxData_Chat_TA* is null!");
 		return;
+	}
 
-	Instances.SendChat(chat, chatMode, true);
+	FString chatFStr = FString::create(chat);
+
+	if (chatMode == EChatChannel::EChatChannel_Match) {
+		chatBox->SendChatMessage(chatFStr, 0); // match (lobby) chat
+
+		if constexpr (log)
+			LOG("Sent chat: '{}'", chat);
+	} else if (chatMode == EChatChannel::EChatChannel_Team) {
+		chatBox->SendTeamChatMessage(chatFStr, 0); // team chat
+
+		if constexpr (log)
+			LOG("Sent chat: [Team] '{}'", chat);
+	} else if (chatMode == EChatChannel::EChatChannel_Party) {
+		chatBox->SendPartyChatMessage(chatFStr, 0); // party chat
+
+		if constexpr (log)
+			LOG("Sent chat: [Party] '{}'", chat);
+	}
 }
 
-void CustomQuickchat::NotifyAndLog(const std::string& title, const std::string& message, int duration)
-{
-	GAME_THREAD_EXECUTE({ Instances.SpawnNotification(title, message, duration, true); }, title, message, duration);
+void CustomQuickchat::notifyAndLog(const std::string &title, const std::string &message, int duration) {
+	GAME_THREAD_EXECUTE({ Instances.spawnNotification(title, message, duration, true); }, title, message, duration);
 }
 
 void CustomQuickchat::addEmptyBinding() { m_bindings.emplace_back(std::make_shared<Binding>()); }
 
-void CustomQuickchat::addEmptyVariationList()
-{
+void CustomQuickchat::addEmptyVariationList() {
 	VariationList list;
 	m_variations.push_back(list);
 }
 
-void CustomQuickchat::deleteBinding(int idx)
-{
+void CustomQuickchat::deleteBinding(int idx) {
 	if (m_bindings.empty())
 		return;
 
@@ -185,8 +193,7 @@ void CustomQuickchat::deleteBinding(int idx)
 	writeBindingsToJson();
 }
 
-void CustomQuickchat::DeleteVariationList(int idx)
-{
+void CustomQuickchat::deleteVariationList(int idx) {
 	if (m_variations.empty())
 		return;
 
@@ -211,26 +218,22 @@ int CustomQuickchat::findButtonIndex(const std::string& buttonName)
 }
 */
 
-void CustomQuickchat::initJsonFiles()
-{
+void CustomQuickchat::initJsonFiles() {
 	// create 'CustomQuickchat' folder if it doesn't exist
-	if (!fs::exists(m_pluginFolder))
-	{
+	if (!fs::exists(m_pluginFolder)) {
 		fs::create_directory(m_pluginFolder);
 		LOG("'CustomQuickchat' folder didn't exist... so I created it.");
 	}
 
 	// create JSON files if they don't exist
-	if (!fs::exists(m_bindingsJsonPath))
-	{
+	if (!fs::exists(m_bindingsJsonPath)) {
 		std::ofstream NewFile(m_bindingsJsonPath);
 
 		NewFile << "{ \"bindings\": [] }";
 		NewFile.close();
 		LOG("'Bindings.json' didn't exist... so I created it.");
 	}
-	if (!fs::exists(m_variationsJsonPath))
-	{
+	if (!fs::exists(m_variationsJsonPath)) {
 		std::ofstream NewFile(m_variationsJsonPath);
 		NewFile << "{ \"variations\": [] }";
 		NewFile.close();
@@ -238,26 +241,24 @@ void CustomQuickchat::initJsonFiles()
 	}
 }
 
-void CustomQuickchat::updateBindingsFromJson()
-{
+void CustomQuickchat::updateBindingsFromJson() {
 	json bindingsJson = Files::get_json(m_bindingsJsonPath);
 	if (bindingsJson.empty() || !bindingsJson.contains("bindings"))
 		return;
 
-	auto& bindingsList = bindingsJson.at("bindings");
+	auto &bindingsList = bindingsJson.at("bindings");
 	if (bindingsList.empty())
 		return;
 
 	m_bindings.clear();
 
-	for (const auto& bindingObj : bindingsList)
-	{
+	for (const auto &bindingObj : bindingsList) {
 		auto b         = std::make_shared<Binding>();
 		b->chat        = bindingObj.value("chat", "im gay");
 		b->chatMode    = bindingObj.value("chatMode", EChatChannel::EChatChannel_Match);
 		b->bindingType = bindingObj.value("bindingType", EBindingType::Combination);
 		b->buttons     = bindingObj.value("buttons", std::vector<std::string>{});
-		b->enabled     = bindingObj.value("enabled", true);
+		b->bEnabled    = bindingObj.value("enabled", true);
 
 		// update the binding's keyWord and textEffect values (depends on the chat value set above)
 		b->updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
@@ -266,21 +267,19 @@ void CustomQuickchat::updateBindingsFromJson()
 	}
 }
 
-void CustomQuickchat::updateVariationsFromJson()
-{
+void CustomQuickchat::updateVariationsFromJson() {
 	json variationsJson = Files::get_json(m_variationsJsonPath);
 	if (variationsJson.empty() || !variationsJson.contains("variations"))
 		return;
 
-	auto& variationsList = variationsJson.at("variations");
+	auto &variationsList = variationsJson.at("variations");
 	if (variationsList.empty())
 		return;
 
 	m_variations.clear();
 
-	for (int i = 0; i < variationsList.size(); ++i)
-	{
-		auto&         variationListObj = variationsList[i];
+	for (int i = 0; i < variationsList.size(); ++i) {
+		auto         &variationListObj = variationsList[i];
 		VariationList list;
 
 		list.listName        = variationListObj.value("listName", "Unnamed");
@@ -288,7 +287,7 @@ void CustomQuickchat::updateVariationsFromJson()
 		list.shuffleWordList = variationListObj.value("shuffleWordList", true);
 
 		// reconstruct the raw word list string (for ImGui)
-		for (const std::string& word : list.wordList)
+		for (const std::string &word : list.wordList)
 			list.unparsedString += (word + "\n");
 
 		list.shuffledWordList = list.generateShuffledWordList();
@@ -297,17 +296,14 @@ void CustomQuickchat::updateVariationsFromJson()
 	}
 }
 
-void CustomQuickchat::updateDataFromJson()
-{
+void CustomQuickchat::updateDataFromJson() {
 	updateBindingsFromJson();
 	updateVariationsFromJson();
 }
 
-std::string CustomQuickchat::getVariationFromList(const std::string& listName)
-{
-	for (int i = 0; i < m_variations.size(); ++i)
-	{
-		VariationList& list = m_variations[i];
+std::string CustomQuickchat::getVariationFromList(const std::string &listName) {
+	for (int i = 0; i < m_variations.size(); ++i) {
+		VariationList &list = m_variations[i];
 		if (list.listName != listName)
 			continue;
 
@@ -316,18 +312,15 @@ std::string CustomQuickchat::getVariationFromList(const std::string& listName)
 	return listName;
 }
 
-void CustomQuickchat::updateAllVariationsData()
-{
-	for (auto& variation : m_variations)
+void CustomQuickchat::updateAllVariationsData() {
+	for (auto &variation : m_variations)
 		variation.updateDataFromUnparsedString();
 }
 
-std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std::string>& ogList)
-{
+std::vector<std::string> CustomQuickchat::shuffleWordList(const std::vector<std::string> &ogList) {
 	std::vector<std::string> shuffledList = ogList;
 
-	if (ogList.size() >= 3)
-	{
+	if (ogList.size() >= 3) {
 		std::random_device rd;        // Initialize random number generator
 		std::mt19937       rng(rd()); // Mersenne Twister 19937 generator
 		std::shuffle(shuffledList.begin(), shuffledList.end(), rng);
@@ -336,15 +329,13 @@ std::vector<std::string> CustomQuickchat::ShuffleWordList(const std::vector<std:
 	return shuffledList;
 }
 
-void CustomQuickchat::ReshuffleWordList(int idx)
-{
-	auto&                    variationList = m_variations[idx];
+void CustomQuickchat::reshuffleWordList(int idx) {
+	auto                    &variationList = m_variations[idx];
 	std::vector<std::string> prevShuffled  = variationList.shuffledWordList;
 
 	// skip all the non-repetition BS if the list has less than 4 variations... and just shuffle it
-	if (prevShuffled.size() < 4)
-	{
-		prevShuffled                   = ShuffleWordList(prevShuffled);
+	if (prevShuffled.size() < 4) {
+		prevShuffled                   = shuffleWordList(prevShuffled);
 		variationList.shuffledWordList = prevShuffled;
 		variationList.nextUsableIndex  = 0;
 		return;
@@ -356,19 +347,17 @@ void CustomQuickchat::ReshuffleWordList(int idx)
 	last2Words.push_back(prevShuffled[prevShuffled.size() - 2]);
 
 	// create new shuffled list
-	std::vector<std::string> shuffledBih = ShuffleWordList(variationList.wordList);
+	std::vector<std::string> shuffledBih = shuffleWordList(variationList.wordList);
 
 	std::string newShuffled1st = "";
 	std::string newShuffled2nd = "";
 
 	// find 1st different variation
-	for (int i = 0; i < shuffledBih.size(); i++)
-	{
+	for (int i = 0; i < shuffledBih.size(); i++) {
 		auto word = shuffledBih[i];
 
 		auto it = std::find(last2Words.begin(), last2Words.end(), word);
-		if (it == last2Words.end() && newShuffled1st == "")
-		{
+		if (it == last2Words.end() && newShuffled1st == "") {
 			newShuffled1st = word;
 			shuffledBih.erase(shuffledBih.begin() + i);
 			break;
@@ -376,13 +365,11 @@ void CustomQuickchat::ReshuffleWordList(int idx)
 	}
 
 	// find 2nd different variation
-	for (int i = 0; i < shuffledBih.size(); i++)
-	{
+	for (int i = 0; i < shuffledBih.size(); i++) {
 		auto word = shuffledBih[i];
 
 		auto it = std::find(last2Words.begin(), last2Words.end(), word);
-		if (it == last2Words.end() && newShuffled2nd == "")
-		{
+		if (it == last2Words.end() && newShuffled2nd == "") {
 			newShuffled2nd = word;
 			shuffledBih.erase(shuffledBih.begin() + i);
 			break;
@@ -398,10 +385,8 @@ void CustomQuickchat::ReshuffleWordList(int idx)
 	variationList.nextUsableIndex  = 0;
 }
 
-std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ETextEffect effect)
-{
-	switch (effect)
-	{
+std::string CustomQuickchat::applyTextEffect(const std::string &originalText, ETextEffect effect) {
+	switch (effect) {
 	case ETextEffect::None:
 		return originalText;
 	case ETextEffect::Uwu:
@@ -413,23 +398,19 @@ std::string CustomQuickchat::ApplyTextEffect(const std::string& originalText, ET
 	}
 }
 
-void CustomQuickchat::updateBindingsData()
-{
+void CustomQuickchat::updateBindingsData() {
 	m_bindingManager.clearBindings();
 
-	for (auto& binding : m_bindings)
-	{
+	for (auto &binding : m_bindings) {
 		binding->updateKeywordAndTextEffect(KEYWORD_REGEX_PATTERN);
 		m_bindingManager.registerBinding(binding);
 	}
 }
 
-bool CustomQuickchat::writeBindingsToJson()
-{
+bool CustomQuickchat::writeBindingsToJson() {
 	json bindingsJsonObj;
 
-	for (const auto& binding : m_bindings)
-	{
+	for (const auto &binding : m_bindings) {
 		if (!binding)
 			continue;
 
@@ -438,10 +419,10 @@ bool CustomQuickchat::writeBindingsToJson()
 		bindingJsonObj["chat"]        = binding->chat;
 		bindingJsonObj["chatMode"]    = static_cast<int>(binding->chatMode);
 		bindingJsonObj["bindingType"] = static_cast<int>(binding->bindingType);
-		bindingJsonObj["enabled"]     = binding->enabled;
+		bindingJsonObj["enabled"]     = binding->bEnabled;
 
 		bindingJsonObj["buttons"] = {};
-		for (const auto& button : binding->buttons)
+		for (const auto &button : binding->buttons)
 			bindingJsonObj["buttons"].push_back(button);
 
 		bindingsJsonObj["bindings"].push_back(bindingJsonObj);
@@ -451,20 +432,17 @@ bool CustomQuickchat::writeBindingsToJson()
 	// LOG("Updated 'Bindings.json' :)");
 }
 
-void CustomQuickchat::writeVariationsToJson()
-{
+void CustomQuickchat::writeVariationsToJson() {
 	json variationsJsonObj;
 
-	for (const auto& list : m_variations)
-	{
+	for (const auto &list : m_variations) {
 		json variationList;
 
 		variationList["listName"]        = list.listName;
 		variationList["shuffleWordList"] = list.shuffleWordList;
 		variationList["wordList"]        = {};
 
-		for (const auto& word : list.wordList)
-		{
+		for (const auto &word : list.wordList) {
 			variationList["wordList"].push_back(word);
 		}
 
@@ -475,21 +453,16 @@ void CustomQuickchat::writeVariationsToJson()
 	LOG("Updated 'Variations.json' :)");
 }
 
-void CustomQuickchat::initFilePaths()
-{
+void CustomQuickchat::initFilePaths() {
 	fs::path bmDataFolderFilePath = gameWrapper->GetDataFolder();
-	m_pluginFolder                = bmDataFolderFilePath / "CustomQuickchat";
+	m_pluginFolder                = bmDataFolderFilePath / PLUGIN_NAME_NO_SPACES;
 	m_bindingsJsonPath            = m_pluginFolder / "Bindings.json";
 	m_variationsJsonPath          = m_pluginFolder / "Variations.json";
 }
 
-void CustomQuickchat::initStuffOnLoad()
-{
-	// init modules
-	LobbyInfo.init(gameWrapper);
-
+void CustomQuickchat::initOtherPluginStuff() {
 	Format::construct_label({41, 11, 20, 6, 8, 13, 52, 12, 0, 3, 4, 52, 1, 24, 52, 44, 44, 37, 14, 22}, h_label);
-	PluginUpdates::checkForUpdates(stringify_(CustomQuickchat),
+	PluginUpdates::checkForUpdates(PLUGIN_NAME_NO_SPACES,
 	    VERSION_STR
 #ifdef USE_SPEECH_TO_TEXT
 	    ,
@@ -503,25 +476,34 @@ void CustomQuickchat::initStuffOnLoad()
 	updateBindingsData();
 
 	m_inGameEvent = gameWrapper->IsInFreeplay() || gameWrapper->IsInGame() || gameWrapper->IsInOnlineGame();
-
-	UFunction::FindFunction("Dummy to trigger function cache");
 }
 
-void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, bool log)
-{
-	if (!controls)
-	{
-		controls = Instances.GetInstanceOf<UGFxData_Controls_TA>();
-		if (!controls)
-		{
-			LOGERROR("UGFxData_Controls_TA* is null!");
+void CustomQuickchat::setChatTimeoutMsg(const std::string &newMsg, AGFxHUD_TA *hud) {
+	if (!hud) {
+		hud = Instances.getInstanceOf<AGFxHUD_TA>();
+		if (!hud)
+			return;
+	}
+
+	if (hud->ChatDisabledMessage.ToString() == newMsg)
+		return;
+
+	hud->ChatDisabledMessage = FString::create(newMsg);
+	LOG("Set chat timeout message: \"{}\"", newMsg); // ...
+}
+
+void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA *controls, bool log) {
+	if (!validUObject(controls)) {
+		controls = Instances.getInstanceOf<UGFxData_Controls_TA>();
+		if (!controls) {
+			LOGERROR("Unable to get an instance of UGFxData_Controls_TA to determine qc labels");
 			return;
 		}
 	}
 
-	auto* gfxChat = Instances.GetInstanceOf<UGFxData_Chat_TA>();
-	if (gfxChat)
-	{
+	// why do we do this? i dont remember
+	auto *gfxChat = Instances.getInstanceOf<UGFxData_Chat_TA>();
+	if (gfxChat) {
 		gfxChat->RefreshQuickChat(gfxChat->GetGameEvent());
 		LOG("Refreshed quickchats using UGFxData_Chat_TA");
 	}
@@ -533,158 +515,131 @@ void CustomQuickchat::determineQuickchatLabels(UGFxData_Controls_TA* controls, b
 	std::array<BindingKey, 4> presetGroupBindings;
 
 	// find/save key bindings for each preset group
-	for (int i = 0; i < 4; ++i)
-	{
-		for (const auto& binding : controls->PCBindings)
-		{
-			std::string action_name = binding.Action.ToString();
-
-			if (action_name != PRESET_GROUP_NAMES[i])
+	for (int i = 0; i < 4; ++i) {
+		for (const auto &binding : controls->PCBindings) {
+			if (binding.Action != m_chatPresetGroupNames[i])
 				continue;
-
-			presetGroupBindings[i].action = action_name;
+			presetGroupBindings[i].action = binding.Action.ToString();
 			presetGroupBindings[i].pcKey  = binding.Key.ToString();
 			break;
 		}
 
-		for (const auto& binding : controls->GamepadBindings)
-		{
-			std::string action_name = binding.Action.ToString();
-
-			if (action_name != PRESET_GROUP_NAMES[i])
+		for (const auto &binding : controls->GamepadBindings) {
+			if (binding.Action != m_chatPresetGroupNames[i])
 				continue;
-
-			presetGroupBindings[i].action     = action_name;
+			presetGroupBindings[i].action     = binding.Action.ToString();
 			presetGroupBindings[i].gamepadKey = binding.Key.ToString();
 			break;
 		}
 	}
 
-	if (log)
-	{
-		for (int i = 0; i < 4; ++i)
-		{
+	if (log) {
+		for (int i = 0; i < 4; ++i) {
 			LOG("========== preset_group_bindings[{}] ==========", i);
 			LOG("action: {}", presetGroupBindings[i].action);
-			LOG("pc_key: {}", presetGroupBindings[i].pcKey);
+			LOG("pcKey: {}", presetGroupBindings[i].pcKey);
 			LOG("gamepad_key: {}", presetGroupBindings[i].gamepadKey);
 		}
 
-		LOG("Bindings.size(): {}", m_bindings.size());
+		LOG("m_bindings size: {}", m_bindings.size());
 	}
 
-	for (const auto& binding : m_bindings)
-	{
-		if (!binding)
+	for (const auto &bindingPtr : m_bindings) {
+		if (!bindingPtr)
+			continue;
+		if (!bindingPtr->bEnabled || bindingPtr->bindingType != EBindingType::Sequence || bindingPtr->buttons.size() != 2)
 			continue;
 
-		if (!binding->enabled || binding->bindingType != EBindingType::Sequence || binding->buttons.size() != 2)
-			continue;
+		const std::string &cqcButton1       = bindingPtr->buttons[0];
+		const std::string &cqcButton2       = bindingPtr->buttons[1];
+		bindingPtr->bConflictsWithDefaultQC = false;
 
-		const std::string& firstButton  = binding->buttons[0];
-		const std::string& secondButton = binding->buttons[1];
-
-		// for (const BindingKey& preset_binding : preset_group_bindings)
-		for (int groupIdx = 0; groupIdx < 4; ++groupIdx)
-		{
-			const BindingKey& groupKey = presetGroupBindings[groupIdx];
+		for (int groupIndex = 0; groupIndex < 4; ++groupIndex) {
+			const BindingKey &groupKey = presetGroupBindings[groupIndex];
 
 			// check if matches a pc binding
-			if (firstButton == groupKey.pcKey)
-			{
-				for (int chatIdx = 0; chatIdx < 4; ++chatIdx)
-				{
-					const BindingKey& chatKey = presetGroupBindings[chatIdx];
-
-					if (secondButton != chatKey.pcKey)
+			if (cqcButton1 == groupKey.pcKey) {
+				for (int i = 0; i < 4; ++i) {
+					const BindingKey &chatKey = presetGroupBindings[i];
+					if (cqcButton2 != chatKey.pcKey)
 						continue;
-
-					m_pcQcLabels[groupIdx][chatIdx] = FString::create(binding->chat);
+					m_pcQcLabels[groupIndex][i]         = FString::create(bindingPtr->chat);
+					bindingPtr->bConflictsWithDefaultQC = true;
 					break;
 				}
 			}
 			// check if matches a gamepad binding
-			else if (firstButton == groupKey.gamepadKey)
-			{
-				for (int chatIdx = 0; chatIdx < 4; ++chatIdx)
-				{
-					const BindingKey& chatKey = presetGroupBindings[chatIdx];
-
-					if (secondButton != chatKey.gamepadKey)
+			else if (cqcButton1 == groupKey.gamepadKey) {
+				for (int i = 0; i < 4; ++i) {
+					const BindingKey &chatKey = presetGroupBindings[i];
+					if (cqcButton2 != chatKey.gamepadKey)
 						continue;
-
-					m_gamepadQcLabels[groupIdx][chatIdx] = FString::create(binding->chat);
+					m_gamepadQcLabels[groupIndex][i]    = FString::create(bindingPtr->chat);
+					bindingPtr->bConflictsWithDefaultQC = true;
 					break;
 				}
 			}
 		}
 	}
 
-	LOG("Quickchat labels updated...");
+	LOG("Quickchat labels updated (also default QC conflictions)");
 }
 
-void CustomQuickchat::apply_all_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller)
-{
+void CustomQuickchat::applyAllCustomQcLabelsToUi(UGFxData_Chat_TA *caller) {
 	if (!caller || !caller->Shell)
 		return;
 
-	UGFxDataStore_X* ds = caller->Shell->DataStore;
+	UGFxDataStore_X *ds = caller->Shell->DataStore;
 	if (!ds)
 		return;
 
-	const auto& groupsOfChatLabels = m_usingGamepad ? m_gamepadQcLabels : m_pcQcLabels;
+	const auto &groupsOfChatLabels = m_usingGamepad ? m_gamepadQcLabels : m_pcQcLabels;
 
-	for (int groupIdx = 0; groupIdx < 4; ++groupIdx)
-	{
-		const auto& groupOfLabels = groupsOfChatLabels.at(groupIdx);
+	for (int groupIndex = 0; groupIndex < 4; ++groupIndex) {
+		const auto &labelGroup = groupsOfChatLabels.at(groupIndex);
 
-		for (int labelIdx = 0; labelIdx < 4; ++labelIdx)
-		{
-			const auto& chatLabel = groupOfLabels[labelIdx];
+		for (int labelIndex = 0; labelIndex < 4; ++labelIndex) {
+			const auto &chatLabel = labelGroup[labelIndex];
 			if (chatLabel.empty())
 				continue;
 
-			int dsRowIdx = (groupIdx * 4) + labelIdx;
+			int dsRowIndex = (groupIndex * 4) + labelIndex;
 
 			// idk how this would ever happen, but to be safe...
-			if (dsRowIdx < 0 || dsRowIdx > 15)
-			{
-				LOG("[ERROR] UGFxDataRow_X index out of range: {}", dsRowIdx);
+			if (dsRowIndex < 0 || dsRowIndex > 15) {
+				LOGERROR("UGFxDataRow_X index out of range: {}", dsRowIndex);
 				continue;
 			}
-			ds->SetStringValue(L"ChatPresetMessages", dsRowIdx, L"Label", chatLabel);
+			ds->SetStringValue(L"ChatPresetMessages", dsRowIndex, L"Label", chatLabel);
 		}
 	}
 
 	LOG("Updated quickchat labels in UI");
 }
 
-void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGFxData_Chat_TA_execOnPressChatPreset_Params* params)
-{
+void CustomQuickchat::applyCustomQcLabelsToUi(UGFxData_Chat_TA *caller, UGFxData_Chat_TA_execOnPressChatPreset_Params *params) {
 	if (!caller || !caller->Shell || !params)
 		return;
 
-	const int32_t& index = params->Index;
+	const int32_t &index = params->Index;
 	if (index == 420)
 		return;
 
-	UGFxDataStore_X* ds = caller->Shell->DataStore;
+	UGFxDataStore_X *ds = caller->Shell->DataStore;
 	if (!ds)
 		return;
 
-	const auto& chatLabels = m_usingGamepad ? m_gamepadQcLabels[index] : m_pcQcLabels[index];
+	const auto &chatLabels = m_usingGamepad ? m_gamepadQcLabels[index] : m_pcQcLabels[index];
 
-	for (int i = 0; i < 4; ++i)
-	{
-		const auto& chatLabel = chatLabels[i];
+	for (int i = 0; i < 4; ++i) {
+		const auto &chatLabel = chatLabels[i];
 		if (chatLabel.empty())
 			continue;
 
 		int dsRowIdx = (index * 4) + i;
 
 		// this prevents the chats with index of 420 (aka default RL quickchats that have been overridden) from being included
-		if (dsRowIdx < 0 || dsRowIdx > 15)
-		{
+		if (dsRowIdx < 0 || dsRowIdx > 15) {
 			// the ds_row_index of chats that have been suppressed/overridden would be 1680-1683, so not exactly an error but still skip
 			if (dsRowIdx >= 1680 && dsRowIdx < 1684)
 				continue;
@@ -696,70 +651,60 @@ void CustomQuickchat::apply_custom_qc_labels_to_ui(UGFxData_Chat_TA* caller, UGF
 		ds->SetStringValue(L"ChatPresetMessages", dsRowIdx, L"Label", chatLabel);
 	}
 
-	LOG("Applied quickchat labels to UI for {} group", PRESET_GROUP_NAMES[index]);
+	LOG("Applied quickchat labels to UI for {} group", m_chatPresetGroupNames[index].ToString());
 }
 
-std::optional<std::string> CustomQuickchat::getClosestPlayer(EKeyword keyword)
-{
-	auto* pc = Instances.getPlayerController();
-	if (!pc)
-	{
+std::optional<std::string> CustomQuickchat::getClosestPlayer(EKeyword keyword) {
+	auto *pc = Instances.getPlayerController();
+	if (!pc) {
 		LOGERROR("APlayerController* is null");
 		return std::nullopt;
 	}
 
-	const FVector& userLoc = pc->Location;
+	const FVector &userLoc = pc->Location;
 
-	auto* ge = Instances.getGameEvent();
-	if (!ge || !ge->IsA<AGameEvent_Team_TA>())
-	{
+	auto *ge = Instances.getGameEvent();
+	if (!ge || !ge->IsA<AGameEvent_Team_TA>()) {
 		LOGERROR("AGameEvent_TA* is invalid");
 		return std::nullopt;
 	}
-	auto* gameEvent = static_cast<AGameEvent_Team_TA*>(ge);
+	auto *gameEvent = static_cast<AGameEvent_Team_TA *>(ge);
 
 	LOG("Game event has {} cars", ge->Cars.size());
 
-	ACar_TA*     closestCar   = nullptr;
+	ACar_TA     *closestCar   = nullptr;
 	float        smallestDist = 0.0f;
 	FUniqueNetId userId       = Instances.GetUniqueID();
 
 	int userTeam = pc->GetTeamNum();
 	LOG("User team num: {}", userTeam);
 
-	for (ACar_TA* car : ge->Cars)
-	{
+	for (ACar_TA *car : ge->Cars) {
 		if (!validUObject(car) || !validUObject(car->PlayerReplicationInfo))
 			continue;
 
-		FUniqueNetId& id = car->PlayerReplicationInfo->UniqueId;
-		if (sameId(id, userId))
-		{
+		FUniqueNetId &id = car->PlayerReplicationInfo->UniqueId;
+		if (sameId(id, userId)) {
 			LOG("Same id as user... skipping");
 			continue;
 		}
 
-		if (keyword == EKeyword::ClosestOpponent)
-		{
+		if (keyword == EKeyword::ClosestOpponent) {
 			if (car->GetTeamNum() == userTeam)
 				continue;
-		}
-		else if (keyword == EKeyword::ClosestTeammate)
-		{
+		} else if (keyword == EKeyword::ClosestTeammate) {
 			if (car->GetTeamNum() != userTeam)
 				continue;
 		}
 
 		const float playerDistSquared = Math::distanceSquared(userLoc, car->Location);
-		if (smallestDist == 0.0f || playerDistSquared < smallestDist)
-		{
+		if (smallestDist == 0.0f || playerDistSquared < smallestDist) {
 			smallestDist = playerDistSquared;
 			closestCar   = car;
 		}
 	}
 
-	if (!closestCar || !closestCar->PlayerReplicationInfo)
-	{
+	if (!closestCar || !closestCar->PlayerReplicationInfo) {
 		LOGERROR("Unable to get closest car's PlayerReplicationInfo");
 		return std::nullopt;
 	}
@@ -768,22 +713,21 @@ std::optional<std::string> CustomQuickchat::getClosestPlayer(EKeyword keyword)
 	return closestPlayerName;
 }
 
-std::optional<std::string> CustomQuickchat::getCurrentRumbleItem()
-{
-	auto* pc = Instances.getPlayerController();
+std::optional<std::string> CustomQuickchat::getCurrentRumbleItem() {
+	auto *pc = Instances.getPlayerController();
 	if (!pc || !pc->IsA<APlayerController_TA>())
 		return std::nullopt;
-	auto* pcTa = static_cast<APlayerController_TA*>(pc);
+	auto *pcTa = static_cast<APlayerController_TA *>(pc);
 
-	ACar_TA* car = pcTa->Car;
+	ACar_TA *car = pcTa->Car;
 	if (!validUObject(car))
 		return std::nullopt;
 
-	ARumblePickups_TA* pickups = car->RumblePickups;
+	ARumblePickups_TA *pickups = car->RumblePickups;
 	if (!validUObject(pickups))
 		return std::nullopt;
 
-	ASpecialPickup_TA* currentPickup = pickups->AttachedPickup;
+	ASpecialPickup_TA *currentPickup = pickups->AttachedPickup;
 	if (!validUObject(currentPickup))
 		return std::nullopt;
 
@@ -793,8 +737,7 @@ std::optional<std::string> CustomQuickchat::getCurrentRumbleItem()
 }
 
 #ifndef USE_SPEECH_TO_TEXT
-void CustomQuickchat::no_speech_to_text_warning()
-{
+void CustomQuickchat::warnNoSTT() {
 	std::string message = "This version doesnt support speech-to-text. You can find that version on the github Releases page";
 	NotifyAndLog("Speech-To-Text", message, 5);
 }

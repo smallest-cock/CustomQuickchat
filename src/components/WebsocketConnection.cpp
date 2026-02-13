@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "WebsocketConnection.hpp"
-#include "Macros.hpp"
+#include "util/Macros.hpp"
 #include <ModUtils/gui/GuiTools.hpp>
 
 // ##############################################################################################################
@@ -8,8 +8,7 @@
 // ##############################################################################################################
 
 void WebsocketConnectionManager::init(
-    const std::shared_ptr<GameWrapper>& gw, const std::shared_ptr<int>& port, const fs::path& serverExePath)
-{
+    const std::shared_ptr<GameWrapper> &gw, const std::shared_ptr<int> &port, const fs::path &serverExePath) {
 	gameWrapper = gw;
 	m_port      = port;
 
@@ -21,38 +20,31 @@ void WebsocketConnectionManager::init(
 // ############################################    FUNCTIONS    #################################################
 // ##############################################################################################################
 
-EWebsocketError WebsocketConnectionManager::connect(JsonResCallback callback)
-{
+EWebsocketError WebsocketConnectionManager::connect(JsonResCallback callback) {
 	EWebsocketError err = m_pythonServer.start(*m_port);
-	if (err == EWebsocketError::NoError)
-	{
+	if (err == EWebsocketError::NoError) {
 		m_isConnecting.store(true);
 		DELAY(START_WS_CLIENT_DELAY, { connectClientToServer(callback); }, callback);
-	}
-	else
+	} else
 		LOGERROR("Unable to start python websocket server");
 
 	return err;
 }
 
-EWebsocketError WebsocketConnectionManager::disconnect()
-{
+EWebsocketError WebsocketConnectionManager::disconnect() {
 	auto err = disconnectClientFromServer();
 
 	DELAY(0.5f, { stopWebsocketServer(); });
 	return err;
 }
 
-void WebsocketConnectionManager::connectClientToServer(JsonResCallback callback)
-{
-	if (!m_pythonServer.isRunning())
-	{
+void WebsocketConnectionManager::connectClientToServer(JsonResCallback callback) {
+	if (!m_pythonServer.isRunning()) {
 		LOGERROR("Unable to connect client. Websocket server hasn't been started!");
 		m_isConnecting.store(false);
 		return;
 	}
-	if (m_client->isConnected())
-	{
+	if (m_client->isConnected()) {
 		LOGERROR("Websocket client is already connected to server!");
 		m_isConnecting.store(false);
 		return;
@@ -62,64 +54,50 @@ void WebsocketConnectionManager::connectClientToServer(JsonResCallback callback)
 	LOG("Connecting websocket client was {}", success ? "successful" : "unsuccessful");
 }
 
-EWebsocketError WebsocketConnectionManager::disconnectClientFromServer()
-{
+EWebsocketError WebsocketConnectionManager::disconnectClientFromServer() {
 	m_isConnecting.store(false);
 
-	if (!m_pythonServer.isRunning())
-	{
+	if (!m_pythonServer.isRunning()) {
 		LOGERROR("Unable to disconnect client. Websocket server hasn't been started!");
 		return EWebsocketError::ServerHasntBeenStarted;
 	}
-	if (!m_client->isConnected())
-	{
+	if (!m_client->isConnected()) {
 		LOGERROR("Websocket client is already disconnected from server!");
 		return EWebsocketError::ClientAlreadyDisconnected;
 	}
 
-	if (bool success = m_client->disconnect())
-	{
+	if (bool success = m_client->disconnect()) {
 		LOG("Successfully disconnected client from server");
 		return EWebsocketError::NoError;
-	}
-	else
-	{
+	} else {
 		LOGERROR("Failed to disconnect client from server");
 		return EWebsocketError::UnableToDisconnectFromServer;
 	}
 }
 
-void WebsocketConnectionManager::stopWebsocketServer()
-{
+void WebsocketConnectionManager::stopWebsocketServer() {
 	// Terminate server in background
-	m_pythonServer.terminate(
-	    [this]()
-	    {
-		    // Called when process is fully dead
-		    // m_startedWebsocketServer = false;
-		    m_isConnecting.store(false);
-		    LOG("Python websocket server terminated");
-	    });
+	m_pythonServer.terminate([this]() {
+		// Called when process is fully dead
+		// m_startedWebsocketServer = false;
+		m_isConnecting.store(false);
+		LOG("Python websocket server terminated");
+	});
 }
 
-void WebsocketConnectionManager::sendMessage(const std::string& eventName, const json& dataJson)
-{
+void WebsocketConnectionManager::sendMessage(const std::string &eventName, const json &dataJson) {
 	std::string message;
-	try
-	{
+	try {
 		json payload = {{"event", eventName}, {"data", dataJson}};
 		message      = payload.dump(); // serialize JSON payload
-	}
-	catch (const std::exception& e)
-	{
+	} catch (const std::exception &e) {
 		LOGERROR("Exception while parsing message JSON: {}", e.what());
 	}
 
 	m_client->sendMessage(message);
 }
 
-void WebsocketConnectionManager::onPluginUnload()
-{
+void WebsocketConnectionManager::onPluginUnload() {
 	// explicitly release resource here (in BM's dedicated onUnload, as opposed to leaving it up to RAII destructor)
 	// to prevent weird behavior where m_websocketClient state persists across plugin reloads, fricking many things up
 	m_client.reset();
@@ -131,10 +109,8 @@ void WebsocketConnectionManager::onPluginUnload()
 // #########################################    DISPLAY FUNCTIONS    ############################################
 // ##############################################################################################################
 
-void WebsocketConnectionManager::display_debugInfo()
-{
-	if (ImGui::CollapsingHeader("debug websockets"))
-	{
+void WebsocketConnectionManager::display_debugInfo() {
+	if (ImGui::CollapsingHeader("debug websockets")) {
 		ImGui::Text("m_pythonServer.isRunning(): %d", m_pythonServer.isRunning());
 		ImGui::Text("m_connectingToWsServer: %d", m_isConnecting.load());
 		GUI::Spacing(2);
@@ -145,36 +121,30 @@ void WebsocketConnectionManager::display_debugInfo()
 // #######################################    PythonServerProcess    ############################################
 // ##############################################################################################################
 
-void PythonServerProcess::init(const fs::path& exePath)
-{
+void PythonServerProcess::init(const fs::path &exePath) {
 	m_exePath       = exePath;
 	m_allFilesExist = fs::exists(exePath);
 }
 
-EWebsocketError PythonServerProcess::start(int port)
-{
-	if (!m_allFilesExist)
-	{
+EWebsocketError PythonServerProcess::start(int port) {
+	if (!m_allFilesExist) {
 		LOGERROR("Missing required files. Check your installation");
 		return EWebsocketError::MissingRequiredFiles;
 	}
-	if (isRunning())
-	{
+	if (isRunning()) {
 		LOGERROR("Websocket server has already started!");
 		return EWebsocketError::ServerAlreadyStarted;
 	}
 
 	if (spawn(std::to_string(port)))
 		return EWebsocketError::NoError;
-	else
-	{
+	else {
 		LOGERROR("Failed to start Python websocket server");
 		return EWebsocketError::UnableToStartServer;
 	}
 }
 
-bool PythonServerProcess::spawn(const std::string& args, const std::string& workingDir)
-{
+bool PythonServerProcess::spawn(const std::string &args, const std::string &workingDir) {
 	terminate(); // ensure previous process is gone
 
 	STARTUPINFO si{};
@@ -193,8 +163,7 @@ bool PythonServerProcess::spawn(const std::string& args, const std::string& work
 	    &si,
 	    &m_pi);
 
-	if (!success)
-	{
+	if (!success) {
 		LOGERROR("CreateProcess failed: {}", GetLastError());
 		return false;
 	}
@@ -205,8 +174,7 @@ bool PythonServerProcess::spawn(const std::string& args, const std::string& work
 }
 
 // Terminate process in background thread
-void PythonServerProcess::terminate(std::function<void()> onDone)
-{
+void PythonServerProcess::terminate(std::function<void()> onDone) {
 	if (!m_running.load())
 		return;
 
@@ -218,24 +186,20 @@ void PythonServerProcess::terminate(std::function<void()> onDone)
 	m_pi = {};
 	m_running.store(false);
 
-	if (hProcess && hProcess != INVALID_HANDLE_VALUE)
-	{
-		std::thread(
-		    [hProcess, hThread, onDone]()
-		    {
-			    if (!TerminateProcess(hProcess, 1))
-				    LOGERROR("TerminateProcess failed: {}", GetLastError());
+	if (hProcess && hProcess != INVALID_HANDLE_VALUE) {
+		std::thread([hProcess, hThread, onDone]() {
+			if (!TerminateProcess(hProcess, 1))
+				LOGERROR("TerminateProcess failed: {}", GetLastError());
 
-			    WaitForSingleObject(hProcess, INFINITE);
+			WaitForSingleObject(hProcess, INFINITE);
 
-			    if (!CloseHandle(hProcess))
-				    LOGERROR("CloseHandle on hProcess failed: {}", GetLastError());
-			    if (!CloseHandle(hThread))
-				    LOGERROR("CloseHandle on hThread failed: {}", GetLastError());
+			if (!CloseHandle(hProcess))
+				LOGERROR("CloseHandle on hProcess failed: {}", GetLastError());
+			if (!CloseHandle(hThread))
+				LOGERROR("CloseHandle on hThread failed: {}", GetLastError());
 
-			    if (onDone)
-				    onDone();
-		    })
-		    .detach();
+			if (onDone)
+				onDone();
+		}).detach();
 	}
 }

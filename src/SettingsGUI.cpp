@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "Cvars.hpp"
 #include "CustomQuickchat.hpp"
-#include "Macros.hpp"
+#include "util/Macros.hpp"
+#include "util/Instances.hpp"
+#include "Cvars.hpp"
 #include "Keys.hpp"
 #include <ModUtils/gui/GuiTools.hpp>
-#include "components/Instances.hpp"
 #include "components/LobbyInfo.hpp"
 #ifdef USE_SPEECH_TO_TEXT
 #include "components/SpeechToText.hpp"
@@ -14,8 +14,7 @@
 // #############################################  PLUGIN SETTINGS  ##############################################
 // ##############################################################################################################
 
-void CustomQuickchat::RenderSettings()
-{
+void CustomQuickchat::RenderSettings() {
 	auto enabled_cvar = getCvar(Cvars::enabled);
 	if (!enabled_cvar)
 		return;
@@ -28,13 +27,11 @@ void CustomQuickchat::RenderSettings()
 		GUI::alt_settings_header(h_label.c_str(), plugin_version_display, gameWrapper);
 
 		bool enabled = enabled_cvar.getBoolValue();
-		if (ImGui::Checkbox("Enabled", &enabled))
-		{
+		if (ImGui::Checkbox("Enabled", &enabled)) {
 			runCommand(Commands::toggleEnabled);
 		}
 
-		if (enabled)
-		{
+		if (enabled) {
 			GUI::Spacing(4);
 
 			// general settings
@@ -46,8 +43,7 @@ void CustomQuickchat::RenderSettings()
 				display_chatTimeoutSettings();
 
 			// speech-to-text
-			if (ImGui::CollapsingHeader("Speech-to-text settings", ImGuiTreeNodeFlags_None))
-			{
+			if (ImGui::CollapsingHeader("Speech-to-text settings", ImGuiTreeNodeFlags_None)) {
 #ifdef USE_SPEECH_TO_TEXT
 				SpeechToText.display_settings();
 #else
@@ -67,7 +63,7 @@ void CustomQuickchat::RenderSettings()
 			GUI::Spacing(8);
 
 			if (ImGui::Button("Send a test chat"))
-				GAME_THREAD_EXECUTE({ Instances.SendChat("this is a test...", EChatChannel::EChatChannel_Match); });
+				GAME_THREAD_EXECUTE({ sendChat("this is a test...", EChatChannel::EChatChannel_Match); });
 
 			GUI::Spacing(8);
 
@@ -84,19 +80,12 @@ void CustomQuickchat::RenderSettings()
 			ImGui::InputText("##openMenuCommand", &openMenuCmd, ImGuiInputTextFlags_ReadOnly);
 			GUI::CopyButton("Copy", openMenuCmd.c_str());
 		}
-
-		/*
-		// debug
-		GUI::Spacing(4);
-		LobbyInfo.display_debug();
-		*/
 	}
 
 	GUI::alt_settings_footer("Need help? Join the Discord", "https://discord.gg/d5ahhQmJbJ");
 }
 
-void CustomQuickchat::display_generalSettings()
-{
+void CustomQuickchat::display_generalSettings() {
 	auto sequenceTimeWindow_cvar         = getCvar(Cvars::sequenceTimeWindow);
 	auto minBindingDelay_cvar            = getCvar(Cvars::minBindingDelay);
 	auto overrideDefaultQuickchats_cvar  = getCvar(Cvars::overrideDefaultQuickchats);
@@ -151,8 +140,7 @@ void CustomQuickchat::display_generalSettings()
 	GUI::Spacing(2);
 }
 
-void CustomQuickchat::display_chatTimeoutSettings()
-{
+void CustomQuickchat::display_chatTimeoutSettings() {
 	// auto disableChatTimeout_cvar      = getCvar(Cvars::disableChatTimeout);
 	auto useCustomChatTimeoutMsg_cvar = getCvar(Cvars::useCustomChatTimeoutMsg);
 	auto customChatTimeoutMsg_cvar    = getCvar(Cvars::customChatTimeoutMsg);
@@ -167,8 +155,7 @@ void CustomQuickchat::display_chatTimeoutSettings()
 	if (ImGui::Checkbox("Custom chat timeout message", &useCustomChatTimeoutMsg))
 		useCustomChatTimeoutMsg_cvar.setValue(useCustomChatTimeoutMsg);
 
-	if (useCustomChatTimeoutMsg)
-	{
+	if (useCustomChatTimeoutMsg) {
 		GUI::Spacing(2);
 
 		std::string customChatTimeoutMsg = customChatTimeoutMsg_cvar.getStringValue();
@@ -184,12 +171,10 @@ void CustomQuickchat::display_chatTimeoutSettings()
 // ###############################################  PLUGIN WINDOW  ##############################################
 // ##############################################################################################################
 
-void CustomQuickchat::RenderWindow()
-{
+void CustomQuickchat::RenderWindow() {
 	ImGui::BeginTabBar("CQCTabs");
 
-	if (ImGui::BeginTabItem("Bindings"))
-	{
+	if (ImGui::BeginTabItem("Bindings")) {
 		display_bindingsList();
 		ImGui::SameLine();
 		display_bindingDetails();
@@ -197,8 +182,7 @@ void CustomQuickchat::RenderWindow()
 		ImGui::EndTabItem();
 	}
 
-	if (ImGui::BeginTabItem("Word Variations"))
-	{
+	if (ImGui::BeginTabItem("Word Variations")) {
 		display_variationListList();
 		ImGui::SameLine();
 		display_variationListDetails();
@@ -207,8 +191,7 @@ void CustomQuickchat::RenderWindow()
 	}
 }
 
-void CustomQuickchat::display_bindingsList()
-{
+void CustomQuickchat::display_bindingsList() {
 	{
 		GUI::ScopedChild c{"SelectOrCreateBinding", ImVec2(300, 0), true};
 
@@ -220,9 +203,8 @@ void CustomQuickchat::display_bindingsList()
 			ImGui::Separator();
 
 			auto bindingsSize = m_bindings.size();
-			for (int i = 0; i < bindingsSize; ++i)
-			{
-				const auto& binding = m_bindings[i];
+			for (int i = 0; i < bindingsSize; ++i) {
+				const auto &binding = m_bindings[i];
 
 				GUI::ScopedID id{&binding};
 
@@ -236,8 +218,7 @@ void CustomQuickchat::display_bindingsList()
 		{
 			GUI::ScopedChild c{"AddBinding"};
 
-			if (ImGui::Button("Add New Binding", ImGui::GetContentRegionAvail()))
-			{
+			if (ImGui::Button("Add New Binding", ImGui::GetContentRegionAvail())) {
 				addEmptyBinding();
 				m_selectedBindingIndex = m_bindings.empty() ? 0 : m_bindings.size() - 1;
 			}
@@ -245,8 +226,7 @@ void CustomQuickchat::display_bindingsList()
 	}
 }
 
-void CustomQuickchat::display_bindingDetails()
-{
+void CustomQuickchat::display_bindingDetails() {
 	// static float childScale = 0.85f;	// <--- for testing
 
 	{
@@ -255,14 +235,13 @@ void CustomQuickchat::display_bindingDetails()
 		{
 			GUI::ScopedChild c{"BindingInfo"};
 
-			if (m_bindings.empty())
-			{
+			if (m_bindings.empty()) {
 				GUI::Spacing(4);
 				ImGui::TextUnformatted("Add a binding...");
 				return;
 			}
 
-			auto& selectedBinding = m_bindings[m_selectedBindingIndex];
+			auto &selectedBinding = m_bindings[m_selectedBindingIndex];
 			if (!selectedBinding)
 				return;
 
@@ -297,19 +276,18 @@ void CustomQuickchat::display_bindingDetails()
 						{
 							GUI::ScopedChild c{"SaveButton", ImVec2(ImGui::GetContentRegionAvailWidth() * 0.75f, 0)};
 
-							if (ImGui::Button("Save", ImGui::GetContentRegionAvail()))
-							{
+							if (ImGui::Button("Save", ImGui::GetContentRegionAvail())) {
 								updateBindingsData();
 
 								GAME_THREAD_EXECUTE({
 									std::string successMsg = writeBindingsToJson() ? "Bindings saved!" : "Unable to save bindings...";
-									Instances.SpawnNotification("custom quickchat", successMsg, 3, true);
+									Instances.spawnNotification("custom quickchat", successMsg, 3, true);
 
 									determineQuickchatLabels();
 
-									auto chat = Instances.GetInstanceOf<UGFxData_Chat_TA>();
+									auto *chat = Instances.getInstanceOf<UGFxData_Chat_TA>();
 									if (chat)
-										apply_all_custom_qc_labels_to_ui(chat);
+										applyAllCustomQcLabelsToUi(chat);
 								});
 							}
 						}
@@ -335,12 +313,11 @@ void CustomQuickchat::display_bindingDetails()
 	}
 }
 
-void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding>& selectedBinding)
-{
+void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding> &selectedBinding) {
 	if (!selectedBinding)
 		return;
 
-	if (ImGui::Checkbox("Enabled", &selectedBinding->enabled))
+	if (ImGui::Checkbox("Enabled", &selectedBinding->bEnabled))
 		GAME_THREAD_EXECUTE({ determineQuickchatLabels(); });
 
 	GUI::Spacing(2);
@@ -353,13 +330,11 @@ void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding>&
 
 	GUI::Spacing(2);
 
-	if (ImGui::BeginCombo("Chat mode", g_possibleChatModes[static_cast<int>(selectedBinding->chatMode)].c_str()))
-	{
-		for (int i = 0; i < g_possibleChatModes.size(); ++i)
-		{
+	if (ImGui::BeginCombo("Chat mode", g_possibleChatModes[static_cast<int>(selectedBinding->chatMode)].c_str())) {
+		for (int i = 0; i < g_possibleChatModes.size(); ++i) {
 			GUI::ScopedID id{i};
 
-			const std::string& chatModeStr = g_possibleChatModes[i];
+			const std::string &chatModeStr = g_possibleChatModes[i];
 			if (ImGui::Selectable(chatModeStr.c_str(), static_cast<int>(selectedBinding->chatMode) == i))
 				selectedBinding->chatMode = static_cast<EChatChannel>(i);
 		}
@@ -367,8 +342,7 @@ void CustomQuickchat::display_bindingChatDetails(const std::shared_ptr<Binding>&
 	}
 }
 
-void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Binding>& selectedBinding)
-{
+void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Binding> &selectedBinding) {
 	if (!selectedBinding)
 		return;
 
@@ -376,13 +350,11 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 
 	GUI::Spacing(4);
 
-	if (ImGui::BeginCombo("Binding type", g_possibleBindingTypes[static_cast<int>(selectedBinding->bindingType)].c_str()))
-	{
-		for (int i = 0; i < g_possibleBindingTypes.size(); ++i)
-		{
+	if (ImGui::BeginCombo("Binding type", g_possibleBindingTypes[static_cast<int>(selectedBinding->bindingType)].c_str())) {
+		for (int i = 0; i < g_possibleBindingTypes.size(); ++i) {
 			GUI::ScopedID id{i};
 
-			const std::string& bindingTypeStr = g_possibleBindingTypes[i];
+			const std::string &bindingTypeStr = g_possibleBindingTypes[i];
 			if (ImGui::Selectable(bindingTypeStr.c_str(), static_cast<int>(selectedBinding->bindingType) == i))
 				selectedBinding->bindingType = static_cast<EBindingType>(i);
 		}
@@ -392,42 +364,36 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 	GUI::Spacing(4);
 
 	bool notEnoughButtonsForSequence = selectedBinding->bindingType == EBindingType::Sequence && selectedBinding->buttons.size() < 2;
-	if (notEnoughButtonsForSequence)
-	{
-		ImGui::TextColored(GUI::Colors::Yellow, "*** Button sequence bindings require at least use 2 buttons! ***");
+	if (notEnoughButtonsForSequence) {
+		ImGui::TextColored(GUI::Colors::Yellow, "*** Button sequence bindings require at least 2 buttons! ***");
 		GUI::Spacing(2);
 	}
 
 	// buttons
-	for (int i = 0; i < selectedBinding->buttons.size(); ++i)
-	{
+	for (int i = 0; i < selectedBinding->buttons.size(); ++i) {
 		GUI::ScopedID iID{i};
 
-		std::string& buttonStr = selectedBinding->buttons[i];
+		std::string &buttonStr = selectedBinding->buttons[i];
 		std::string  label     = "Button " + std::to_string(i + 1);
 
 		char searchBuffer[128] = ""; // text buffer for search input
 
-		if (ImGui::BeginSearchableCombo(label.c_str(), buttonStr.c_str(), searchBuffer, sizeof(searchBuffer), "search..."))
-		{
+		if (ImGui::BeginSearchableCombo(label.c_str(), buttonStr.c_str(), searchBuffer, sizeof(searchBuffer), "search...")) {
 			std::string searchQuery = Format::ToLower(searchBuffer);
 
-			for (int j = 0; j < possibleKeyNames.size(); ++j)
-			{
+			for (int j = 0; j < possibleKeyNames.size(); ++j) {
 				GUI::ScopedID jID{j};
 
-				const std::string& keyNameStr      = possibleKeyNames[j];
+				const std::string &keyNameStr      = possibleKeyNames[j];
 				const std::string  keyNameStrLower = Format::ToLower(keyNameStr);
 
 				if (!searchQuery.empty()) // only render option if there's text in search box & it matches the key name
 				{
-					if (keyNameStrLower.find(searchQuery) != std::string::npos)
-					{
+					if (keyNameStrLower.find(searchQuery) != std::string::npos) {
 						if (ImGui::Selectable(keyNameStr.c_str(), keyNameStr == buttonStr))
 							buttonStr = keyNameStr;
 					}
-				}
-				else // if there's no text in search box, render all possible key options
+				} else // if there's no text in search box, render all possible key options
 				{
 					if (ImGui::Selectable(keyNameStr.c_str(), keyNameStr == buttonStr))
 						buttonStr = keyNameStr;
@@ -443,10 +409,9 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 			selectedBinding->buttons.erase(selectedBinding->buttons.begin() + i);
 	}
 
-	if (notEnoughButtonsForSequence)
-	{
+	if (notEnoughButtonsForSequence) {
 		GUI::Spacing(2);
-		ImGui::TextColored(GUI::Colors::Yellow, "Please add a button...");
+		ImGui::TextColored(GUI::Colors::Yellow, "Please add a button ...");
 	}
 
 	GUI::Spacing(2);
@@ -455,17 +420,15 @@ void CustomQuickchat::display_bindingTriggerDetails(const std::shared_ptr<Bindin
 		selectedBinding->buttons.emplace_back("");
 }
 
-void CustomQuickchat::display_variationListList()
-{
+void CustomQuickchat::display_variationListList() {
 	{
 		GUI::ScopedChild c{"VariationListSection", ImVec2(300, 0), true};
 
 		{
 			GUI::ScopedChild c{"VariationListList", ImVec2(0, ImGui::GetContentRegionAvail().y * 0.9f)};
 
-			for (int i = 0; i < m_variations.size(); ++i)
-			{
-				VariationList& list = m_variations[i];
+			for (int i = 0; i < m_variations.size(); ++i) {
+				VariationList &list = m_variations[i];
 				GUI::ScopedID  id{&list};
 
 				if (ImGui::Selectable(list.listName.c_str(), i == m_selectedVariationIndex))
@@ -478,8 +441,7 @@ void CustomQuickchat::display_variationListList()
 		{
 			GUI::ScopedChild c{"AddVariationListSection"};
 
-			if (ImGui::Button("Add New List", ImGui::GetContentRegionAvail()))
-			{
+			if (ImGui::Button("Add New List", ImGui::GetContentRegionAvail())) {
 				addEmptyVariationList();
 				m_selectedVariationIndex = m_variations.empty() ? 0 : m_variations.size() - 1;
 			}
@@ -487,21 +449,19 @@ void CustomQuickchat::display_variationListList()
 	}
 }
 
-void CustomQuickchat::display_variationListDetails()
-{
+void CustomQuickchat::display_variationListDetails() {
 	// static float childScale = 0.9f;
 
 	{
 		GUI::ScopedChild c{"VariationListData", ImVec2(0, 0), true};
 
-		if (m_variations.empty())
-		{
+		if (m_variations.empty()) {
 			GUI::Spacing(4);
 			ImGui::TextUnformatted("add a word variation list...");
 			return;
 		}
 
-		VariationList& selectedVariation = m_variations[m_selectedVariationIndex];
+		VariationList &selectedVariation = m_variations[m_selectedVariationIndex];
 
 		{
 			GUI::ScopedChild c{"VariationView", ImVec2(0, ImGui::GetContentRegionAvail().y * 0.9f)};
@@ -540,12 +500,11 @@ void CustomQuickchat::display_variationListDetails()
 				{
 					GUI::ScopedChild c{"SaveButton", ImVec2(ImGui::GetContentRegionAvailWidth() * 0.75f, 0)};
 
-					if (ImGui::Button("Save", ImGui::GetContentRegionAvail()))
-					{
+					if (ImGui::Button("Save", ImGui::GetContentRegionAvail())) {
 						selectedVariation.updateDataFromUnparsedString();
 						writeVariationsToJson();
 
-						GAME_THREAD_EXECUTE({ Instances.SpawnNotification("custom quickchat", "Variations saved!", 3); });
+						GAME_THREAD_EXECUTE({ Instances.spawnNotification("custom quickchat", "Variations saved!", 3); });
 					}
 				}
 
@@ -559,7 +518,7 @@ void CustomQuickchat::display_variationListDetails()
 					ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
 
 					if (ImGui::Button("Delete List", ImGui::GetContentRegionAvail()))
-						GAME_THREAD_EXECUTE({ DeleteVariationList(m_selectedVariationIndex); });
+						GAME_THREAD_EXECUTE({ deleteVariationList(m_selectedVariationIndex); });
 
 					ImGui::PopStyleColor(3);
 				}

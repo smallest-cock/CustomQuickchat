@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
 
-project(CustomQuickchat VERSION 1.10.4)
+project(CustomQuickchat VERSION 1.10.5)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -27,10 +27,16 @@ set(compile_options
 )
 
 set(SRC_DIR "${CMAKE_SOURCE_DIR}/src")
-set(COMPONENTS_DIR "${SRC_DIR}/components")
 
+set(BOILERPLATE_DIR "${SRC_DIR}/boilerplate")
+set(BOILERPLATE_SRC
+    ${BOILERPLATE_DIR}/GuiBase.cpp
+    ${BOILERPLATE_DIR}/PluginHelperBase.cpp
+    ${BOILERPLATE_DIR}/${PROJECT_NAME}.rc
+)
+
+set(COMPONENTS_DIR "${SRC_DIR}/components")
 set(COMPONENTS_SRC
-    ${COMPONENTS_DIR}/Instances.cpp
     ${COMPONENTS_DIR}/LobbyInfo.cpp
 )
 if(USE_SPEECH_TO_TEXT)
@@ -40,6 +46,13 @@ if(USE_SPEECH_TO_TEXT)
         ${COMPONENTS_DIR}/WebsocketConnection.cpp
     )
 endif()
+
+
+set(UTIL_DIR "${SRC_DIR}/util")
+set(UTIL_SRC
+    ${UTIL_DIR}/Instances.cpp
+    ${UTIL_DIR}/HookManager.cpp
+)
 
 set(EXTERNAL_DIR "${CMAKE_SOURCE_DIR}/external")
 set(BMSDK_DIR "${EXTERNAL_DIR}/BMSDK")
@@ -109,21 +122,19 @@ add_library(${PROJECT_NAME}
     ${IMGUI_SRC}
     ${RLSDK_SRC}
     ${MODUTILS_SRC}
+    ${BOILERPLATE_SRC}
     ${COMPONENTS_SRC}
+    ${UTIL_SRC}
     ${SRC_DIR}/${PROJECT_NAME}.cpp
-    ${SRC_DIR}/HelperFuncs.cpp
     ${SRC_DIR}/SettingsGUI.cpp
-    ${SRC_DIR}/Functions.cpp
-    ${SRC_DIR}/Events.cpp
+    ${SRC_DIR}/MiscFunctions.cpp
     ${SRC_DIR}/Commands.cpp
     ${SRC_DIR}/Structs.cpp
     ${SRC_DIR}/Bindings.cpp
     ${SRC_DIR}/TextEffects.cpp
-    ${SRC_DIR}/Events.cpp
+    ${SRC_DIR}/Hooks.cpp
     ${SRC_DIR}/Commands.cpp
-    ${SRC_DIR}/GuiBase.cpp
     ${SRC_DIR}/pch.cpp
-    ${SRC_DIR}/${PROJECT_NAME}.rc
 )
 
 target_precompile_headers(${PROJECT_NAME}
@@ -142,8 +153,8 @@ if(USE_SPEECH_TO_TEXT)
     )
 endif()
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${CMAKE_SOURCE_DIR}/external/BMSDK/lib/pluginsdk.lib
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE ${CMAKE_SOURCE_DIR}/external/BMSDK/lib/pluginsdk.lib
 )
 
 # use selective export handling instead of exporting all symbols

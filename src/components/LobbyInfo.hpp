@@ -3,14 +3,13 @@
 #include "Component.hpp"
 #include <optional>
 
-class LobbyInfoComponent : Component<LobbyInfoComponent>
-{
+class LobbyInfoComponent : Component<LobbyInfoComponent> {
 public:
 	LobbyInfoComponent() {}
 	~LobbyInfoComponent() {}
 
 	static constexpr std::string_view componentName = "LobbyInfo";
-	void                              init(const std::shared_ptr<GameWrapper>& gw);
+	void                              init(const std::shared_ptr<GameWrapper> &gw);
 
 private:
 	void initFilepaths();
@@ -31,7 +30,7 @@ private:
 	fs::path m_chatsJsonPath;
 	fs::path m_ranksJsonPath;
 
-	UGFxData_Chat_TA* m_gfxChatData = nullptr;
+	UGFxData_Chat_TA *m_gfxChatData = nullptr;
 
 	std::vector<ChatData>                         m_matchChats;
 	std::unordered_map<std::string, ChatterRanks> m_matchRanks; // bm ID string --> ChatterRanks struct
@@ -42,11 +41,11 @@ public:
 	std::string getLastChatterRankStr(EKeyword keyword);
 
 	std::optional<ChatData> getLastChatData();
-	static std::string      uidStrFromNetId(const FUniqueNetId& id);
+	static std::string      uidStrFromNetId(const FUniqueNetId &id);
 	static std::string      getPlatformStr(uint8_t platform);
-	static void             logChatData(const ChatData& chat);
+	static void             logChatData(const ChatData &chat);
 	void                    clearStoredChats();
-	void                    handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params& params);
+	void                    handleChatMsg(const UGFxData_Chat_TA_execOnChatMessage_Params &params);
 
 	inline size_t getMatchChatsSize() { return m_matchChats.size(); }
 	inline size_t getMatchRanksSize() { return m_matchRanks.size(); }

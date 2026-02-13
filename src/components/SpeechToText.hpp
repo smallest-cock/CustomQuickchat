@@ -3,37 +3,34 @@
 #include "components/WebsocketConnection.hpp"
 #include "CustomQuickchat.hpp"
 #include "Structs.hpp"
+#include <ModUtils/gui/GuiTools.hpp>
 
-struct ActiveSTTAttempt
-{
+struct ActiveSTTAttempt {
 	std::string attemptID;
 	Binding     binding;
 };
 
-struct SpeechToTextResult
-{
+struct SpeechToTextResult {
 	bool        success = false;
 	bool        error   = false;
 	std::string outputStr;
 };
 
-struct MicCalibrationResult
-{
+struct MicCalibrationResult {
 	bool        success         = false;
 	bool        error           = false;
 	int         energyThreshold = 420;
 	std::string errorMsg;
 };
 
-class STTComponent : Component<STTComponent>
-{
+class STTComponent : Component<STTComponent> {
 public:
 	STTComponent() {}
 	~STTComponent() {}
 
 	static constexpr std::string_view componentName = "SpeechToText";
 
-	void init(const std::shared_ptr<CustomQuickchat>& mainPluginClass, const std::shared_ptr<GameWrapper>& gw);
+	void init(const std::shared_ptr<CustomQuickchat> &mainPluginClass, const std::shared_ptr<GameWrapper> &gw);
 
 private:
 	void initFilepaths();
@@ -86,28 +83,28 @@ private:
 	void endConnection();
 
 	// speech-to-text
-	void startSTT(const Binding& binding);
+	void startSTT(const Binding &binding);
 	json generateDataForSTTAttempt();
-	void processWsResponse(const json& res);
-	void processSTTResult(const json& res);
+	void processWsResponse(const json &res);
+	void processSTTResult(const json &res);
 
 	// mic calibration
 	void calibrateMicrophone();
 	json generateDataForMicCalibrationAttempt() const;
-	void processMicCalibrationResult(const json& res);
+	void processMicCalibrationResult(const json &res);
 
 	// misc
 	std::string generateAttemptId();
 	void        clearSttErrorLog();
 
-	std::string CreateCommandString(const fs::path& executablePath, const std::vector<std::string>& args);
-	void        sttLog(const std::string& message);
-	void        notifyAndLog(const std::string& title, const std::string& message, int duration = 3);
+	std::string CreateCommandString(const fs::path &executablePath, const std::vector<std::string> &args);
+	void        sttLog(const std::string &message);
+	void        notifyAndLog(const std::string &title, const std::string &message, int duration = 3);
 
 public:
 	void onUnload();
 
-	void triggerSTT(const Binding& binding);
+	void triggerSTT(const Binding &binding);
 	void test();
 
 private:
