@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.10.5
+- Improved method of blocking default quickchats when a custom binding is triggered (maybe)
+- Minor UI improvements
+- Updated internal SDK to match latest version of RL (v2.64)
+
 ## v1.10.4
 - Fixed `[[lastChat]]` keywords not working due to RL update v2.59 [#19](https://github.com/smallest-cock/CustomQuickchat/issues/19)
 
