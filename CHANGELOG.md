@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.10.6
+- Fixed potential crashes when sending chats with certain keywords like `[[closestOpponent]]`
+- Updated internal SDK to match latest RL version (v2.66)
+
 ## v1.10.5
 - Improved method of blocking default quickchats when a custom binding is triggered (maybe)
 - Minor UI improvements

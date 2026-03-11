@@ -84,7 +84,7 @@ jobs:
         run: cmake --preset stt-off
 
       - name: 🔨 Build project (CMake + Ninja)
-        run: cmake --build --preset build
+        run: cmake --build --preset Ninja-Release
 
       - name: 🥵 Prepare release files
         shell: bash
@@ -130,7 +130,7 @@ jobs:
         run: cmake --preset stt-on
 
       - name: 🔨 Build project (CMake + Ninja)
-        run: cmake --build --preset build-stt
+        run: cmake --build --preset Ninja-Release-STT
 
       - name: 🥵 Prepare release files
         shell: bash

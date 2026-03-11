@@ -178,12 +178,12 @@ class UGameViewportClient *InstancesComponent::IUGameViewportClient() { return I
 
 class ULocalPlayer *InstancesComponent::IULocalPlayer() {
 	UEngine *engine = IUEngine();
-
-	if (engine && engine->GamePlayers[0]) {
-		return engine->GamePlayers[0];
-	}
-
-	return nullptr;
+	if (!engine)
+		return nullptr;
+	auto &player = engine->GamePlayers[0];
+	if (!player)
+		return nullptr;
+	return player;
 }
 
 class APlayerController *InstancesComponent::IAPlayerController() {
@@ -207,11 +207,10 @@ struct FUniqueNetId InstancesComponent::GetUniqueID() {
 // ======================= get instance funcs =========================
 
 AGFxHUD_TA *InstancesComponent::getHUD() {
-	if (!hud || !hud->IsA<AGFxHUD_TA>()) {
-		hud = getInstanceOf<AGFxHUD_TA>();
-	}
-
-	return hud;
+	APlayerController *pc = getPlayerController();
+	if (!pc)
+		return nullptr;
+	return UnrealCast<AGFxHUD_TA>(pc->myHUD);
 }
 
 AGameEvent_TA *InstancesComponent::getGameEvent() {
@@ -249,8 +248,7 @@ APlayerController *InstancesComponent::getPlayerController() {
 	ULocalPlayer *lp = Instances.IULocalPlayer();
 	if (!validUObject(lp) || !validUObject(lp->Actor) || !lp->Actor->IsA<APlayerController>())
 		return nullptr;
-
-	return static_cast<APlayerController *>(lp->Actor);
+	return reinterpret_cast<APlayerController *>(lp->Actor);
 }
 
 AActor *InstancesComponent::getCarActor() {

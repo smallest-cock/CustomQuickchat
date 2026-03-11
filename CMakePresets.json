@@ -7,16 +7,16 @@
     },
     "configurePresets": [
         {
-            "name": "default",
+            "name": "ninja-base",
             "description": "Sets generator and source directory",
             "hidden": true,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build"
         },
         {
-            "name": "x64-ninja-msvc",
+            "name": "ninja-release",
             "displayName": "Windows (x64): Ninja + cl.exe (with STT)",
-            "inherits": "default",
+            "inherits": "ninja-base",
             "hidden": true,
             "description": "Sets x64 architecture, compiler/linker, and build type",
             "architecture": {
@@ -38,7 +38,7 @@
         {
             "name": "stt-off",
             "displayName": "Without STT",
-            "inherits": "x64-ninja-msvc",
+            "inherits": "ninja-release",
             "description": "speech-to-text disabled",
             "cacheVariables": {
                 "USE_SPEECH_TO_TEXT": "OFF",
@@ -48,7 +48,7 @@
         {
             "name": "stt-on",
             "displayName": "With STT",
-            "inherits": "x64-ninja-msvc",
+            "inherits": "ninja-release",
             "description": "speech-to-text enabled",
             "cacheVariables": {
                 "USE_SPEECH_TO_TEXT": "ON",
@@ -58,12 +58,12 @@
     ],
     "buildPresets": [
         {
-            "name": "build",
+            "name": "Ninja-Release",
             "displayName": "Build (without STT)",
             "configurePreset": "stt-off"
         },
         {
-            "name": "build-stt",
+            "name": "Ninja-Release-STT",
             "displayName": "Build with STT",
             "configurePreset": "stt-on"
         }
